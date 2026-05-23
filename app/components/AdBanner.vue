@@ -9,7 +9,8 @@
           :data-ad-client="adsenseId"
           :data-ad-slot="adSlot"
           :data-ad-format="adFormat"
-          :data-full-width-responsive="fullWidthResponsive"
+          :data-ad-layout="adLayout ? adLayout : undefined"
+          :data-full-width-responsive="adLayout ? undefined : fullWidthResponsive"
           :style="adStyle"
         />
         <!-- Premium visual mock-ad fallback shown in dev, when loading, or if blocked -->
@@ -27,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRuntimeConfig, computed, useI18n, ref, onMounted, onBeforeUnmount, nextTick } from '#imports'
+import { useRuntimeConfig, computed, useI18n, ref, onMounted, onBeforeUnmount, nextTick, watch } from '#imports'
 
 defineProps({
   adSlot: {
@@ -45,23 +46,69 @@ defineProps({
   fullWidthResponsive: {
     type: String,
     default: 'true'
+  },
+  adLayout: {
+    type: String,
+    default: ''
   }
 })
 
 const { t } = useI18n()
 const config = useRuntimeConfig()
-const adsenseId = computed(() => config.public.adsenseClientId)
+const adsenseId = computed(() => {
+  const rawId = config.public.adsenseClientId
+  return rawId && !rawId.startsWith('ca-pub-') ? `ca-pub-${rawId}` : rawId
+})
 
 const adRef = ref<HTMLElement | null>(null)
 const showFallback = ref(true)
 let retryTimer: ReturnType<typeof setTimeout> | null = null
 let observer: MutationObserver | null = null
 let retryCount = 0
-const MAX_RETRIES = 5
+const MAX_RETRIES = 10
+
+const setupObserver = (el: HTMLElement) => {
+  if (observer) observer.disconnect()
+
+  if (el.getAttribute('data-adsbygoogle-status') === 'done') {
+    showFallback.value = false
+  }
+
+  observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-adsbygoogle-status') {
+        const status = el.getAttribute('data-adsbygoogle-status')
+        if (status === 'done') {
+          showFallback.value = false
+        }
+      }
+    })
+  })
+
+  observer.observe(el, {
+    attributes: true,
+    attributeFilter: ['data-adsbygoogle-status']
+  })
+}
+
+// Watch adRef reactive template reference to ensure observer works even during asynchronous mounting
+watch(adRef, (newEl) => {
+  if (newEl) {
+    setupObserver(newEl)
+  }
+})
 
 const initAd = () => {
   try {
-    if (typeof window !== 'undefined' && adRef.value) {
+    if (typeof window !== 'undefined') {
+      if (!adRef.value) {
+        if (retryCount < MAX_RETRIES) {
+          retryCount++
+          retryTimer = setTimeout(initAd, 200)
+        }
+        return
+      }
+
       const hasStatus = adRef.value.getAttribute('data-adsbygoogle-status')
       const width = adRef.value.offsetWidth
 
@@ -75,7 +122,7 @@ const initAd = () => {
       } else if (!hasStatus && width === 0) {
         if (retryCount < MAX_RETRIES) {
           retryCount++
-          retryTimer = setTimeout(initAd, 250)
+          retryTimer = setTimeout(initAd, 200)
         } else {
           console.warn('AdSense layout width remained 0 after maximum retries. Keeping fallback active.')
         }
@@ -88,32 +135,9 @@ const initAd = () => {
 
 onMounted(async () => {
   await nextTick()
-
-  // Use MutationObserver to detect when AdSense changes status to 'done' (loaded successfully)
-  if (typeof window !== 'undefined' && adRef.value) {
-    // If it's already done before observer setup
-    if (adRef.value.getAttribute('data-adsbygoogle-status') === 'done') {
-      showFallback.value = false
-    }
-
-    observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-adsbygoogle-status') {
-          const status = adRef.value?.getAttribute('data-adsbygoogle-status')
-          if (status === 'done') {
-            showFallback.value = false
-          }
-        }
-      })
-    })
-
-    observer.observe(adRef.value, {
-      attributes: true,
-      attributeFilter: ['data-adsbygoogle-status']
-    })
+  if (adRef.value) {
+    setupObserver(adRef.value)
   }
-
-  // Initial load trigger
   retryTimer = setTimeout(initAd, 150)
 })
 
@@ -132,8 +156,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 28px 0;
+  margin: 28px auto;
   width: 100%;
+  max-width: 728px;
 }
 
 .promo-label {

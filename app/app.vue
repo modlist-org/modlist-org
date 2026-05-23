@@ -13,12 +13,17 @@ const config = useRuntimeConfig()
 const { locale } = useI18n()
 const { state, loadSettings } = useOverlayerState()
 
-if (config.public.adsenseClientId) {
+const rawClientId = config.public.adsenseClientId
+const formattedClientId = rawClientId && !rawClientId.startsWith('ca-pub-')
+  ? `ca-pub-${rawClientId}`
+  : rawClientId
+
+if (formattedClientId) {
   useHead({
     script: [
       {
         async: true,
-        src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${config.public.adsenseClientId}`,
+        src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${formattedClientId}`,
         crossorigin: 'anonymous'
       }
     ]

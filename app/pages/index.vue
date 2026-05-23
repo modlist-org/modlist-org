@@ -58,6 +58,14 @@
       </div>
     </div>
 
+    <!-- AdSense Advertisement -->
+    <AdBanner
+      ad-layout="in-article"
+      ad-format="fluid"
+      ad-slot="7347692922"
+      :ad-style="{ display: 'block', textAlign: 'center' }"
+    />
+
     <!-- Loading Indicator -->
     <div v-if="loadingMods" class="mods-loading-state">
       <div class="spinner" />
@@ -110,9 +118,17 @@
                     class="collab-avatar-img"
                     @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }"
                   >
+                  <!-- If there are more than 2, render a "+N" circle -->
+                  <div
+                    v-if="mod.collaboratorIds.length > 2"
+                    v-tooltip="mod.collaboratorIds.slice(2).map(c => c.globalName || c.username).join(', ')"
+                    class="collab-avatar-more"
+                  >
+                    +{{ mod.collaboratorIds.length - 2 }}
+                  </div>
                 </template>
               </div>
-              <span class="author-name" :title="getAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
+              <span class="author-name" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
               <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
             </div>
 
@@ -168,8 +184,6 @@
       <p>{{ t('home.no_mods') }}</p>
     </div>
 
-    <!-- AdSense Advertisement -->
-    <AdBanner />
   </div>
 </template>
 
@@ -231,6 +245,23 @@ useSeoMeta({
 })
 
 const getAuthorsText = (mod: ModItem) => {
+  const names = []
+  if (mod.authorId) {
+    names.push(mod.authorId.globalName || mod.authorId.username)
+  }
+  if (mod.collaboratorIds && mod.collaboratorIds.length > 0) {
+    const displayed = mod.collaboratorIds.slice(0, 2)
+    displayed.forEach(collab => {
+      names.push(collab.globalName || collab.username)
+    })
+    if (mod.collaboratorIds.length > 2) {
+      return names.join(', ') + ' and more'
+    }
+  }
+  return names.length > 0 ? names.join(', ') : 'Unknown'
+}
+
+const getFullAuthorsText = (mod: ModItem) => {
   const names = []
   if (mod.authorId) {
     names.push(mod.authorId.globalName || mod.authorId.username)
@@ -706,12 +737,29 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.collab-avatar-img {
+.collab-avatar-img, .collab-avatar-more {
   margin-left: -8px;
 }
 
+.collab-avatar-more {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #1b1a22;
+  background-color: #2b2a33;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
 .author-avatars-group:hover .author-avatar-img,
-.author-avatars-group:hover .collab-avatar-img {
+.author-avatars-group:hover .collab-avatar-img,
+.author-avatars-group:hover .collab-avatar-more {
   transform: translateY(-2px);
 }
 

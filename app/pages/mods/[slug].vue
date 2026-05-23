@@ -74,6 +74,14 @@
         </div>
       </div>
 
+      <!-- AdSense Advertisement -->
+      <AdBanner
+        ad-layout="in-article"
+        ad-format="fluid"
+        ad-slot="7347692922"
+        :ad-style="{ display: 'block', textAlign: 'center' }"
+      />
+
       <!-- Description Block -->
       <div class="card detail-desc-card">
         <h3>{{ t('mod.details.about') }}</h3>
@@ -85,7 +93,7 @@
       <div class="card detail-versions-card">
         <h3>{{ t('mod.details.versions') }}</h3>
         <div class="versions-list">
-          <div v-for="ver in mod.versions" :key="ver._id" :class="{ 'pending-version': !ver.isApproved }" class="version-row">
+          <div v-for="ver in paginatedVersions" :key="ver._id" :class="{ 'pending-version': !ver.isApproved }" class="version-row">
             <div class="version-row-header">
               <div class="version-meta-left">
                 <span class="version-number">v{{ ver.version }}</span>
@@ -124,10 +132,36 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- AdSense Advertisement -->
-      <AdBanner />
+        <!-- Versions Pagination -->
+        <div v-if="totalVersionPages > 1" class="pagination-container" style="margin-top: 24px; margin-bottom: 0;">
+          <button
+            class="pagination-btn"
+            :disabled="versionPage === 1"
+            @click="changeVersionPage(versionPage - 1)"
+          >
+            {{ t('pagination.prev') }}
+          </button>
+          <div class="pagination-pages">
+            <button
+              v-for="p in visibleVersionPages"
+              :key="p"
+              class="pagination-page-btn"
+              :class="{ active: p === versionPage }"
+              @click="changeVersionPage(p)"
+            >
+              {{ p }}
+            </button>
+          </div>
+          <button
+            class="pagination-btn"
+            :disabled="versionPage === totalVersionPages"
+            @click="changeVersionPage(versionPage + 1)"
+          >
+            {{ t('pagination.next') }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Right Column: Sidebar & Actions -->
@@ -375,6 +409,50 @@ watch([modData, fetchError], ([newVal, err]) => {
   }
 }, { immediate: true })
 
+// Version History Pagination
+const versionPage = ref(1)
+const versionsPerPage = 5
+
+const totalVersionPages = computed(() => {
+  if (!mod.value || !mod.value.versions) return 1
+  return Math.ceil(mod.value.versions.length / versionsPerPage) || 1
+})
+
+const paginatedVersions = computed(() => {
+  if (!mod.value || !mod.value.versions) return []
+  const start = (versionPage.value - 1) * versionsPerPage
+  const end = start + versionsPerPage
+  return mod.value.versions.slice(start, end)
+})
+
+const changeVersionPage = (page: number) => {
+  if (page < 1 || page > totalVersionPages.value) return
+  versionPage.value = page
+}
+
+const visibleVersionPages = computed(() => {
+  const range = []
+  const maxVisible = 5
+  let start = Math.max(1, versionPage.value - Math.floor(maxVisible / 2))
+  const end = Math.min(totalVersionPages.value, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  return range
+})
+
+watch(totalVersionPages, (newTotal) => {
+  if (versionPage.value > newTotal) {
+    versionPage.value = Math.max(1, newTotal)
+  }
+})
+
+
 // SEO Metadata
 useSeoMeta({
   title: () => mod.value ? mod.value.name : 'Loading...',
@@ -444,6 +522,7 @@ const fetchModDetails = async () => {
     mod.value = response.mod
     latestVersion.value = response.latestVersion
     isEditable.value = response.isEditable
+    versionPage.value = 1
   } catch (error) {
     console.error('Failed to load mod details:', error)
     mod.value = null
