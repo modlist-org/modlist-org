@@ -26,13 +26,14 @@ export default defineNuxtConfig({
   i18n: {
     restructureDir: 'app',
     vueI18n: './i18n.config.ts',
-    locales: [
-      { code: 'en-US', file: 'en-US.json' },
-      { code: 'ko-KR', file: 'ko-KR.json' }
-    ],
-    langDir: 'locales',
+    locales: ['en-US', 'ko-KR'],
     defaultLocale: 'en-US',
-    strategy: 'no_prefix'
+    strategy: 'no_prefix',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root'
+    }
   },
 
   runtimeConfig: {

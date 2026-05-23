@@ -128,6 +128,19 @@ const {
 // Sync overlayer language with standard Nuxt i18n
 setI18nLocaleRef(locale)
 
+// Two-way synchronization between overlayer state language and Nuxt i18n locale
+watch(() => state.language, (newLang) => {
+  if (newLang && locale.value !== newLang) {
+    locale.value = newLang as 'en-US' | 'ko-KR'
+  }
+})
+
+watch(locale, (newLocale) => {
+  if (newLocale && state.language !== newLocale) {
+    state.language = newLocale
+  }
+}, { immediate: true })
+
 const { user, loading, fetchUser, logout, invitationsCount } = useAuth()
 
 const getLanguageName = (lang: string) => {
