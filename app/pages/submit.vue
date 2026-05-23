@@ -188,14 +188,13 @@
         </span>
 
         <!-- Beta Option -->
-        <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: -8px; margin-bottom: 20px;">
-          <input
-            id="mod-is-beta"
+        <div class="form-group" style="margin-bottom: 20px; width: 220px;">
+          <UIToggle
             v-model="form.isBeta"
-            type="checkbox"
-            style="width: auto; cursor: pointer; box-shadow: none;"
-          >
-          <label for="mod-is-beta" style="cursor: pointer; user-select: none;">{{ t('submit.is_beta_label', 'Mark as Beta Version') }}</label>
+            :default-value="false"
+            :label="t('submit.is_beta_label', 'Mark as Beta Version')"
+            :font-size="14"
+          />
         </div>
 
         <!-- Changelog -->
@@ -273,7 +272,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
-import { UIButton, UIDropdown } from 'overlayer-ui'
+import { UIButton, UIDropdown, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()

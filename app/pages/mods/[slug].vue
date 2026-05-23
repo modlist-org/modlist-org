@@ -297,14 +297,13 @@
             <span class="form-help-text">{{ t('submit.download_url_help') }}</span>
           </div>
 
-          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: -8px; margin-bottom: 20px;">
-            <input
-              id="new-is-beta"
+          <div class="form-group" style="margin-bottom: 20px; width: 220px;">
+            <UIToggle
               v-model="updateForm.isBeta"
-              type="checkbox"
-              style="width: auto; cursor: pointer; box-shadow: none;"
-            >
-            <label for="new-is-beta" style="cursor: pointer; user-select: none;">{{ t('submit.is_beta_label', 'Mark as Beta Version') }}</label>
+              :default-value="false"
+              :label="t('submit.is_beta_label', 'Mark as Beta Version')"
+              :font-size="14"
+            />
           </div>
 
           <div class="form-group">
