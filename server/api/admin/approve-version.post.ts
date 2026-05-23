@@ -39,10 +39,24 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    const wasApproved = ver.isApproved
     ver.isApproved = true
     ver.rejectionReason = ''
     mod.updatedAt = new Date()
     await mod.save()
+
+    if (!wasApproved) {
+      const populatedMod = await Mod.findById(mod._id).populate('authorId')
+      if (populatedMod) {
+        sendDiscordWebhook(
+          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+          { version: ver.version, downloadUrl: ver.downloadUrl, changelog: ver.changelog },
+          true
+        ).catch((err) => {
+          console.error('Failed to send Discord webhook on version approval:', err)
+        })
+      }
+    }
 
     return {
       success: true,

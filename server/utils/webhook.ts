@@ -13,6 +13,7 @@ interface WebhookMod {
   versions?: {
     version: string
     downloadUrl: string
+    changelog?: string
   }[]
 }
 
@@ -38,7 +39,11 @@ interface DiscordEmbed {
   }
 }
 
-export async function sendDiscordWebhook(mod: WebhookMod) {
+export async function sendDiscordWebhook(
+  mod: WebhookMod,
+  specificVersion?: { version: string; downloadUrl: string; changelog?: string },
+  isUpdate: boolean = false
+) {
   const config = useRuntimeConfig()
   const webhookUrl = config.discordWebhookUrl
   if (!webhookUrl) {
@@ -82,16 +87,17 @@ export async function sendDiscordWebhook(mod: WebhookMod) {
   }
 
   // Get Version Info
-  const latestVerObj = mod.versions?.[0]
+  const latestVerObj = specificVersion || mod.versions?.[0]
   const versionStr = latestVerObj?.version || '1.0.0'
   const downloadUrl = latestVerObj?.downloadUrl || ''
+  const changelogText = latestVerObj?.changelog || ''
 
   // Build Discord Embed
   const embed: DiscordEmbed = {
-    title: `🆕 New Mod: ${mod.name}`,
+    title: isUpdate ? `🚀 Mod Updated: ${mod.name}` : `🆕 New Mod: ${mod.name}`,
     url: modUrl,
     description: mod.summary,
-    color: 7108863, // #6c78ff
+    color: isUpdate ? 6276001 : 7108863, // #5fc391 (greenish) for update, #6c78ff for new
     timestamp: new Date().toISOString(),
     fields: [
       {
@@ -111,7 +117,7 @@ export async function sendDiscordWebhook(mod: WebhookMod) {
       }
     ],
     author: {
-      name: `Submitted by ${authorName}`,
+      name: isUpdate ? `Updated by ${authorName}` : `Submitted by ${authorName}`,
       icon_url: authorIconUrl || undefined
     },
     footer: {
@@ -137,6 +143,19 @@ export async function sendDiscordWebhook(mod: WebhookMod) {
     })
   }
 
+  // Add optional changelog for updates
+  if (isUpdate && changelogText) {
+    const truncatedChangelog = changelogText.length > 800 
+      ? changelogText.slice(0, 800) + '\n\n*(Truncated due to length)*' 
+      : changelogText
+
+    embed.fields.push({
+      name: '📝 Changelog',
+      value: truncatedChangelog,
+      inline: false
+    })
+  }
+
   try {
     const payload = {
       embeds: [embed]
@@ -146,7 +165,7 @@ export async function sendDiscordWebhook(mod: WebhookMod) {
       method: 'POST',
       body: payload
     })
-    console.log(`Successfully sent Discord webhook notification for mod: ${mod.name}`)
+    console.log(`Successfully sent Discord webhook notification for mod ${isUpdate ? 'update' : 'creation'}: ${mod.name}`)
   } catch (err) {
     console.error('Failed to send Discord webhook:', err)
   }

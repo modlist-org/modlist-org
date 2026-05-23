@@ -91,6 +91,19 @@ export default defineEventHandler(async (event) => {
       mod.updatedAt = new Date()
       await mod.save()
 
+      if (isAutoApproved) {
+        const populatedMod = await Mod.findById(mod._id).populate('authorId')
+        if (populatedMod) {
+          sendDiscordWebhook(
+            populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+            { version, downloadUrl, changelog: changelog || '' },
+            true
+          ).catch((err) => {
+            console.error('Failed to send Discord webhook on version update:', err)
+          })
+        }
+      }
+
       return {
         success: true,
         version: existingVer
@@ -111,6 +124,19 @@ export default defineEventHandler(async (event) => {
     mod.versions.push(newVersion)
     mod.updatedAt = new Date()
     await mod.save()
+
+    if (isAutoApproved) {
+      const populatedMod = await Mod.findById(mod._id).populate('authorId')
+      if (populatedMod) {
+        sendDiscordWebhook(
+          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+          { version, downloadUrl, changelog: changelog || '' },
+          true
+        ).catch((err) => {
+          console.error('Failed to send Discord webhook on version update:', err)
+        })
+      }
+    }
 
     return {
       success: true,
