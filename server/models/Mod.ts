@@ -18,6 +18,7 @@ export interface IModVersion {
   version: string
   downloadUrl: string
   changelog: string
+  gameVersion?: string
   isApproved: boolean
   rejectionReason?: string
   submittedBy: Types.ObjectId
@@ -51,6 +52,7 @@ const ModVersionSchema = new Schema<IModVersion>({
   version: { type: String, required: true },
   downloadUrl: { type: String, required: true },
   changelog: { type: String, default: '' },
+  gameVersion: { type: String, default: '' },
   isApproved: { type: Boolean, default: false, index: true },
   rejectionReason: { type: String, default: '' },
   submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },

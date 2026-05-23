@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { version, downloadUrl, changelog } = body
+  const { version, downloadUrl, changelog, gameVersion } = body
 
   // Validations
   if (!version || !downloadUrl) {
@@ -83,6 +83,7 @@ export default defineEventHandler(async (event) => {
       // Update existing unapproved/rejected version in-place
       existingVer.downloadUrl = downloadUrl
       existingVer.changelog = changelog || ''
+      existingVer.gameVersion = gameVersion || ''
       existingVer.isApproved = isAutoApproved
       existingVer.rejectionReason = ''
       existingVer.createdAt = new Date()
@@ -96,7 +97,7 @@ export default defineEventHandler(async (event) => {
         if (populatedMod) {
           sendDiscordWebhook(
             populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-            { version, downloadUrl, changelog: changelog || '' },
+            { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '' },
             true
           ).catch((err) => {
             console.error('Failed to send Discord webhook on version update:', err)
@@ -115,6 +116,7 @@ export default defineEventHandler(async (event) => {
       version,
       downloadUrl,
       changelog: changelog || '',
+      gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
       submittedBy: new mongoose.Types.ObjectId(currentUser.id),
       createdAt: new Date()
@@ -130,7 +132,7 @@ export default defineEventHandler(async (event) => {
       if (populatedMod) {
         sendDiscordWebhook(
           populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version, downloadUrl, changelog: changelog || '' },
+          { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '' },
           true
         ).catch((err) => {
           console.error('Failed to send Discord webhook on version update:', err)

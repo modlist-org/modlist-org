@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
     version,
     downloadUrl,
     changelog,
+    gameVersion,
     collaboratorIds,
     logo,
     sourceUrl
@@ -128,6 +129,7 @@ export default defineEventHandler(async (event) => {
           version,
           downloadUrl,
           changelog: changelog || 'Initial release',
+          gameVersion: gameVersion || '',
           isApproved: isAutoApproved,
           submittedBy: new mongoose.Types.ObjectId(currentUser.id),
           createdAt: new Date()

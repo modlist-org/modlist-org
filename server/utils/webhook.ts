@@ -14,6 +14,7 @@ interface WebhookMod {
     version: string
     downloadUrl: string
     changelog?: string
+    gameVersion?: string
   }[]
 }
 
@@ -41,7 +42,7 @@ interface DiscordEmbed {
 
 export async function sendDiscordWebhook(
   mod: WebhookMod,
-  specificVersion?: { version: string; downloadUrl: string; changelog?: string },
+  specificVersion?: { version: string; downloadUrl: string; changelog?: string; gameVersion?: string },
   isUpdate: boolean = false
 ) {
   const config = useRuntimeConfig()
@@ -91,6 +92,7 @@ export async function sendDiscordWebhook(
   const versionStr = latestVerObj?.version || '1.0.0'
   const downloadUrl = latestVerObj?.downloadUrl || ''
   const changelogText = latestVerObj?.changelog || ''
+  const gameVersionStr = latestVerObj?.gameVersion || ''
 
   // Build Discord Embed
   const embed: DiscordEmbed = {
@@ -112,7 +114,7 @@ export async function sendDiscordWebhook(
       },
       {
         name: '📦 Version',
-        value: `v${versionStr}`,
+        value: gameVersionStr ? `v${versionStr} (for ${gameVersionStr})` : `v${versionStr}`,
         inline: true
       }
     ],

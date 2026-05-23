@@ -89,6 +89,7 @@
             <div class="version-row-header">
               <div class="version-meta-left">
                 <span class="version-number">v{{ ver.version }}</span>
+                <span v-if="ver.gameVersion" class="badge badge-category version-game-version-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 6px;">{{ ver.gameVersion }}</span>
                 <span v-if="!ver.isApproved" class="badge badge-pending version-pending-badge">{{ t('mod.details.pending_approval') }}</span>
               </div>
               <span class="version-date">{{ formatDate(ver.createdAt) }}</span>
@@ -226,6 +227,16 @@
           </div>
 
           <div class="form-group">
+            <label for="new-game-version">{{ t('submit.game_version') }}</label>
+            <input
+              id="new-game-version"
+              v-model="updateForm.gameVersion"
+              type="text"
+              :placeholder="t('submit.game_version_placeholder')"
+            >
+          </div>
+
+          <div class="form-group">
             <label for="new-download">{{ t('submit.download_url') }}</label>
             <input
               id="new-download"
@@ -294,6 +305,7 @@ interface ModVersion {
   version: string
   downloadUrl: string
   changelog: string
+  gameVersion?: string
   isApproved: boolean
   rejectionReason?: string
   submittedBy?: {
@@ -377,7 +389,8 @@ useSeoMeta({
 const updateForm = ref({
   version: '',
   downloadUrl: '',
-  changelog: ''
+  changelog: '',
+  gameVersion: ''
 })
 const submittingUpdate = ref(false)
 const formError = ref('')
@@ -541,7 +554,8 @@ const submitUpdate = async () => {
     updateForm.value = {
       version: '',
       downloadUrl: '',
-      changelog: ''
+      changelog: '',
+      gameVersion: ''
     }
 
     // Refresh details after a short delay

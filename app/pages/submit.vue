@@ -157,6 +157,17 @@
             >
           </div>
 
+          <!-- Target Game Version -->
+          <div class="form-group">
+            <label for="mod-game-version">{{ t('submit.game_version') }}</label>
+            <input
+              id="mod-game-version"
+              v-model="form.gameVersion"
+              type="text"
+              :placeholder="t('submit.game_version_placeholder')"
+            >
+          </div>
+
           <!-- Download Link -->
           <div class="form-group">
             <label for="mod-download">{{ t('submit.download_url') }}</label>
@@ -170,6 +181,9 @@
           </div>
         </div>
         <span class="form-help-text" style="margin-top: -12px; margin-bottom: 20px; display: block;">
+          {{ t('submit.game_version_help') }}
+        </span>
+        <span class="form-help-text" style="margin-top: -16px; margin-bottom: 20px; display: block;">
           {{ t('submit.download_url_help') }}
         </span>
 
@@ -281,7 +295,8 @@ const form = ref({
   description: '',
   version: '',
   downloadUrl: '',
-  changelog: ''
+  changelog: '',
+  gameVersion: ''
 })
 
 const selectedCollabs = ref<SearchUserItem[]>([])
