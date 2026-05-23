@@ -21,7 +21,7 @@ export const useAuth = () => {
       return
     }
     try {
-      const res = await $fetch<{ mods: any[] }>('/api/mods/invitations')
+      const res = await $fetch<{ mods: unknown[] }>('/api/mods/invitations')
       invitationsCount.value = res.mods?.length || 0
     } catch (e) {
       console.error('Failed to fetch invitations count:', e)
