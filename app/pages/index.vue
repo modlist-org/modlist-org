@@ -123,7 +123,7 @@
     </div>
 
     <!-- AdSense Advertisement -->
-    <AdBanner ad-slot="1122334455" />
+    <AdBanner />
   </div>
 </template>
 

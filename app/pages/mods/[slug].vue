@@ -127,7 +127,7 @@
       </div>
 
       <!-- AdSense Advertisement -->
-      <AdBanner ad-slot="9876543210" />
+      <AdBanner />
     </div>
 
     <!-- Right Column: Sidebar & Actions -->

@@ -19,10 +19,6 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxtjs/tailwindcss',
-    ['@nuxtjs/google-adsense', {
-      id: process.env.ADSENSE_CLIENT_ID || 'ca-pub-1234567890123456',
-      test: process.env.NODE_ENV !== 'production'
-    }],
     '@nuxtjs/eslint-module',
     '@nuxtjs/i18n'
   ],
@@ -49,7 +45,7 @@ export default defineNuxtConfig({
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
     appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
     public: {
-      adsenseClientId: process.env.ADSENSE_CLIENT_ID || 'ca-pub-1234567890123456'
+      adsenseClientId: process.env.ADSENSE_CLIENT_ID || 'ca-pub-2646814269553300'
     }
   }
 })
