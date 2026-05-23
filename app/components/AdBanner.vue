@@ -165,19 +165,30 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* Premium mock ad styling */
+/* Ensure the ins element is block level, stretches full width, and has height */
+.adsbygoogle {
+  display: block !important;
+  width: 100% !important;
+  min-height: 90px;
+}
+
+/* Premium mock ad styling - absolutely positioned to overlay the ins element */
 .mock-ad-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 20px;
-  width: 100%;
-  min-height: 90px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.01) 0%, rgba(255, 255, 255, 0.03) 100%);
   color: rgba(255, 255, 255, 0.6);
   user-select: none;
+  z-index: 10;
   animation: fadeIn 0.4s ease-out;
 }
 
