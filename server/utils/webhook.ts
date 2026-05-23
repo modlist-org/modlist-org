@@ -19,14 +19,15 @@ interface WebhookMod {
 }
 
 export async function sendDiscordWebhook(mod: WebhookMod) {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL
+  const config = useRuntimeConfig()
+  const webhookUrl = config.discordWebhookUrl
   if (!webhookUrl) {
     console.warn('DISCORD_WEBHOOK_URL is not set. Skipping Discord notification.')
     return
   }
 
   // Get App Base URL from environment or default to localhost
-  const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000'
+  const baseUrl = config.appBaseUrl || 'http://localhost:3000'
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
   // Format Game Name
