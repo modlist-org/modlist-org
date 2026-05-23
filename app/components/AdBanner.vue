@@ -3,10 +3,13 @@
     <span class="ad-label">{{ t('ads.advertisement') }}</span>
     <div class="ad-wrapper">
       <ClientOnly>
-        <adsbygoogle
-          :ad-slot="adSlot"
-          :ad-style="adStyle"
-          :ad-format="adFormat"
+        <ins
+          ref="adRef"
+          class="adsbygoogle"
+          :data-ad-client="adsenseId"
+          :data-ad-slot="adSlot"
+          :data-ad-format="adFormat"
+          :style="adStyle"
         />
       </ClientOnly>
     </div>
@@ -14,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRuntimeConfig, computed, useI18n } from '#imports'
+import { useRuntimeConfig, computed, useI18n, ref, onMounted, onBeforeUnmount, nextTick } from '#imports'
 
 defineProps({
   adSlot: {
@@ -34,6 +37,40 @@ defineProps({
 const { t } = useI18n()
 const config = useRuntimeConfig()
 const adsenseId = computed(() => config.public.adsenseClientId)
+
+const adRef = ref<HTMLElement | null>(null)
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+const initAd = () => {
+  try {
+    if (typeof window !== 'undefined' && adRef.value) {
+      const hasStatus = adRef.value.getAttribute('data-adsbygoogle-status')
+      const width = adRef.value.offsetWidth
+
+      if (!hasStatus && width > 0) {
+        const adsbygoogle = (window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle || []
+        adsbygoogle.push({})
+      } else if (!hasStatus && width === 0) {
+        // Retry after a short delay if layout is not ready yet (prevents availableWidth=0 error)
+        retryTimer = setTimeout(initAd, 200)
+      }
+    }
+  } catch (e) {
+    console.error('AdSense push error:', e)
+  }
+}
+
+onMounted(async () => {
+  await nextTick()
+  // Brief delay to allow initial layout calculation
+  retryTimer = setTimeout(initAd, 150)
+})
+
+onBeforeUnmount(() => {
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+  }
+})
 </script>
 
 <style scoped>
