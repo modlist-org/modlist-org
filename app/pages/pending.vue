@@ -84,8 +84,23 @@
 
         <div class="mod-card-footer">
           <div class="author-info">
-            <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img">
-            <span class="author-name">{{ mod.authorId?.globalName || mod.authorId?.username || 'Unknown' }}</span>
+            <div class="author-avatars-group">
+              <!-- Author Avatar -->
+              <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+              <!-- Collaborators Avatars (max 2 for visual balance) -->
+              <template v-if="mod.collaboratorIds && mod.collaboratorIds.length > 0">
+                <img
+                  v-for="collab in mod.collaboratorIds.slice(0, 2)"
+                  :key="collab._id"
+                  v-tooltip="collab.globalName || collab.username"
+                  :src="collab.avatar || '/images/default_avatar.png'"
+                  alt="Collab Avatar"
+                  class="collab-avatar-img"
+                  @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }"
+                >
+              </template>
+            </div>
+            <span class="author-name" :title="getAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
             <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
           </div>
 
@@ -115,7 +130,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useI18n, navigateTo } from '#imports'
+import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
 
 interface ModVersion {
@@ -145,6 +160,13 @@ interface ModItem {
     avatar?: string
     isVerifiedDeveloper: boolean
   }
+  collaboratorIds?: Array<{
+    _id: string
+    username: string
+    globalName?: string
+    avatar?: string
+    isVerifiedDeveloper?: boolean
+  }>
   isApproved: boolean
   downloads: number
   versions: ModVersion[]
@@ -154,6 +176,29 @@ interface ModItem {
 }
 
 const { t } = useI18n()
+
+// SEO Metadata
+useSeoMeta({
+  title: () => t('pending.title'),
+  ogTitle: () => t('pending.title'),
+  description: () => t('seo.description'),
+  ogDescription: () => t('seo.description'),
+  ogImage: '/favicon.svg',
+  twitterCard: 'summary'
+})
+
+const getAuthorsText = (mod: ModItem) => {
+  const names = []
+  if (mod.authorId) {
+    names.push(mod.authorId.globalName || mod.authorId.username)
+  }
+  if (mod.collaboratorIds && mod.collaboratorIds.length > 0) {
+    mod.collaboratorIds.forEach(collab => {
+      names.push(collab.globalName || collab.username)
+    })
+  }
+  return names.length > 0 ? names.join(', ') : 'Unknown'
+}
 
 const getFallbackGradientStyle = (name: string) => {
   let hash = 0
@@ -328,19 +373,42 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow: hidden;
+  max-width: 70%;
 }
 
-.author-avatar-img {
+.author-avatars-group {
+  display: flex;
+  align-items: center;
+}
+
+.author-avatar-img, .collab-avatar-img {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid #1b1a22; /* overlaps overlay boundary */
+  object-fit: cover;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.collab-avatar-img {
+  margin-left: -8px;
+}
+
+.author-avatars-group:hover .author-avatar-img,
+.author-avatars-group:hover .collab-avatar-img {
+  transform: translateY(-2px);
 }
 
 .author-name {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
 .mod-stats {

@@ -1,5 +1,5 @@
 {
-  "subtitle": "Modern Mod Repository for Rhythm Games",
+  "subtitle": "Mod Repository for Everyone",
   "loading": "Loading...",
   "home.no_mods": "No mods found. Be the first to register a new mod!",
   "nav.home": "Home",
@@ -132,5 +132,6 @@
   "submit.source_url_help": "Link to the mod source code repository (optional)",
   "mod.details.source_code": "Source Code",
   "pagination.prev": "Previous",
-  "pagination.next": "Next"
+  "pagination.next": "Next",
+  "seo.description": "An open-source mod repository for everyone. Explore, download, and share mods for various games."
 }

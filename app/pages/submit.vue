@@ -247,12 +247,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useI18n, navigateTo } from '#imports'
+import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIButton, UIDropdown } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
 const { user, loading: authLoading } = useAuth()
+
+useSeoMeta({
+  title: () => t('submit.title'),
+  ogTitle: () => t('submit.title'),
+  description: () => t('seo.description'),
+  ogDescription: () => t('seo.description'),
+  ogImage: '/favicon.svg',
+  twitterCard: 'summary'
+})
 
 interface SearchUserItem {
   _id: string

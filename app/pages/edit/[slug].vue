@@ -215,9 +215,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute, useI18n, navigateTo } from '#imports'
+import { useRoute, useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIButton, UIDropdown } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
+
+const { t } = useI18n()
+
+useSeoMeta({
+  title: () => t('submit.edit_title'),
+  ogTitle: () => t('submit.edit_title'),
+  description: () => t('seo.description'),
+  ogDescription: () => t('seo.description'),
+  ogImage: '/favicon.svg',
+  twitterCard: 'summary',
+  robots: 'noindex, nofollow'
+})
 
 interface SearchUserItem {
   _id: string
@@ -274,7 +286,6 @@ interface ModItem {
 
 const route = useRoute()
 const slug = route.params.slug as string
-const { t } = useI18n()
 const { user, loading: authLoading } = useAuth()
 
 const mod = ref<ModItem | null>(null)

@@ -275,8 +275,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useI18n, navigateTo } from '#imports'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
 import { UIButton, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { marked } from 'marked'
@@ -340,11 +340,38 @@ const slug = route.params.slug as string
 const { t } = useI18n()
 const { user } = useAuth()
 
+// Fetch mod details on both server and client side
+const { data: modData, error: fetchError } = await useFetch<{ mod: ModItem; latestVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
+
 const mod = ref<ModItem | null>(null)
 const latestVersion = ref<ModVersion | null>(null)
 const isEditable = ref(false)
 const showPreviewMode = ref(false)
 const loading = ref(true)
+
+watch([modData, fetchError], ([newVal, err]) => {
+  if (newVal) {
+    mod.value = newVal.mod
+    latestVersion.value = newVal.latestVersion
+    isEditable.value = newVal.isEditable
+    loading.value = false
+  } else if (err) {
+    mod.value = null
+    latestVersion.value = null
+    isEditable.value = false
+    loading.value = false
+  }
+}, { immediate: true })
+
+// SEO Metadata
+useSeoMeta({
+  title: () => mod.value ? mod.value.name : 'Loading...',
+  ogTitle: () => mod.value ? mod.value.name : 'Loading...',
+  description: () => mod.value?.summary || t('seo.description'),
+  ogDescription: () => mod.value?.summary || t('seo.description'),
+  ogImage: () => mod.value?.logo || '/favicon.svg',
+  twitterCard: 'summary'
+})
 
 // Update Release form state
 const updateForm = ref({
@@ -589,7 +616,7 @@ const adminDelete = async () => {
 }
 
 onMounted(() => {
-  fetchModDetails()
+  // Already fetched via useFetch on server/client hydration
 })
 </script>
 

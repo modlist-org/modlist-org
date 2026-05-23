@@ -1,5 +1,5 @@
 {
-  "subtitle": "리듬 게임 모드 공유 저장소",
+  "subtitle": "모두를 위한 모드 공유소",
   "loading": "로딩 중...",
   "home.no_mods": "등록된 모드가 없습니다. 가장 먼저 새로운 모드를 등록해 보세요!",
   "nav.home": "홈",
@@ -132,5 +132,6 @@
   "submit.source_url_help": "모드 소스코드 저장소 링크 (선택사항)",
   "mod.details.source_code": "소스코드",
   "pagination.prev": "이전",
-  "pagination.next": "다음"
+  "pagination.next": "다음",
+  "seo.description": "다양한 게임의 모드를 탐색하고 다운로드 및 직접 공유할 수 있는 오픈소스 모드 저장소입니다."
 }

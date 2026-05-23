@@ -351,12 +351,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useI18n, navigateTo } from '#imports'
+import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIButton } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
 const { user, loading: authLoading } = useAuth()
+
+useSeoMeta({
+  title: () => t('admin.title'),
+  ogTitle: () => t('admin.title'),
+  description: () => t('seo.description'),
+  ogDescription: () => t('seo.description'),
+  ogImage: '/favicon.svg',
+  twitterCard: 'summary',
+  robots: 'noindex, nofollow'
+})
 
 const activeTab = ref('mods')
 const loadingData = ref(true)
