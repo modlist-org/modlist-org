@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { version, downloadUrl, changelog, gameVersion } = body
+  const { version, downloadUrl, changelog, gameVersion, isBeta } = body
 
   // Validations
   if (!version || !downloadUrl) {
@@ -85,6 +85,7 @@ export default defineEventHandler(async (event) => {
       existingVer.changelog = changelog || ''
       existingVer.gameVersion = gameVersion || ''
       existingVer.isApproved = isAutoApproved
+      existingVer.isBeta = !!isBeta
       existingVer.rejectionReason = ''
       existingVer.createdAt = new Date()
       existingVer.submittedBy = new mongoose.Types.ObjectId(currentUser.id)
@@ -97,7 +98,7 @@ export default defineEventHandler(async (event) => {
         if (populatedMod) {
           sendDiscordWebhook(
             populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-            { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '' },
+            { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
             true
           ).catch((err) => {
             console.error('Failed to send Discord webhook on version update:', err)
@@ -118,6 +119,7 @@ export default defineEventHandler(async (event) => {
       changelog: changelog || '',
       gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
+      isBeta: !!isBeta,
       submittedBy: new mongoose.Types.ObjectId(currentUser.id),
       createdAt: new Date()
     }
@@ -132,7 +134,7 @@ export default defineEventHandler(async (event) => {
       if (populatedMod) {
         sendDiscordWebhook(
           populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '' },
+          { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
           true
         ).catch((err) => {
           console.error('Failed to send Discord webhook on version update:', err)

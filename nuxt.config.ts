@@ -44,6 +44,8 @@ export default defineNuxtConfig({
     jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret-replace-in-production',
     adminDiscordIds: process.env.ADMIN_DISCORD_IDS || '',
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
+    discordModAllRoleId: process.env.DISCORD_MOD_ALL_ROLE_ID || '',
+    discordModPingRoleId: process.env.DISCORD_MOD_PING_ROLE_ID || '',
     appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
     public: {
       adsenseClientId: process.env.ADSENSE_CLIENT_ID || 'ca-pub-2646814269553300'

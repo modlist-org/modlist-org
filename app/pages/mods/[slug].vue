@@ -98,6 +98,7 @@
             <div class="version-row-header">
               <div class="version-meta-left">
                 <span class="version-number">v{{ ver.version }}</span>
+                <span v-if="ver.isBeta" class="badge badge-beta version-beta-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 6px; background-color: rgba(240, 173, 78, 0.15); color: #f0ad4e; border: 1px solid rgba(240, 173, 78, 0.3); text-transform: uppercase;">BETA</span>
                 <span v-if="ver.gameVersion" class="badge badge-category version-game-version-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 6px;">{{ ver.gameVersion }}</span>
                 <span v-if="!ver.isApproved" class="badge badge-pending version-pending-badge">{{ t('mod.details.pending_approval') }}</span>
               </div>
@@ -214,7 +215,13 @@
           class="download-main-btn"
           @click="triggerDownload(latestVersion.downloadUrl)"
         />
-        <div v-else class="no-download-state">
+        <UIButton
+          v-if="latestBetaVersion"
+          :label="`${t('mod.details.download_beta')} (v${latestBetaVersion.version})`"
+          class="download-beta-btn"
+          @click="triggerDownload(latestBetaVersion.downloadUrl)"
+        />
+        <div v-if="!latestVersion && !latestBetaVersion" class="no-download-state">
           <p>{{ t('mod.details.no_downloads') }}</p>
         </div>
 
@@ -290,6 +297,16 @@
             <span class="form-help-text">{{ t('submit.download_url_help') }}</span>
           </div>
 
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: -8px; margin-bottom: 20px;">
+            <input
+              id="new-is-beta"
+              v-model="updateForm.isBeta"
+              type="checkbox"
+              style="width: auto; cursor: pointer; box-shadow: none;"
+            >
+            <label for="new-is-beta" style="cursor: pointer; user-select: none;">{{ t('submit.is_beta_label', 'Mark as Beta Version') }}</label>
+          </div>
+
           <div class="form-group">
             <label for="new-changelog">{{ t('submit.changelog') }}</label>
             <textarea
@@ -349,6 +366,7 @@ interface ModVersion {
   changelog: string
   gameVersion?: string
   isApproved: boolean
+  isBeta?: boolean
   rejectionReason?: string
   submittedBy?: {
     username: string
@@ -396,10 +414,11 @@ const { t } = useI18n()
 const { user } = useAuth()
 
 // Fetch mod details on both server and client side
-const { data: modData, error: fetchError } = await useFetch<{ mod: ModItem; latestVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
+const { data: modData, error: fetchError } = await useFetch<{ mod: ModItem; latestVersion: ModVersion | null; latestBetaVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
 
 const mod = ref<ModItem | null>(null)
 const latestVersion = ref<ModVersion | null>(null)
+const latestBetaVersion = ref<ModVersion | null>(null)
 const isEditable = ref(false)
 const showPreviewMode = ref(false)
 const loading = ref(true)
@@ -408,11 +427,13 @@ watch([modData, fetchError], ([newVal, err]) => {
   if (newVal) {
     mod.value = newVal.mod
     latestVersion.value = newVal.latestVersion
+    latestBetaVersion.value = newVal.latestBetaVersion
     isEditable.value = newVal.isEditable
     loading.value = false
   } else if (err) {
     mod.value = null
     latestVersion.value = null
+    latestBetaVersion.value = null
     isEditable.value = false
     loading.value = false
   }
@@ -477,7 +498,8 @@ const updateForm = ref({
   version: '',
   downloadUrl: '',
   changelog: '',
-  gameVersion: ''
+  gameVersion: '',
+  isBeta: false
 })
 const submittingUpdate = ref(false)
 const formError = ref('')
@@ -527,9 +549,10 @@ const fallbackGradientStyle = computed(() => {
 const fetchModDetails = async () => {
   loading.value = true
   try {
-    const response = await $fetch<{ mod: ModItem; latestVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
+    const response = await $fetch<{ mod: ModItem; latestVersion: ModVersion | null; latestBetaVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
     mod.value = response.mod
     latestVersion.value = response.latestVersion
+    latestBetaVersion.value = response.latestBetaVersion
     isEditable.value = response.isEditable
     versionPage.value = 1
   } catch (error) {
@@ -643,7 +666,8 @@ const submitUpdate = async () => {
       version: '',
       downloadUrl: '',
       changelog: '',
-      gameVersion: ''
+      gameVersion: '',
+      isBeta: false
     }
 
     // Refresh details after a short delay
@@ -968,6 +992,20 @@ onMounted(() => {
 
 .download-main-btn:hover {
   background-color: #838EFF !important;
+}
+
+.download-beta-btn {
+  width: 100%;
+  padding: 16px !important;
+  font-size: 16px !important;
+  background-color: rgba(240, 173, 78, 0.12) !important;
+  color: #f0ad4e !important;
+  border: 1px solid rgba(240, 173, 78, 0.25) !important;
+  margin-top: 8px;
+}
+
+.download-beta-btn:hover {
+  background-color: rgba(240, 173, 78, 0.22) !important;
 }
 
 .no-download-state {

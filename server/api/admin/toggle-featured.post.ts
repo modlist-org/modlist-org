@@ -1,6 +1,12 @@
 import { Mod } from '../../models/Mod'
 import { sendFeaturedWebhook } from '../../utils/webhook'
 
+interface PopulatedUser {
+  username: string
+  globalName?: string
+  avatar?: string
+}
+
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
 
@@ -35,8 +41,7 @@ export default defineEventHandler(async (event) => {
     mod.isFeatured = !mod.isFeatured
     await mod.save()
 
-    // Trigger webhook notification to Discord
-    // We pass categories as strings, mapping the populated author details
+    // Trigger webhook notification to Discord without role pings
     await sendFeaturedWebhook({
       name: mod.name,
       slug: mod.slug,
@@ -45,9 +50,9 @@ export default defineEventHandler(async (event) => {
       summary: mod.summary,
       sourceUrl: mod.sourceUrl,
       authorId: mod.authorId ? {
-        username: (mod.authorId as any).username,
-        globalName: (mod.authorId as any).globalName,
-        avatar: (mod.authorId as any).avatar
+        username: (mod.authorId as unknown as PopulatedUser).username,
+        globalName: (mod.authorId as unknown as PopulatedUser).globalName,
+        avatar: (mod.authorId as unknown as PopulatedUser).avatar
       } : undefined
     }, mod.isFeatured)
 

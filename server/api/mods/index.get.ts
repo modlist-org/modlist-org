@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
       const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'versions'> & {
         authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
         collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-        versions: { isApproved: boolean; createdAt: Date | string; version: string; downloadUrl: string; changelog: string }[]
+        versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl: string; changelog: string }[]
       }
       
       // Filter approved versions for regular users
@@ -129,9 +129,10 @@ export default defineEventHandler(async (event) => {
         approvedVersions = approvedVersions.filter((v: { isApproved: boolean }) => v.isApproved)
       }
 
-      const latestVersion = approvedVersions.sort(
+      const sortedVersions = approvedVersions.sort(
         (a: { createdAt: Date | string }, b: { createdAt: Date | string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )[0] || null
+      )
+      const latestVersion = sortedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || sortedVersions[0] || null
 
       return {
         ...modObj,

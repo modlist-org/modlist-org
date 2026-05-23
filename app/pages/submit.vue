@@ -187,6 +187,17 @@
           {{ t('submit.download_url_help') }}
         </span>
 
+        <!-- Beta Option -->
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: -8px; margin-bottom: 20px;">
+          <input
+            id="mod-is-beta"
+            v-model="form.isBeta"
+            type="checkbox"
+            style="width: auto; cursor: pointer; box-shadow: none;"
+          >
+          <label for="mod-is-beta" style="cursor: pointer; user-select: none;">{{ t('submit.is_beta_label', 'Mark as Beta Version') }}</label>
+        </div>
+
         <!-- Changelog -->
         <div class="form-group">
           <label for="mod-changelog">{{ t('submit.changelog') }}</label>
@@ -296,7 +307,8 @@ const form = ref({
   version: '',
   downloadUrl: '',
   changelog: '',
-  gameVersion: ''
+  gameVersion: '',
+  isBeta: false
 })
 
 const selectedCollabs = ref<SearchUserItem[]>([])

@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
     gameVersion,
     collaboratorIds,
     logo,
-    sourceUrl
+    sourceUrl,
+    isBeta
   } = body
 
   // 1. Validations
@@ -131,6 +132,7 @@ export default defineEventHandler(async (event) => {
           changelog: changelog || 'Initial release',
           gameVersion: gameVersion || '',
           isApproved: isAutoApproved,
+          isBeta: !!isBeta,
           submittedBy: new mongoose.Types.ObjectId(currentUser.id),
           createdAt: new Date()
         }
@@ -144,7 +146,10 @@ export default defineEventHandler(async (event) => {
     if (mod.isApproved) {
       const populatedMod = await Mod.findById(mod._id).populate('authorId')
       if (populatedMod) {
-        sendDiscordWebhook(populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0]).catch((err) => {
+        sendDiscordWebhook(
+          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+          { version, downloadUrl, changelog: changelog || 'Initial release', gameVersion: gameVersion || '', isBeta: !!isBeta }
+        ).catch((err) => {
           console.error('Failed to send Discord webhook on creation:', err)
         })
       }

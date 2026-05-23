@@ -42,7 +42,7 @@ interface DiscordEmbed {
 
 export async function sendDiscordWebhook(
   mod: WebhookMod,
-  specificVersion?: { version: string; downloadUrl: string; changelog?: string; gameVersion?: string },
+  specificVersion?: { version: string; downloadUrl: string; changelog?: string; gameVersion?: string; isBeta?: boolean },
   isUpdate: boolean = false
 ) {
   const config = useRuntimeConfig()
@@ -57,24 +57,24 @@ export async function sendDiscordWebhook(
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
   // Format Game Name
-  const gameName = mod.game === 'adofai' 
-    ? 'A Dance of Fire and Ice' 
-    : mod.game === 'rhythm-doctor' 
-      ? 'Rhythm Doctor' 
+  const gameName = mod.game === 'adofai'
+    ? 'A Dance of Fire and Ice'
+    : mod.game === 'rhythm-doctor'
+      ? 'Rhythm Doctor'
       : mod.game
 
   // Format Categories
   const categoryNames = Array.isArray(mod.categories)
     ? mod.categories.map((cat: string) => {
-        const labels: Record<string, string> = {
-          ui: 'UI',
-          gameplay: 'Gameplay',
-          utility: 'Utility',
-          visuals: 'Visuals',
-          library: 'Library'
-        }
-        return labels[cat] || cat
-      }).join(', ')
+      const labels: Record<string, string> = {
+        ui: 'UI',
+        gameplay: 'Gameplay',
+        utility: 'Utility',
+        visuals: 'Visuals',
+        library: 'Library'
+      }
+      return labels[cat] || cat
+    }).join(', ')
     : ''
 
   // Get Author Info
@@ -93,13 +93,23 @@ export async function sendDiscordWebhook(
   const downloadUrl = latestVerObj?.downloadUrl || ''
   const changelogText = latestVerObj?.changelog || ''
   const gameVersionStr = latestVerObj?.gameVersion || ''
+  const isBeta = (latestVerObj as { isBeta?: boolean })?.isBeta || false
+
+  // Determine Title and Color
+  let embedTitle = isUpdate ? `🚀 Mod Updated: ${mod.name}` : `🆕 New Mod: ${mod.name}`
+  let embedColor = isUpdate ? 6276001 : 7108863 // #5fc391 (greenish) for update, #6c78ff for new
+
+  if (isBeta) {
+    embedTitle = isUpdate ? `🧪 Beta Update: ${mod.name}` : `🧪 New Beta Mod: ${mod.name}`
+    embedColor = 15773006 // #f0ad4e (amber/orange) for beta
+  }
 
   // Build Discord Embed
   const embed: DiscordEmbed = {
-    title: isUpdate ? `🚀 Mod Updated: ${mod.name}` : `🆕 New Mod: ${mod.name}`,
+    title: embedTitle,
     url: modUrl,
     description: mod.summary,
-    color: isUpdate ? 6276001 : 7108863, // #5fc391 (greenish) for update, #6c78ff for new
+    color: embedColor,
     timestamp: new Date().toISOString(),
     fields: [
       {
@@ -123,7 +133,7 @@ export async function sendDiscordWebhook(
       icon_url: authorIconUrl || undefined
     },
     footer: {
-      text: 'Modlist'
+      text: 'modlist.org'
     }
   }
 
@@ -147,8 +157,8 @@ export async function sendDiscordWebhook(
 
   // Add optional changelog for updates
   if (isUpdate && changelogText) {
-    const truncatedChangelog = changelogText.length > 800 
-      ? changelogText.slice(0, 800) + '\n\n*(Truncated due to length)*' 
+    const truncatedChangelog = changelogText.length > 800
+      ? changelogText.slice(0, 800) + '\n\n*(Truncated due to length)*'
       : changelogText
 
     embed.fields.push({
@@ -158,8 +168,12 @@ export async function sendDiscordWebhook(
     })
   }
 
+  const pingRoleId = isBeta ? config.discordModAllRoleId : config.discordModPingRoleId
+  const content = pingRoleId ? `<@&${pingRoleId}>` : undefined
+
   try {
     const payload = {
+      content,
       embeds: [embed]
     }
 
@@ -187,10 +201,10 @@ export async function sendFeaturedWebhook(
   const baseUrl = config.appBaseUrl || 'http://localhost:3000'
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
-  const gameName = mod.game === 'adofai' 
-    ? 'A Dance of Fire and Ice' 
-    : mod.game === 'rhythm-doctor' 
-      ? 'Rhythm Doctor' 
+  const gameName = mod.game === 'adofai'
+    ? 'A Dance of Fire and Ice'
+    : mod.game === 'rhythm-doctor'
+      ? 'Rhythm Doctor'
       : mod.game
 
   let authorName = 'Unknown'
@@ -201,7 +215,7 @@ export async function sendFeaturedWebhook(
   const embed: DiscordEmbed = {
     title: isFeatured ? `⭐ Featured Mod: ${mod.name}` : `⚠️ Unfeatured Mod: ${mod.name}`,
     url: modUrl,
-    description: isFeatured 
+    description: isFeatured
       ? `This mod has been featured by an administrator! 🚀\n\n**Description:**\n${mod.summary}`
       : `This mod is no longer featured.`,
     color: isFeatured ? 16766720 : 10066329, // Gold color #FFD700 for featured, Grey #999999 for unfeatured
@@ -219,12 +233,15 @@ export async function sendFeaturedWebhook(
       }
     ],
     footer: {
-      text: 'Modlist'
+      text: 'modlist.org'
     }
   }
 
+  const content = undefined
+
   try {
     const payload = {
+      content,
       embeds: [embed]
     }
 

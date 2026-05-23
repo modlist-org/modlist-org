@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
       authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
       collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
       pendingCollaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      versions: { isApproved: boolean; createdAt: Date | string; version: string; downloadUrl: string; changelog: string; submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean } }[]
+      versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl: string; changelog: string; submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean } }[]
     }
     const isOwnerOrAdmin = currentUser && (
       currentUser.isAdmin ||
@@ -58,8 +58,17 @@ export default defineEventHandler(async (event) => {
       (a: { createdAt: Date | string }, b: { createdAt: Date | string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
 
-    // Compute latest version
-    const latestVersion = modObj.versions[0] || null
+    // Compute latest versions
+    const approvedVersions = modObj.versions.filter((v: { isApproved: boolean }) => v.isApproved)
+    const latestVersion = approvedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || null
+    const latestBeta = approvedVersions.find((v: { isBeta?: boolean }) => v.isBeta) || null
+
+    let latestBetaVersion = null
+    if (latestBeta) {
+      if (!latestVersion || new Date(latestBeta.createdAt).getTime() > new Date(latestVersion.createdAt).getTime()) {
+        latestBetaVersion = latestBeta
+      }
+    }
 
     if (!isOwnerOrAdmin) {
       delete modObj.pendingEdit
@@ -68,6 +77,7 @@ export default defineEventHandler(async (event) => {
     return {
       mod: modObj,
       latestVersion,
+      latestBetaVersion,
       isEditable: !!isOwnerOrAdmin
     }
   } catch (error) {

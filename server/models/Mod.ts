@@ -20,6 +20,7 @@ export interface IModVersion {
   changelog: string
   gameVersion?: string
   isApproved: boolean
+  isBeta?: boolean
   rejectionReason?: string
   submittedBy: Types.ObjectId
   createdAt: Date
@@ -55,6 +56,7 @@ const ModVersionSchema = new Schema<IModVersion>({
   changelog: { type: String, default: '' },
   gameVersion: { type: String, default: '' },
   isApproved: { type: Boolean, default: false, index: true },
+  isBeta: { type: Boolean, default: false, index: true },
   rejectionReason: { type: String, default: '' },
   submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }

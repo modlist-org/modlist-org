@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
       if (populatedMod) {
         sendDiscordWebhook(
           populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version: ver.version, downloadUrl: ver.downloadUrl, changelog: ver.changelog, gameVersion: ver.gameVersion },
+          { version: ver.version, downloadUrl: ver.downloadUrl, changelog: ver.changelog, gameVersion: ver.gameVersion, isBeta: ver.isBeta },
           true
         ).catch((err) => {
           console.error('Failed to send Discord webhook on version approval:', err)
