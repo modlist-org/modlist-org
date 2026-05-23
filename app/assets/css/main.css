@@ -124,7 +124,7 @@ html, body {
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1440px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -303,13 +303,16 @@ label {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 24px;
+  flex: 1;
+  margin-left: 48px;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nav-link {
@@ -317,9 +320,10 @@ label {
   text-decoration: none;
   font-weight: 500;
   font-size: 15px;
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
   transition: color 0.2s, background-color 0.2s;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -450,6 +454,8 @@ label {
     white-space: nowrap !important;
     flex-wrap: nowrap !important;
     padding: 4px 0 10px 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     /* Hide scrollbar */
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -513,8 +519,13 @@ label {
   }
   .header-right {
     width: 100%;
+    margin-left: 0;
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+  .nav-links {
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 
