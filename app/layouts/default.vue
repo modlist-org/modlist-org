@@ -80,6 +80,7 @@
                   default-value="en-US"
                   :values="['en-US', 'ko-KR']"
                   :display="getLanguageName"
+                  disable-reset
                 />
               </div>
             </div>

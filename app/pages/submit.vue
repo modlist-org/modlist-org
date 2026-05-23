@@ -79,6 +79,7 @@
               default-value="adofai"
               :values="['adofai', 'rhythm-doctor']"
               :display="getGameLabel"
+              disable-reset
             />
           </div>
         </div>
