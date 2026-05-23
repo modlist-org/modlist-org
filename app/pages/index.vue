@@ -10,7 +10,7 @@
             <div class="filter-dropdown-box game-dropdown-box">
               <UIDropdown
                 v-model="gameFilterModel"
-                :default-value="gameFilterModel"
+                default-value="all"
                 :values="['all', 'adofai', 'rhythm-doctor']"
                 :display="getGameLabel"
               />
@@ -23,7 +23,7 @@
             <div class="filter-dropdown-box category-dropdown-box">
               <UIDropdown
                 v-model="categoryFilterModel"
-                :default-value="categoryFilterModel"
+                default-value="all"
                 :values="['all', 'ui', 'gameplay', 'utility', 'visuals', 'library']"
                 :display="getCategoryLabel"
               />

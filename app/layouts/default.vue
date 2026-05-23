@@ -77,7 +77,7 @@
               <div style="width: 140px;">
                 <UIDropdown
                   v-model="state.language"
-                  :default-value="state.language"
+                  default-value="en-US"
                   :values="['en-US', 'ko-KR']"
                   :display="getLanguageName"
                 />

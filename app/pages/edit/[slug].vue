@@ -66,7 +66,7 @@
           <div class="form-dropdown-wrapper">
             <UIDropdown
               v-model="form.game"
-              :default-value="mod.game"
+              default-value="adofai"
               :values="['adofai', 'rhythm-doctor']"
               :display="getGameLabel"
             />
@@ -79,7 +79,7 @@
           <div class="form-dropdown-wrapper category-dropdown-wrapper">
             <UIDropdown
               v-model="categoriesFormModel"
-              :default-value="categoriesFormModel"
+              default-value="selected:"
               :values="['ui', 'gameplay', 'utility', 'visuals', 'library']"
               :display="getCategoryLabel"
             />
@@ -357,6 +357,10 @@ const categoriesFormModel = computed({
     return 'selected:' + form.value.categories.join(',')
   },
   set(val: string) {
+    if (val === 'selected:' || !val) {
+      form.value.categories = []
+      return
+    }
     const actualVal = val.startsWith('selected:') ? val.slice(9) : val
     toggleFormCategory(actualVal)
   }
