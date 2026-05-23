@@ -1,5 +1,3 @@
-import type mongoose from 'mongoose'
-
 interface WebhookMod {
   name: string
   slug: string
@@ -16,6 +14,28 @@ interface WebhookMod {
     version: string
     downloadUrl: string
   }[]
+}
+
+interface DiscordEmbedField {
+  name: string
+  value: string
+  inline?: boolean
+}
+
+interface DiscordEmbed {
+  title?: string
+  url?: string
+  description?: string
+  color?: number
+  timestamp?: string
+  fields: DiscordEmbedField[]
+  author?: {
+    name: string
+    icon_url?: string
+  }
+  footer?: {
+    text: string
+  }
 }
 
 export async function sendDiscordWebhook(mod: WebhookMod) {
@@ -67,7 +87,7 @@ export async function sendDiscordWebhook(mod: WebhookMod) {
   const downloadUrl = latestVerObj?.downloadUrl || ''
 
   // Build Discord Embed
-  const embed: any = {
+  const embed: DiscordEmbed = {
     title: `🆕 New Mod: ${mod.name}`,
     url: modUrl,
     description: mod.summary,
