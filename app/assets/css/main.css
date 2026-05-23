@@ -380,6 +380,7 @@ label {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 16px rgba(88, 101, 242, 0.25);
   transition: background-color 0.2s, transform 0.2s;
+  white-space: nowrap;
 }
 
 .discord-login-btn:hover {
@@ -432,6 +433,8 @@ label {
     grid-area: user-actions !important;
     justify-self: end !important;
     gap: 8px !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
   }
 
   .user-profile-widget {
@@ -508,6 +511,11 @@ label {
   .dropdown-header {
     font-size: 13px !important;
     padding: 0 4px 0 8px !important;
+  }
+  .discord-login-btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
   }
 }
 
