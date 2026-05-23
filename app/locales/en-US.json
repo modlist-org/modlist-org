@@ -137,5 +137,8 @@
   "mod.details.source_code": "Source Code",
   "pagination.prev": "Previous",
   "pagination.next": "Next",
-  "seo.description": "An open-source mod repository for everyone. Explore, download, and share mods for various games."
+  "seo.description": "An open-source mod repository for everyone. Explore, download, and share mods for various games.",
+  "nav.privacy": "Privacy Policy",
+  "nav.terms": "Terms of Service",
+  "nav.contact": "Contact Us"
 }

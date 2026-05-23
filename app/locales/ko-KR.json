@@ -137,5 +137,8 @@
   "mod.details.source_code": "소스코드",
   "pagination.prev": "이전",
   "pagination.next": "다음",
-  "seo.description": "다양한 게임의 모드를 탐색하고 다운로드 및 직접 공유할 수 있는 오픈소스 모드 저장소입니다."
+  "seo.description": "다양한 게임의 모드를 탐색하고 다운로드 및 직접 공유할 수 있는 오픈소스 모드 저장소입니다.",
+  "nav.privacy": "개인정보처리방침",
+  "nav.terms": "이용약관",
+  "nav.contact": "문의하기"
 }
