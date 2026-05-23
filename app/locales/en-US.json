@@ -130,5 +130,7 @@
   "submit.source_url": "Source Code Link",
   "submit.source_url_placeholder": "e.g. https://github.com/...",
   "submit.source_url_help": "Link to the mod source code repository (optional)",
-  "mod.details.source_code": "Source Code"
+  "mod.details.source_code": "Source Code",
+  "pagination.prev": "Previous",
+  "pagination.next": "Next"
 }

@@ -7,7 +7,7 @@
           <!-- Game Dropdown -->
           <div class="filter-dropdown-wrap">
             <span class="control-label">{{ t('filter.game') }}</span>
-            <div style="width: 170px;">
+            <div class="filter-dropdown-box game-dropdown-box">
               <UIDropdown
                 v-model="gameFilterModel"
                 :default-value="gameFilterModel"
@@ -20,7 +20,7 @@
           <!-- Category Dropdown -->
           <div class="filter-dropdown-wrap">
             <span class="control-label">{{ t('filter.category') }}</span>
-            <div style="width: 180px;">
+            <div class="filter-dropdown-box category-dropdown-box">
               <UIDropdown
                 v-model="categoryFilterModel"
                 :default-value="categoryFilterModel"
@@ -65,53 +65,84 @@
     </div>
 
     <!-- Mod Grid List -->
-    <div v-else-if="mods.length > 0" class="mods-grid">
-      <NuxtLink
-        v-for="mod in mods"
-        :key="mod._id"
-        :to="`/mods/${mod.slug}`"
-        class="card card-hover mod-card"
-      >
-        <div class="mod-card-header">
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-grow: 1; flex-shrink: 1;">
-            <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
-            <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
+    <template v-else-if="mods.length > 0">
+      <div class="mods-grid">
+        <NuxtLink
+          v-for="mod in mods"
+          :key="mod._id"
+          :to="`/mods/${mod.slug}`"
+          class="card card-hover mod-card"
+        >
+          <div class="mod-card-header">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-grow: 1; flex-shrink: 1;">
+              <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
+              <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
+            </div>
+            <span v-if="!mod.isApproved" class="badge badge-pending" style="flex-shrink: 0; margin-left: 8px;">{{ t('mod.details.pending_approval') }}</span>
           </div>
-          <span v-if="!mod.isApproved" class="badge badge-pending" style="flex-shrink: 0; margin-left: 8px;">{{ t('mod.details.pending_approval') }}</span>
-        </div>
 
-        <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; flex-grow: 1;">
-          <div class="card-logo-container" style="width: 54px; height: 54px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);">
-            <img v-if="mod.logo" :src="mod.logo" alt="Mod Logo" class="card-logo-img" style="width: 100%; height: 100%; object-fit: cover;">
-            <div v-else class="card-logo-fallback" :style="getFallbackGradientStyle(mod.name)" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 22px; font-weight: 700; color: #ffffff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
+          <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; flex-grow: 1;">
+            <div class="card-logo-container" style="width: 54px; height: 54px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);">
+              <img v-if="mod.logo" :src="mod.logo" alt="Mod Logo" class="card-logo-img" style="width: 100%; height: 100%; object-fit: cover;">
+              <div v-else class="card-logo-fallback" :style="getFallbackGradientStyle(mod.name)" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
+              </div>
+            </div>
+            <div class="mod-card-body" style="flex-grow: 1; margin-bottom: 0;">
+              <h3 class="mod-card-title">{{ mod.name }}</h3>
+              <p class="mod-card-summary">{{ mod.summary }}</p>
             </div>
           </div>
-          <div class="mod-card-body" style="flex-grow: 1; margin-bottom: 0;">
-            <h3 class="mod-card-title">{{ mod.name }}</h3>
-            <p class="mod-card-summary">{{ mod.summary }}</p>
-          </div>
-        </div>
 
-        <div class="mod-card-footer">
-          <div class="author-info">
-            <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-            <span class="author-name">{{ mod.authorId?.globalName || mod.authorId?.username || 'Unknown' }}</span>
-            <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
-          </div>
+          <div class="mod-card-footer">
+            <div class="author-info">
+              <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+              <span class="author-name">{{ mod.authorId?.globalName || mod.authorId?.username || 'Unknown' }}</span>
+              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
+            </div>
 
-          <div class="mod-stats">
-            <span v-if="mod.latestVersion" class="version-tag">v{{ mod.latestVersion.version }}</span>
-            <span class="downloads-count">
-              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ mod.downloads }}
-            </span>
+            <div class="mod-stats">
+              <span v-if="mod.latestVersion" class="version-tag">v{{ mod.latestVersion.version }}</span>
+              <span class="downloads-count">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ mod.downloads }}
+              </span>
+            </div>
           </div>
+        </NuxtLink>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="pagination-container">
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === 1"
+          @click="changePage(currentPage - 1)"
+        >
+          {{ t('pagination.prev') }}
+        </button>
+        <div class="pagination-pages">
+          <button
+            v-for="p in visiblePages"
+            :key="p"
+            class="pagination-page-btn"
+            :class="{ active: p === currentPage }"
+            @click="changePage(p)"
+          >
+            {{ p }}
+          </button>
         </div>
-      </NuxtLink>
-    </div>
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === totalPages"
+          @click="changePage(currentPage + 1)"
+        >
+          {{ t('pagination.next') }}
+        </button>
+      </div>
+    </template>
 
     <!-- Empty State -->
     <div v-else class="mods-empty-state card">
@@ -193,10 +224,18 @@ const searchQuery = ref('')
 const mods = ref<ModItem[]>([])
 const loadingMods = ref(true)
 
+// Pagination states
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalMods = ref(0)
+
 const fetchMods = async () => {
   loadingMods.value = true
   try {
-    const params: Record<string, string> = {}
+    const params: Record<string, string> = {
+      page: String(currentPage.value),
+      limit: '12'
+    }
     if (activeGames.value.length > 0) {
       params.game = activeGames.value.join(',')
     }
@@ -207,8 +246,16 @@ const fetchMods = async () => {
       params.search = searchQuery.value
     }
 
-    const response = await $fetch<{ mods: ModItem[] }>('/api/mods', { params })
+    const response = await $fetch<{ mods: ModItem[]; pagination?: { total: number; page: number; limit: number; totalPages: number } }>('/api/mods', { params })
     mods.value = response.mods || []
+    if (response.pagination) {
+      totalMods.value = response.pagination.total
+      totalPages.value = response.pagination.totalPages
+      currentPage.value = response.pagination.page
+    } else {
+      totalMods.value = mods.value.length
+      totalPages.value = 1
+    }
   } catch (error) {
     console.error('Failed to load mods:', error)
   } finally {
@@ -216,11 +263,37 @@ const fetchMods = async () => {
   }
 }
 
+const changePage = (page: number) => {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  fetchMods()
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const visiblePages = computed(() => {
+  const range = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  return range
+})
+
 // Simple debounce for search input
 let debounceTimeout: ReturnType<typeof setTimeout> | undefined = undefined
 const debouncedFetch = () => {
   clearTimeout(debounceTimeout)
   debounceTimeout = setTimeout(() => {
+    currentPage.value = 1
     fetchMods()
   }, 300)
 }
@@ -289,6 +362,7 @@ const clearAllFilters = () => {
 }
 
 watch([activeGames, activeCategories], () => {
+  currentPage.value = 1
   fetchMods()
 }, { deep: true })
 
@@ -443,6 +517,33 @@ onMounted(() => {
   gap: 8px;
 }
 
+.game-dropdown-box {
+  width: 170px;
+}
+
+.category-dropdown-box {
+  width: 180px;
+}
+
+@media (max-width: 768px) {
+  .filter-dropdowns-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-dropdown-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-dropdown-box {
+    flex-grow: 1;
+    max-width: 260px;
+  }
+}
+
 .control-label {
   font-size: 14px;
   font-weight: 500;
@@ -465,6 +566,13 @@ onMounted(() => {
 .search-input-wrap {
   flex-grow: 1;
   max-width: 480px;
+}
+
+@media (max-width: 768px) {
+  .search-input-wrap {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .search-input {

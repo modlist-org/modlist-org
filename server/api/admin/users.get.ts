@@ -23,12 +23,28 @@ export default defineEventHandler(async (event) => {
     ]
   }
 
+  // Pagination parameters
+  const page = Math.max(1, parseInt(query.page as string) || 1)
+  const limit = Math.max(1, Math.min(100, parseInt(query.limit as string) || 20))
+
   try {
+    const total = await User.countDocuments(filter)
+    const totalPages = Math.ceil(total / limit)
+
     const users = await User.find(filter)
       .sort({ username: 1 })
-      .limit(100) // Caps user lists to 100 for safety
+      .skip((page - 1) * limit)
+      .limit(limit)
 
-    return { users }
+    return {
+      users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages
+      }
+    }
   } catch (error) {
     console.error('Fetch users error:', error)
     throw createError({

@@ -174,66 +174,66 @@
               </div>
 
               <!-- Changes Comparison Grid -->
-              <div class="comparison-grid" style="display: flex; flex-direction: column; gap: 14px;">
+              <div class="comparison-grid">
                 
                 <!-- Name Change -->
-                <div v-if="mod.pendingEdit?.name && mod.pendingEdit.name !== mod.name" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Name</span>
-                  <span style="color: #E2676D; text-decoration: line-through;">{{ mod.name }}</span>
-                  <span style="color: #5FC391; font-weight: 500;">&rarr; {{ mod.pendingEdit.name }}</span>
+                <div v-if="mod.pendingEdit?.name && mod.pendingEdit.name !== mod.name" class="comparison-row">
+                  <span class="comparison-row-label">Name</span>
+                  <span class="comparison-row-old">{{ mod.name }}</span>
+                  <span class="comparison-row-new">&rarr; {{ mod.pendingEdit.name }}</span>
                 </div>
-
+ 
                 <!-- Logo Change -->
-                <div v-if="mod.pendingEdit?.logo !== undefined && mod.pendingEdit.logo !== mod.logo" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Logo</span>
-                  <div>
-                    <img v-if="mod.logo" :src="mod.logo" alt="Current Logo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); object-fit: cover;">
-                    <span v-else style="color: rgba(255,255,255,0.4);">None</span>
+                <div v-if="mod.pendingEdit?.logo !== undefined && mod.pendingEdit.logo !== mod.logo" class="comparison-row">
+                  <span class="comparison-row-label">Logo</span>
+                  <div class="comparison-logo-box">
+                    <img v-if="mod.logo" :src="mod.logo" alt="Current Logo" class="comparison-logo-img">
+                    <span v-else class="comparison-none-label">None</span>
                   </div>
-                  <div>
-                    <span style="color: #5FC391; font-weight: 500; margin-right: 8px;">&rarr;</span>
-                    <img v-if="mod.pendingEdit.logo" :src="mod.pendingEdit.logo" alt="New Logo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); object-fit: cover; vertical-align: middle;">
-                    <span v-else style="color: #E2676D; vertical-align: middle;">Removed</span>
+                  <div class="comparison-logo-box">
+                    <span class="comparison-arrow-inline">&rarr;</span>
+                    <img v-if="mod.pendingEdit.logo" :src="mod.pendingEdit.logo" alt="New Logo" class="comparison-logo-img nested-logo-img">
+                    <span v-else class="comparison-removed-label">Removed</span>
                   </div>
                 </div>
-
+ 
                 <!-- Source URL Change -->
-                <div v-if="mod.pendingEdit?.sourceUrl !== undefined && mod.pendingEdit.sourceUrl !== mod.sourceUrl" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Source Link</span>
-                  <span style="color: #E2676D; text-decoration: line-through; word-break: break-all;">{{ mod.sourceUrl || 'None' }}</span>
-                  <span style="color: #5FC391; font-weight: 500; word-break: break-all;">&rarr; {{ mod.pendingEdit.sourceUrl || 'Removed' }}</span>
+                <div v-if="mod.pendingEdit?.sourceUrl !== undefined && mod.pendingEdit.sourceUrl !== mod.sourceUrl" class="comparison-row">
+                  <span class="comparison-row-label">Source Link</span>
+                  <span class="comparison-row-old comparison-url-text">{{ mod.sourceUrl || 'None' }}</span>
+                  <span class="comparison-row-new comparison-url-text">&rarr; {{ mod.pendingEdit.sourceUrl || 'Removed' }}</span>
                 </div>
-
+ 
                 <!-- Game Change -->
-                <div v-if="mod.pendingEdit?.game && mod.pendingEdit.game !== mod.game" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Game</span>
-                  <span style="color: #E2676D; text-decoration: line-through;">{{ getGameLabel(mod.game) }}</span>
-                  <span style="color: #5FC391; font-weight: 500;">&rarr; {{ getGameLabel(mod.pendingEdit.game) }}</span>
+                <div v-if="mod.pendingEdit?.game && mod.pendingEdit.game !== mod.game" class="comparison-row">
+                  <span class="comparison-row-label">Game</span>
+                  <span class="comparison-row-old">{{ getGameLabel(mod.game) }}</span>
+                  <span class="comparison-row-new">&rarr; {{ getGameLabel(mod.pendingEdit.game) }}</span>
                 </div>
-
+ 
                 <!-- Categories Change -->
-                <div v-if="mod.pendingEdit?.categories && mod.pendingEdit.categories.length > 0 && JSON.stringify(mod.pendingEdit.categories) !== JSON.stringify(mod.categories)" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Categories</span>
-                  <span style="color: #E2676D; text-decoration: line-through;">{{ mod.categories.map(getCategoryLabelOnly).join(', ') }}</span>
-                  <span style="color: #5FC391; font-weight: 500;">&rarr; {{ mod.pendingEdit.categories.map(getCategoryLabelOnly).join(', ') }}</span>
+                <div v-if="mod.pendingEdit?.categories && mod.pendingEdit.categories.length > 0 && JSON.stringify(mod.pendingEdit.categories) !== JSON.stringify(mod.categories)" class="comparison-row">
+                  <span class="comparison-row-label">Categories</span>
+                  <span class="comparison-row-old">{{ mod.categories.map(getCategoryLabelOnly).join(', ') }}</span>
+                  <span class="comparison-row-new">&rarr; {{ mod.pendingEdit.categories.map(getCategoryLabelOnly).join(', ') }}</span>
                 </div>
-
+ 
                 <!-- Summary Change -->
-                <div v-if="mod.pendingEdit?.summary && mod.pendingEdit.summary !== mod.summary" class="comparison-row" style="display: grid; grid-template-columns: 120px 1fr 1fr; gap: 16px; font-size: 14px; align-items: center;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Summary</span>
-                  <span style="color: #E2676D;">{{ mod.summary }}</span>
-                  <span style="color: #5FC391; font-weight: 500;">&rarr; {{ mod.pendingEdit.summary }}</span>
+                <div v-if="mod.pendingEdit?.summary && mod.pendingEdit.summary !== mod.summary" class="comparison-row">
+                  <span class="comparison-row-label">Summary</span>
+                  <span class="comparison-row-old-noline">{{ mod.summary }}</span>
+                  <span class="comparison-row-new">&rarr; {{ mod.pendingEdit.summary }}</span>
                 </div>
-
+ 
                 <!-- Description Change -->
-                <div v-if="mod.pendingEdit?.description && mod.pendingEdit.description !== mod.description" class="comparison-row" style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; border-top: 1px dashed rgba(255, 255, 255, 0.05); padding-top: 10px;">
-                  <span style="font-weight: 600; color: rgba(255, 255, 255, 0.4);">Description Change</span>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div style="background-color: rgba(226, 103, 109, 0.03); border: 1px solid rgba(226, 103, 109, 0.1); border-radius: 8px; padding: 12px; max-height: 150px; overflow-y: auto; font-size: 13px; color: rgba(255, 255, 255, 0.5); white-space: pre-wrap;">{{ mod.description }}</div>
-                    <div style="background-color: rgba(95, 195, 145, 0.03); border: 1px solid rgba(95, 195, 145, 0.1); border-radius: 8px; padding: 12px; max-height: 150px; overflow-y: auto; font-size: 13px; color: rgba(255, 255, 255, 0.9); white-space: pre-wrap;">{{ mod.pendingEdit.description }}</div>
+                <div v-if="mod.pendingEdit?.description && mod.pendingEdit.description !== mod.description" class="desc-comparison-row">
+                  <span class="comparison-row-label">Description Change</span>
+                  <div class="desc-comparison-grid">
+                    <div class="desc-comparison-box desc-comparison-old">{{ mod.description }}</div>
+                    <div class="desc-comparison-box desc-comparison-new">{{ mod.pendingEdit.description }}</div>
                   </div>
                 </div>
-
+ 
               </div>
 
               <!-- Actions row -->
@@ -305,6 +305,35 @@
               </div>
             </div>
           </div>
+          
+          <!-- Pagination for Users -->
+          <div v-if="userTotalPages > 1" class="pagination-container" style="margin-top: 24px;">
+            <button
+              class="pagination-btn"
+              :disabled="userCurrentPage === 1"
+              @click="changeUserPage(userCurrentPage - 1)"
+            >
+              {{ t('pagination.prev') }}
+            </button>
+            <div class="pagination-pages">
+              <button
+                v-for="p in visibleUserPages"
+                :key="p"
+                class="pagination-page-btn"
+                :class="{ active: p === userCurrentPage }"
+                @click="changeUserPage(p)"
+              >
+                {{ p }}
+              </button>
+            </div>
+            <button
+              class="pagination-btn"
+              :disabled="userCurrentPage === userTotalPages"
+              @click="changeUserPage(userCurrentPage + 1)"
+            >
+              {{ t('pagination.next') }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -321,7 +350,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n, navigateTo } from '#imports'
 import { UIButton } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
@@ -417,6 +446,11 @@ const pendingEdits = ref<ModItem[]>([])
 const users = ref<UserItem[]>([])
 const userSearchQuery = ref('')
 
+// Pagination states for users
+const userCurrentPage = ref(1)
+const userTotalPages = ref(1)
+const totalUsers = ref(0)
+
 const fetchData = async () => {
   if (!user.value || !user.value.isAdmin) return
   loadingData.value = true
@@ -438,21 +472,55 @@ const fetchData = async () => {
 
 const fetchUsersList = async () => {
   try {
-    const params: Record<string, string> = {}
+    const params: Record<string, string> = {
+      page: String(userCurrentPage.value),
+      limit: '20'
+    }
     if (userSearchQuery.value.trim().length > 0) {
       params.search = userSearchQuery.value
     }
-    const userRes = await $fetch<{ users: UserItem[] }>('/api/admin/users', { params })
+    const userRes = await $fetch<{ users: UserItem[]; pagination?: { total: number; page: number; limit: number; totalPages: number } }>('/api/admin/users', { params })
     users.value = userRes.users || []
+    if (userRes.pagination) {
+      totalUsers.value = userRes.pagination.total
+      userTotalPages.value = userRes.pagination.totalPages
+      userCurrentPage.value = userRes.pagination.page
+    } else {
+      totalUsers.value = users.value.length
+      userTotalPages.value = 1
+    }
   } catch (e) {
     console.error('Failed to fetch users:', e)
   }
 }
 
+const changeUserPage = (page: number) => {
+  if (page < 1 || page > userTotalPages.value) return
+  userCurrentPage.value = page
+  fetchUsersList()
+}
+
+const visibleUserPages = computed(() => {
+  const range = []
+  const maxVisible = 5
+  let start = Math.max(1, userCurrentPage.value - Math.floor(maxVisible / 2))
+  let end = Math.min(userTotalPages.value, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  return range
+})
+
 let userSearchTimeout: ReturnType<typeof setTimeout> | null = null
 const debouncedUserSearch = () => {
   clearTimeout(userSearchTimeout || undefined)
   userSearchTimeout = setTimeout(() => {
+    userCurrentPage.value = 1
     fetchUsersList()
   }, 300)
 }
@@ -864,5 +932,148 @@ onMounted(async () => {
   text-align: center;
   padding: 40px;
   margin: 40px auto;
+}
+
+/* Comparison grid classes */
+.comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 16px;
+  font-size: 14px;
+  align-items: center;
+}
+
+.comparison-row-label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.comparison-row-old {
+  color: #E2676D;
+  text-decoration: line-through;
+}
+
+.comparison-row-old-noline {
+  color: #E2676D;
+}
+
+.comparison-row-new {
+  color: #5FC391;
+  font-weight: 500;
+}
+
+.comparison-logo-box {
+  display: flex;
+  align-items: center;
+}
+
+.comparison-logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  object-fit: cover;
+}
+
+.nested-logo-img {
+  vertical-align: middle;
+}
+
+.comparison-arrow-inline {
+  color: #5FC391;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.comparison-none-label {
+  color: rgba(255,255,255,0.4);
+}
+
+.comparison-removed-label {
+  color: #E2676D;
+  vertical-align: middle;
+}
+
+.comparison-url-text {
+  word-break: break-all;
+}
+
+.desc-comparison-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+}
+
+.desc-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.desc-comparison-box {
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.desc-comparison-old {
+  background-color: rgba(226, 103, 109, 0.03);
+  border: 1px solid rgba(226, 103, 109, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.desc-comparison-new {
+  background-color: rgba(95, 195, 145, 0.03);
+  border: 1px solid rgba(95, 195, 145, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Mobile Media Queries */
+@media (max-width: 768px) {
+  .admin-tabs {
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding: 12px 16px !important;
+    gap: 8px !important;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .admin-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .admin-tab-btn {
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+
+  .comparison-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    padding-bottom: 10px;
+  }
+
+  .desc-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 </style>

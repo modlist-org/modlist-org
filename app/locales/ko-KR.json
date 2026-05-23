@@ -130,5 +130,7 @@
   "submit.source_url": "소스코드 링크",
   "submit.source_url_placeholder": "예: https://github.com/...",
   "submit.source_url_help": "모드 소스코드 저장소 링크 (선택사항)",
-  "mod.details.source_code": "소스코드"
+  "mod.details.source_code": "소스코드",
+  "pagination.prev": "이전",
+  "pagination.next": "다음"
 }

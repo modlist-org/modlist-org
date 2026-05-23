@@ -47,16 +47,16 @@
     <!-- Left Column: Detailed Info -->
     <div class="detail-main-pane">
       <div class="card detail-header-card">
-        <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+        <div class="header-card-body">
           <div class="header-logo-container">
             <img v-if="activeLogo" :src="activeLogo" alt="Mod Logo" class="header-logo-img">
             <div v-else class="header-logo-fallback" :style="fallbackGradientStyle">
               <span>{{ activeName ? activeName.charAt(0).toUpperCase() : 'M' }}</span>
             </div>
           </div>
-          <div style="flex: 1; min-width: 250px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
-            <div>
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+          <div class="header-info-container">
+            <div class="header-text-block">
+              <div class="header-badges">
                 <span class="badge badge-game">{{ getGameLabel((showPreviewMode && mod.pendingEdit?.game) ? mod.pendingEdit.game : mod.game) }}</span>
                 <span v-for="cat in ((showPreviewMode && mod.pendingEdit?.categories && mod.pendingEdit.categories.length > 0) ? mod.pendingEdit.categories : mod.categories)" :key="cat" class="badge badge-category">{{ getCategoryLabel(cat) }}</span>
                 <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
@@ -65,9 +65,9 @@
               <p class="mod-summary-text">{{ (showPreviewMode && mod.pendingEdit?.summary) ? mod.pendingEdit.summary : mod.summary }}</p>
             </div>
 
-            <div v-if="isEditable" style="display: flex; gap: 12px;">
-              <NuxtLink :to="`/edit/${mod.slug}`">
-                <UIButton :label="t('mod.details.edit')" />
+            <div v-if="isEditable" class="header-actions">
+              <NuxtLink :to="`/edit/${mod.slug}`" class="header-edit-link">
+                <UIButton :label="t('mod.details.edit')" class="header-edit-button" />
               </NuxtLink>
             </div>
           </div>
@@ -87,15 +87,15 @@
         <div class="versions-list">
           <div v-for="ver in mod.versions" :key="ver._id" :class="{ 'pending-version': !ver.isApproved }" class="version-row">
             <div class="version-row-header">
-              <div style="display: flex; gap: 8px; align-items: center;">
+              <div class="version-meta-left">
                 <span class="version-number">v{{ ver.version }}</span>
-                <span v-if="!ver.isApproved" style="font-size: 9px; padding: 1px 6px;" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
+                <span v-if="!ver.isApproved" class="badge badge-pending version-pending-badge">{{ t('mod.details.pending_approval') }}</span>
               </div>
               <span class="version-date">{{ formatDate(ver.createdAt) }}</span>
             </div>
 
             <!-- Version Rejection Reason -->
-            <div v-if="!ver.isApproved && ver.rejectionReason" class="version-rejection-reason" style="margin-bottom: 12px; padding: 10px 14px; background: rgba(226, 103, 109, 0.08); border: 1px solid rgba(226, 103, 109, 0.2); border-radius: 8px; font-size: 13px; color: #E2676D;">
+            <div v-if="!ver.isApproved && ver.rejectionReason" class="version-rejection-reason">
               <strong>{{ t('mod.details.rejection_reason_label') || 'Rejection Reason:' }}</strong> {{ ver.rejectionReason }}
             </div>
 
@@ -105,19 +105,18 @@
 
             <div class="version-footer">
               <div class="submitted-by-label">
-                {{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[0] }}<span style="color: rgba(255, 255, 255, 0.7); display: inline-flex; align-items: center; gap: 4px;">{{ ver.submittedBy?.globalName || ver.submittedBy?.username || 'Unknown' }}<span v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 1px 3px; font-size: 8px; border-radius: 3px; line-height: 1; margin-right: 4px;">✓</span></span>{{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[1] }}
+                {{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[0] }}<span class="version-submitter">{{ ver.submittedBy?.globalName || ver.submittedBy?.username || 'Unknown' }}<span v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified version-verified-badge">✓</span></span>{{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[1] }}
               </div>
-              <div style="display: flex; gap: 8px;">
+              <div class="version-actions">
                 <UIButton
                   v-if="!ver.isApproved && isEditable"
                   :label="t('mod.details.delete_version')"
-                  class="danger-btn"
-                  style="padding: 6px 14px; font-size: 13px;"
+                  class="danger-btn version-action-btn"
                   @click="deleteVersion(ver._id)"
                 />
                 <UIButton
                   :label="t('mod.details.download')"
-                  style="padding: 6px 14px; font-size: 13px;"
+                  class="version-action-btn"
                   @click="triggerDownload(ver.downloadUrl)"
                 />
               </div>
@@ -133,36 +132,32 @@
     <!-- Right Column: Sidebar & Actions -->
     <div class="detail-sidebar-pane">
       <!-- Admin Controls Panel (Only Admins) -->
-      <div v-if="user?.isAdmin && mod" class="card sidebar-card admin-controls-card" style="border-color: rgba(226, 103, 109, 0.3); background-color: rgba(226, 103, 109, 0.02); margin-bottom: 8px;">
-        <h3 style="color: #E2676D; margin-bottom: 16px; border-bottom: 1px solid rgba(226, 103, 109, 0.15); padding-bottom: 8px;">
+      <div v-if="user?.isAdmin && mod" class="card sidebar-card admin-controls-card">
+        <h3 class="admin-controls-title">
           {{ t('admin.controls') }}
         </h3>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="admin-controls-buttons">
           <UIButton
             v-if="!mod.isApproved"
             :label="t('admin.approve_mod')"
-            class="success-btn"
-            style="width: 100%;"
+            class="success-btn admin-btn"
             @click="adminApprove"
           />
           <UIButton
             v-if="!mod.isApproved"
             :label="t('admin.reject_mod')"
-            class="danger-btn"
-            style="width: 100%;"
+            class="danger-btn admin-btn"
             @click="adminReject"
           />
           <UIButton
             v-if="mod.isApproved"
             :label="t('admin.unapprove_mod')"
-            class="danger-btn"
-            style="width: 100%;"
+            class="danger-btn admin-btn"
             @click="adminUnapprove"
           />
           <UIButton
             :label="t('admin.delete_mod')"
-            class="danger-btn"
-            style="width: 100%; background-color: #7c2227 !important;"
+            class="danger-btn admin-btn admin-delete-btn"
             @click="adminDelete"
           />
         </div>
@@ -987,5 +982,207 @@ onMounted(() => {
 .source-code-btn:hover {
   background-color: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(145, 154, 255, 0.3) !important;
+}
+
+/* Header layout classes */
+.header-card-body {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.header-info-container {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.header-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.header-edit-link {
+  text-decoration: none;
+}
+
+/* Version layout classes */
+.version-meta-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.version-pending-badge {
+  font-size: 9px !important;
+  padding: 1px 6px !important;
+}
+
+.version-verified-badge {
+  padding: 1px 3px !important;
+  font-size: 8px !important;
+  border-radius: 3px !important;
+  line-height: 1 !important;
+  margin-right: 4px !important;
+}
+
+.version-submitter {
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.version-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.version-action-btn {
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+}
+
+.version-rejection-reason {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(226, 103, 109, 0.08);
+  border: 1px solid rgba(226, 103, 109, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #E2676D;
+}
+
+/* Admin controls sidebar overrides */
+.admin-controls-card {
+  border-color: rgba(226, 103, 109, 0.3) !important;
+  background-color: rgba(226, 103, 109, 0.02) !important;
+  margin-bottom: 8px;
+}
+
+.admin-controls-title {
+  color: #E2676D !important;
+  margin-bottom: 16px !important;
+  border-bottom: 1px solid rgba(226, 103, 109, 0.15) !important;
+  padding-bottom: 8px !important;
+}
+
+.admin-controls-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-btn {
+  width: 100% !important;
+}
+
+.admin-delete-btn {
+  background-color: #7c2227 !important;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 968px) {
+  .detail-sidebar-pane {
+    position: static !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-card-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100% !important;
+  }
+  
+  .header-logo-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+  }
+  
+  .header-logo-fallback span {
+    font-size: 32px;
+  }
+  
+  .header-info-container {
+    width: 100%;
+    min-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .mod-title {
+    font-size: 24px;
+  }
+  
+  .header-actions {
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  .header-edit-link {
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  .header-edit-button {
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  .header-edit-link :deep(.overlayer-btn) {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 44px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .version-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .version-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .version-actions {
+    width: 100%;
+  }
+  
+  .version-actions :deep(.overlayer-btn) {
+    flex: 1;
+    width: 100% !important;
+    text-align: center;
+  }
+}
+
+/* Prevent markdown images from overflowing on mobile */
+.markdown-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 </style>

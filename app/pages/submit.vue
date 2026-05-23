@@ -49,20 +49,21 @@
                 style="display: none;"
                 @change="handleLogoUpload"
               >
-              <UIButton
-                type="button"
-                :label="t('submit.logo_select')"
-                @click="triggerLogoSelect"
-              />
-              <UIButton
-                v-if="form.logo"
-                type="button"
-                :label="t('submit.logo_remove')"
-                class="danger-btn"
-                style="margin-left: 8px;"
-                @click="clearLogo"
-              />
-              <span class="form-help-text" style="display: block; margin-top: 8px;">
+              <div class="logo-upload-buttons">
+                <UIButton
+                  type="button"
+                  :label="t('submit.logo_select')"
+                  @click="triggerLogoSelect"
+                />
+                <UIButton
+                  v-if="form.logo"
+                  type="button"
+                  :label="t('submit.logo_remove')"
+                  class="danger-btn"
+                  @click="clearLogo"
+                />
+              </div>
+              <span class="form-help-text logo-help-text">
                 {{ t('submit.logo_help') }}
               </span>
             </div>
@@ -72,7 +73,7 @@
         <!-- Target Game -->
         <div class="form-group">
           <label>{{ t('submit.game') }}</label>
-          <div style="width: 100%; max-width: 320px;">
+          <div class="form-dropdown-wrapper">
             <UIDropdown
               v-model="form.game"
               :default-value="'adofai'"
@@ -85,7 +86,7 @@
         <!-- Category -->
         <div class="form-group">
           <label>{{ t('submit.category') }}</label>
-          <div style="width: 100%; max-width: 320px; margin-bottom: 12px;">
+          <div class="form-dropdown-wrapper category-dropdown-wrapper">
             <UIDropdown
               v-model="categoriesFormModel"
               :default-value="categoriesFormModel"
@@ -628,5 +629,62 @@ onMounted(() => {
 
 .logo-upload-controls {
   flex-grow: 1;
+}
+
+.logo-upload-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.logo-help-text {
+  display: block;
+  margin-top: 8px;
+}
+
+.form-dropdown-wrapper {
+  width: 100%;
+  max-width: 320px;
+}
+
+.category-dropdown-wrapper {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    padding: 24px 16px !important;
+  }
+  
+  .logo-upload-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .logo-preview-box {
+    margin: 0 auto;
+  }
+  
+  .logo-upload-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .logo-upload-buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .logo-upload-buttons :deep(.overlayer-btn) {
+    width: 100% !important;
+    text-align: center;
+  }
+
+  .form-dropdown-wrapper {
+    max-width: 100%;
+  }
 }
 </style>

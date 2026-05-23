@@ -38,41 +38,44 @@
             </NuxtLink>
           </nav>
 
-          <!-- User Widget -->
-          <div v-if="loading" class="user-profile-widget" style="opacity: 0.7;">
-            <span class="control-label">{{ t('loading') }}</span>
-          </div>
-          <div v-else-if="user" class="user-profile-widget">
-            <img :src="user.avatar || '/images/default_avatar.png'" alt="Avatar" class="user-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-            <div class="user-name-box">
-              <span class="user-display-name">{{ user.globalName || user.username }}</span>
-              <div style="display: flex; gap: 4px;">
-                <span v-if="user.isAdmin" class="badge badge-admin" style="font-size: 8px; padding: 1px 4px;">Admin</span>
-                <span v-else-if="user.isVerifiedDeveloper" class="badge badge-verified" style="font-size: 8px; padding: 1px 4px;">Dev</span>
-              </div>
+          <!-- User & Language Actions -->
+          <div class="header-user-actions">
+            <!-- User Widget -->
+            <div v-if="loading" class="user-profile-widget" style="opacity: 0.7;">
+              <span class="control-label">{{ t('loading') }}</span>
             </div>
-            <UIButton
-              :label="t('nav.logout')"
-              style="padding: 6px 12px; font-size: 13px;"
-              @click="logout"
-            />
-          </div>
-          <a v-else href="/api/auth/login" class="discord-login-btn">
-            <svg class="discord-icon-svg" viewBox="0 0 127.14 96.36" xmlns="http://www.w3.org/2000/svg">
-              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.53-2a75.58,75.58,0,0,0,73,0c.81.71,1.65,1.4,2.53,2a68.32,68.32,0,0,1-10.5,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,48.24,123.6,25.41,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
-            </svg>
-            <span>{{ t('nav.login') }}</span>
-          </a>
-
-          <!-- Language Selector -->
-          <div class="quick-dropdown" style="margin-left: 12px;">
-            <div style="width: 140px;">
-              <UIDropdown
-                v-model="state.language"
-                :default-value="state.language"
-                :values="['en-US', 'ko-KR']"
-                :display="getLanguageName"
+            <div v-else-if="user" class="user-profile-widget">
+              <img :src="user.avatar || '/images/default_avatar.png'" alt="Avatar" class="user-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+              <div class="user-name-box">
+                <span class="user-display-name">{{ user.globalName || user.username }}</span>
+                <div style="display: flex; gap: 4px;">
+                  <span v-if="user.isAdmin" class="badge badge-admin" style="font-size: 8px; padding: 1px 4px;">Admin</span>
+                  <span v-else-if="user.isVerifiedDeveloper" class="badge badge-verified" style="font-size: 8px; padding: 1px 4px;">Dev</span>
+                </div>
+              </div>
+              <UIButton
+                :label="t('nav.logout')"
+                style="padding: 6px 12px; font-size: 13px;"
+                @click="logout"
               />
+            </div>
+            <a v-else href="/api/auth/login" class="discord-login-btn">
+              <svg class="discord-icon-svg" viewBox="0 0 127.14 96.36" xmlns="http://www.w3.org/2000/svg">
+                <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.53-2a75.58,75.58,0,0,0,73,0c.81.71,1.65,1.4,2.53,2a68.32,68.32,0,0,1-10.5,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,48.24,123.6,25.41,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+              </svg>
+              <span>{{ t('nav.login') }}</span>
+            </a>
+
+            <!-- Language Selector -->
+            <div class="quick-dropdown">
+              <div style="width: 140px;">
+                <UIDropdown
+                  v-model="state.language"
+                  :default-value="state.language"
+                  :values="['en-US', 'ko-KR']"
+                  :display="getLanguageName"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -88,10 +91,11 @@
     <transition name="tooltip-fade">
       <div
         v-if="tooltipVisible"
+        ref="tooltipRef"
         class="global-tooltip"
         :style="{
-          left: `${tooltipX}px`,
-          top: `${tooltipY}px`
+          left: `${adjustedX}px`,
+          top: `${adjustedY}px`
         }"
       >
         {{ tooltipText }}
@@ -101,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from '#imports'
 import {
   UIButton,
@@ -131,6 +135,54 @@ const getLanguageName = (lang: string) => {
   if (lang === 'ko-KR') return '한국어'
   return lang
 }
+
+// Tooltip collision bounds checks
+const tooltipRef = ref<HTMLElement | null>(null)
+const adjustedX = ref(-9999)
+const adjustedY = ref(-9999)
+
+watch([tooltipX, tooltipY, tooltipVisible, tooltipText], () => {
+  if (!tooltipVisible.value) {
+    adjustedX.value = -9999
+    adjustedY.value = -9999
+    return
+  }
+
+  nextTick(() => {
+    if (!tooltipRef.value) return
+    const el = tooltipRef.value
+    const rect = el.getBoundingClientRect()
+    
+    const width = rect.width
+    const height = rect.height
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    let x = tooltipX.value
+    let y = tooltipY.value
+    
+    // Check right boundary (keep 16px safety padding)
+    if (x + width > viewportWidth - 16) {
+      x = viewportWidth - width - 16
+    }
+    // Check left boundary
+    if (x < 16) {
+      x = 16
+    }
+    
+    // Check bottom boundary (keep 16px safety padding)
+    if (y + height > viewportHeight - 16) {
+      y = viewportHeight - height - 16
+    }
+    // Check top boundary
+    if (y < 16) {
+      y = 16
+    }
+    
+    adjustedX.value = x
+    adjustedY.value = y
+  })
+}, { immediate: true })
 
 onMounted(async () => {
   await fetchUser()

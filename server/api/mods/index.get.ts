@@ -68,11 +68,20 @@ export default defineEventHandler(async (event) => {
     filter.isApproved = true
   }
 
+  // Pagination parameters
+  const page = Math.max(1, parseInt(query.page as string) || 1)
+  const limit = Math.max(1, Math.min(100, parseInt(query.limit as string) || 12))
+
   try {
+    const total = await Mod.countDocuments(filter)
+    const totalPages = Math.ceil(total / limit)
+
     const mods = await Mod.find(filter)
       .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
       .populate('collaboratorIds', 'username globalName avatar isVerifiedDeveloper')
       .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
 
     // Return the mods. For frontend display, we only return approved versions unless
     // the user is authorized. We'll map versions count or latest version.
@@ -106,7 +115,15 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    return { mods: sanitizedMods }
+    return {
+      mods: sanitizedMods,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages
+      }
+    }
   } catch (error) {
     console.error('Fetch mods error:', error)
     throw createError({
