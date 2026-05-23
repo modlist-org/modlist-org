@@ -121,6 +121,9 @@
       </svg>
       <p>{{ t('home.no_mods') }}</p>
     </div>
+
+    <!-- AdSense Advertisement -->
+    <AdBanner ad-slot="1122334455" />
   </div>
 </template>
 

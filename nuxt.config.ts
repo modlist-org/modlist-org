@@ -19,7 +19,10 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxtjs/tailwindcss',
-    '@nuxtjs/google-adsense',
+    ['@nuxtjs/google-adsense', {
+      id: process.env.ADSENSE_CLIENT_ID || 'ca-pub-1234567890123456',
+      test: process.env.NODE_ENV !== 'production'
+    }],
     '@nuxtjs/eslint-module',
     '@nuxtjs/i18n'
   ],
@@ -42,6 +45,9 @@ export default defineNuxtConfig({
     discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
     discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
     jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret-replace-in-production',
-    adminDiscordIds: process.env.ADMIN_DISCORD_IDS || ''
+    adminDiscordIds: process.env.ADMIN_DISCORD_IDS || '',
+    public: {
+      adsenseClientId: process.env.ADSENSE_CLIENT_ID || 'ca-pub-1234567890123456'
+    }
   }
 })

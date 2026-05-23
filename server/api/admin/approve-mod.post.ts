@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    const wasApproved = mod.isApproved
     mod.isApproved = true
     mod.rejectionReason = ''
     // Also approve all of its versions (since the initial mod approval covers the initial release version)
@@ -40,6 +41,15 @@ export default defineEventHandler(async (event) => {
 
     mod.updatedAt = new Date()
     await mod.save()
+
+    if (!wasApproved) {
+      const populatedMod = await Mod.findById(mod._id).populate('authorId')
+      if (populatedMod) {
+        sendDiscordWebhook(populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0]).catch((err) => {
+          console.error('Failed to send Discord webhook on approval:', err)
+        })
+      }
+    }
 
     return {
       success: true,

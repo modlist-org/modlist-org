@@ -139,6 +139,15 @@ export default defineEventHandler(async (event) => {
 
     await mod.save()
 
+    if (mod.isApproved) {
+      const populatedMod = await Mod.findById(mod._id).populate('authorId')
+      if (populatedMod) {
+        sendDiscordWebhook(populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0]).catch((err) => {
+          console.error('Failed to send Discord webhook on creation:', err)
+        })
+      }
+    }
+
     return {
       success: true,
       mod: {
