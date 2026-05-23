@@ -57,6 +57,7 @@
           <div class="header-info-container">
             <div class="header-text-block">
               <div class="header-badges">
+                <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
                 <span class="badge badge-game">{{ getGameLabel((showPreviewMode && mod.pendingEdit?.game) ? mod.pendingEdit.game : mod.game) }}</span>
                 <span v-for="cat in ((showPreviewMode && mod.pendingEdit?.categories && mod.pendingEdit.categories.length > 0) ? mod.pendingEdit.categories : mod.categories)" :key="cat" class="badge badge-category">{{ getCategoryLabel(cat) }}</span>
                 <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
@@ -172,6 +173,13 @@
           {{ t('admin.controls') }}
         </h3>
         <div class="admin-controls-buttons">
+          <UIButton
+            v-if="mod.isApproved"
+            :label="mod.isFeatured ? t('admin.unfeature_mod', 'Unfeature Mod') : t('admin.feature_mod', 'Feature Mod')"
+            :class="{ 'danger-btn': mod.isFeatured }"
+            class="admin-btn"
+            @click="adminToggleFeatured"
+          />
           <UIButton
             v-if="!mod.isApproved"
             :label="t('admin.approve_mod')"
@@ -379,6 +387,7 @@ interface ModItem {
   sourceUrl?: string
   downloads: number
   versions: ModVersion[]
+  isFeatured?: boolean
 }
 
 const route = useRoute()
@@ -705,6 +714,19 @@ const adminDelete = async () => {
   } catch (e) {
     console.error(e)
     alert('Failed to delete mod.')
+  }
+}
+
+const adminToggleFeatured = async () => {
+  try {
+    await $fetch('/api/admin/toggle-featured', {
+      method: 'POST',
+      body: { modId: mod.value?._id }
+    })
+    await fetchModDetails()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to toggle featured status.')
   }
 }
 
@@ -1304,5 +1326,12 @@ onMounted(() => {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+.badge-featured {
+  background-color: rgba(255, 215, 0, 0.15) !important;
+  color: #FFD700 !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+  font-weight: 700;
 }
 </style>

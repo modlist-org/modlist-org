@@ -172,3 +172,68 @@ export async function sendDiscordWebhook(
     console.error('Failed to send Discord webhook:', err)
   }
 }
+
+export async function sendFeaturedWebhook(
+  mod: WebhookMod,
+  isFeatured: boolean
+) {
+  const config = useRuntimeConfig()
+  const webhookUrl = config.discordWebhookUrl
+  if (!webhookUrl) {
+    console.warn('DISCORD_WEBHOOK_URL is not set. Skipping Discord notification.')
+    return
+  }
+
+  const baseUrl = config.appBaseUrl || 'http://localhost:3000'
+  const modUrl = `${baseUrl}/mods/${mod.slug}`
+
+  const gameName = mod.game === 'adofai' 
+    ? 'A Dance of Fire and Ice' 
+    : mod.game === 'rhythm-doctor' 
+      ? 'Rhythm Doctor' 
+      : mod.game
+
+  let authorName = 'Unknown'
+  if (mod.authorId) {
+    authorName = mod.authorId.globalName || mod.authorId.username || 'Unknown'
+  }
+
+  const embed: DiscordEmbed = {
+    title: isFeatured ? `⭐ Featured Mod: ${mod.name}` : `⚠️ Unfeatured Mod: ${mod.name}`,
+    url: modUrl,
+    description: isFeatured 
+      ? `This mod has been featured by an administrator! 🚀\n\n**Description:**\n${mod.summary}`
+      : `This mod is no longer featured.`,
+    color: isFeatured ? 16766720 : 10066329, // Gold color #FFD700 for featured, Grey #999999 for unfeatured
+    timestamp: new Date().toISOString(),
+    fields: [
+      {
+        name: '🎮 Game',
+        value: gameName,
+        inline: true
+      },
+      {
+        name: '👤 Creator',
+        value: authorName,
+        inline: true
+      }
+    ],
+    footer: {
+      text: 'Modlist'
+    }
+  }
+
+  try {
+    const payload = {
+      embeds: [embed]
+    }
+
+    await $fetch(webhookUrl, {
+      method: 'POST',
+      body: payload
+    })
+    console.log(`Successfully sent Discord webhook notification for mod featured status change: ${mod.name}`)
+  } catch (err) {
+    console.error('Failed to send Discord webhook for featured mod:', err)
+  }
+}

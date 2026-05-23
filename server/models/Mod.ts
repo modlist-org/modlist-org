@@ -44,6 +44,7 @@ export interface IMod {
   sourceUrl?: string
   downloads: number
   versions: IModVersion[]
+  isFeatured?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -87,6 +88,7 @@ const ModSchema = new Schema<IMod>({
   logo: { type: String, default: '' },
   sourceUrl: { type: String, default: '' },
   downloads: { type: Number, default: 0 },
+  isFeatured: { type: Boolean, default: false, index: true },
   versions: [ModVersionSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

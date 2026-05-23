@@ -7,7 +7,7 @@
     </div>
 
     <div class="privacy-iframe-container">
-      <iframe src="/privacy.html" class="privacy-iframe" title="Privacy Policy"></iframe>
+      <iframe src="/privacy.html" class="privacy-iframe" title="Privacy Policy" />
     </div>
   </div>
 </template>

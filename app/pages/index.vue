@@ -29,6 +29,19 @@
               />
             </div>
           </div>
+
+          <!-- Sort Dropdown -->
+          <div class="filter-dropdown-wrap">
+            <span class="control-label">{{ t('filter.sort') }}</span>
+            <div class="filter-dropdown-box sort-dropdown-box">
+              <UIDropdown
+                v-model="sortBy"
+                default-value="updated"
+                :values="['updated', 'created', 'downloads_desc', 'downloads_asc', 'name_asc', 'name_desc']"
+                :display="getSortLabel"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="search-input-wrap">
@@ -83,6 +96,7 @@
         >
           <div class="mod-card-header">
             <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-grow: 1; flex-shrink: 1;">
+              <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
               <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
               <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
             </div>
@@ -229,6 +243,7 @@ interface ModItem {
   downloads: number
   versions: ModVersion[]
   latestVersion?: ModVersion | null
+  isFeatured?: boolean
   logo?: string
 }
 
@@ -290,6 +305,7 @@ const getFallbackGradientStyle = (name: string) => {
 const activeGames = ref<string[]>([])
 const activeCategories = ref<string[]>([])
 const searchQuery = ref('')
+const sortBy = ref('updated')
 const mods = ref<ModItem[]>([])
 const loadingMods = ref(true)
 
@@ -303,7 +319,8 @@ const fetchMods = async () => {
   try {
     const params: Record<string, string> = {
       page: String(currentPage.value),
-      limit: '12'
+      limit: '12',
+      sortBy: sortBy.value
     }
     if (activeGames.value.length > 0) {
       params.game = activeGames.value.join(',')
@@ -434,6 +451,21 @@ watch([activeGames, activeCategories], () => {
   currentPage.value = 1
   fetchMods()
 }, { deep: true })
+
+watch(sortBy, () => {
+  currentPage.value = 1
+  fetchMods()
+})
+
+const getSortLabel = (val: string) => {
+  if (val === 'updated') return t('sort.updated')
+  if (val === 'created') return t('sort.created')
+  if (val === 'downloads_desc') return t('sort.downloads_desc')
+  if (val === 'downloads_asc') return t('sort.downloads_asc')
+  if (val === 'name_asc') return t('sort.name_asc')
+  if (val === 'name_desc') return t('sort.name_desc')
+  return val
+}
 
 const getGameLabelOnly = (game: string) => {
   if (game === 'adofai') return t('games.adofai')
@@ -592,6 +624,17 @@ onMounted(() => {
 
 .category-dropdown-box {
   width: 180px;
+}
+
+.sort-dropdown-box {
+  width: 180px;
+}
+
+.badge-featured {
+  background-color: rgba(255, 215, 0, 0.15) !important;
+  color: #FFD700 !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {

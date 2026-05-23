@@ -72,16 +72,41 @@ export default defineEventHandler(async (event) => {
   const page = Math.max(1, parseInt(query.page as string) || 1)
   const limit = Math.max(1, Math.min(100, parseInt(query.limit as string) || 12))
 
+  // Sort parameters
+  const sortBy = query.sortBy as string || 'updated'
+  const sortCriteria: Record<string, 1 | -1> = { isFeatured: -1 }
+
+  if (sortBy === 'downloads_desc' || sortBy === 'downloads') {
+    sortCriteria.downloads = -1
+  } else if (sortBy === 'downloads_asc') {
+    sortCriteria.downloads = 1
+  } else if (sortBy === 'name_asc') {
+    sortCriteria.name = 1
+  } else if (sortBy === 'name_desc') {
+    sortCriteria.name = -1
+  } else if (sortBy === 'created') {
+    sortCriteria.createdAt = -1
+  } else {
+    sortCriteria.updatedAt = -1 // Default: recently updated
+  }
+
   try {
     const total = await Mod.countDocuments(filter)
     const totalPages = Math.ceil(total / limit)
 
-    const mods = await Mod.find(filter)
+    const queryChain = Mod.find(filter)
       .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
       .populate('collaboratorIds', 'username globalName avatar isVerifiedDeveloper')
-      .sort({ updatedAt: -1 })
+      .sort(sortCriteria)
       .skip((page - 1) * limit)
       .limit(limit)
+
+    // Apply collation for case-insensitive alphabetical sorting if name sorting is selected
+    if (sortBy === 'name_asc' || sortBy === 'name_desc') {
+      queryChain.collation({ locale: 'en', strength: 2 })
+    }
+
+    const mods = await queryChain
 
     // Return the mods. For frontend display, we only return approved versions unless
     // the user is authorized. We'll map versions count or latest version.
