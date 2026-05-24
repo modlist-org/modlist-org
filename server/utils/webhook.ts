@@ -5,6 +5,7 @@ interface WebhookMod {
   categories: string[]
   summary: string
   sourceUrl?: string
+  communityUrl?: string
   authorId?: {
     username: string
     globalName?: string
@@ -142,6 +143,15 @@ export async function sendDiscordWebhook(
     embed.fields.push({
       name: '🔗 Source Code',
       value: `[Repository Link](${mod.sourceUrl})`,
+      inline: false
+    })
+  }
+
+  // Add optional community link
+  if (mod.communityUrl) {
+    embed.fields.push({
+      name: '💬 Community Link',
+      value: `[Join Community](${mod.communityUrl})`,
       inline: false
     })
   }

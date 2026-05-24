@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
       categories: mod.categories || [],
       summary: mod.summary,
       sourceUrl: mod.sourceUrl,
+      communityUrl: mod.communityUrl,
       authorId: mod.authorId ? {
         username: (mod.authorId as unknown as PopulatedUser).username,
         globalName: (mod.authorId as unknown as PopulatedUser).globalName,

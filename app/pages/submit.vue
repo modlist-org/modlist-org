@@ -142,6 +142,18 @@
           <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
         </div>
 
+        <!-- Community Link -->
+        <div class="form-group">
+          <label for="mod-community-url">{{ t('submit.community_url') }}</label>
+          <input
+            id="mod-community-url"
+            v-model="form.communityUrl"
+            type="text"
+            :placeholder="t('submit.community_url_placeholder')"
+          >
+          <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
+        </div>
+
         <div class="card-divider-sub" />
         <h3>{{ t('submit.initial_release') }}</h3>
 
@@ -300,6 +312,7 @@ const form = ref({
   slug: '',
   logo: '',
   sourceUrl: '',
+  communityUrl: '',
   game: 'adofai',
   categories: [] as string[],
   summary: '',

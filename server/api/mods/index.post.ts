@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
     collaboratorIds,
     logo,
     sourceUrl,
+    communityUrl,
     isBeta
   } = body
 
@@ -50,6 +51,15 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
+      })
+    }
+  }
+
+  if (communityUrl && typeof communityUrl === 'string') {
+    if (!communityUrl.startsWith('http://') && !communityUrl.startsWith('https://')) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
       })
     }
   }
@@ -124,6 +134,7 @@ export default defineEventHandler(async (event) => {
       isApproved: isAutoApproved,
       logo: logo || '',
       sourceUrl: sourceUrl || '',
+      communityUrl: communityUrl || '',
       downloads: 0,
       versions: [
         {

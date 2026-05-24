@@ -127,6 +127,18 @@
           <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
         </div>
 
+        <!-- Community Link -->
+        <div class="form-group">
+          <label for="mod-community-url">{{ t('submit.community_url') }}</label>
+          <input
+            id="mod-community-url"
+            v-model="form.communityUrl"
+            type="text"
+            :placeholder="t('submit.community_url_placeholder')"
+          >
+          <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
+        </div>
+
         <div class="card-divider-sub" />
 
         <!-- Collaborators Section (Only Author or Admin can manage) -->
@@ -273,6 +285,7 @@ interface ModItem {
   versions: ModVersion[]
   logo?: string
   sourceUrl?: string
+  communityUrl?: string
   pendingEdit?: {
     name?: string
     summary?: string
@@ -281,6 +294,7 @@ interface ModItem {
     categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
     logo?: string
     sourceUrl?: string
+    communityUrl?: string
   } | null
 }
 
@@ -296,6 +310,7 @@ const form = ref({
   name: '',
   logo: '',
   sourceUrl: '',
+  communityUrl: '',
   game: 'adofai' as 'adofai' | 'rhythm-doctor',
   categories: ['ui'] as string[],
   summary: '',
@@ -419,7 +434,8 @@ const loadModDetails = async () => {
       summary: edit.summary || data.mod.summary,
       description: edit.description !== undefined ? edit.description : (data.mod.description || ''),
       logo: edit.logo !== undefined ? edit.logo : (data.mod.logo || ''),
-      sourceUrl: edit.sourceUrl !== undefined ? edit.sourceUrl : (data.mod.sourceUrl || '')
+      sourceUrl: edit.sourceUrl !== undefined ? edit.sourceUrl : (data.mod.sourceUrl || ''),
+      communityUrl: edit.communityUrl !== undefined ? edit.communityUrl : (data.mod.communityUrl || '')
     }
     selectedCollabs.value = [
       ...(data.mod.collaboratorIds || []),

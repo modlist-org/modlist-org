@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl } = body
+  const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl, communityUrl } = body
 
   if (logo && typeof logo === 'string' && logo.length > 1500000) {
     throw createError({
@@ -35,6 +35,15 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
+      })
+    }
+  }
+
+  if (communityUrl && typeof communityUrl === 'string') {
+    if (!communityUrl.startsWith('http://') && !communityUrl.startsWith('https://')) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
       })
     }
   }
@@ -68,6 +77,7 @@ export default defineEventHandler(async (event) => {
       if (game && ['adofai', 'rhythm-doctor'].includes(game)) mod.game = game
       if (logo !== undefined) mod.logo = logo
       if (sourceUrl !== undefined) mod.sourceUrl = sourceUrl
+      if (communityUrl !== undefined) mod.communityUrl = communityUrl
       if (categories !== undefined) {
         if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))) {
           throw createError({
@@ -109,6 +119,10 @@ export default defineEventHandler(async (event) => {
         proposedEdit.sourceUrl = sourceUrl
         isChanged = true
       }
+      if (communityUrl !== undefined && communityUrl !== mod.communityUrl) {
+        proposedEdit.communityUrl = communityUrl
+        isChanged = true
+      }
       if (categories !== undefined) {
         if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))) {
           throw createError({
@@ -131,6 +145,7 @@ export default defineEventHandler(async (event) => {
           game: mod.pendingEdit.game,
           logo: mod.pendingEdit.logo,
           sourceUrl: mod.pendingEdit.sourceUrl,
+          communityUrl: mod.pendingEdit.communityUrl,
           categories: mod.pendingEdit.categories ? [...mod.pendingEdit.categories] : undefined
         } : {}
         mod.pendingEdit = {

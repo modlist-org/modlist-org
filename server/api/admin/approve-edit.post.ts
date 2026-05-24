@@ -45,6 +45,7 @@ export default defineEventHandler(async (event) => {
     if (edit.game) mod.game = edit.game
     if (edit.logo !== undefined) mod.logo = edit.logo
     if (edit.sourceUrl !== undefined) mod.sourceUrl = edit.sourceUrl
+    if (edit.communityUrl !== undefined) mod.communityUrl = edit.communityUrl
     if (edit.categories && edit.categories.length > 0) {
       mod.categories = edit.categories
     }

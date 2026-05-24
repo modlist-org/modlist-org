@@ -203,6 +203,13 @@
                   <span class="comparison-row-old comparison-url-text">{{ mod.sourceUrl || 'None' }}</span>
                   <span class="comparison-row-new comparison-url-text">&rarr; {{ mod.pendingEdit.sourceUrl || 'Removed' }}</span>
                 </div>
+
+                <!-- Community URL Change -->
+                <div v-if="mod.pendingEdit?.communityUrl !== undefined && mod.pendingEdit.communityUrl !== mod.communityUrl" class="comparison-row">
+                  <span class="comparison-row-label">Community Link</span>
+                  <span class="comparison-row-old comparison-url-text">{{ mod.communityUrl || 'None' }}</span>
+                  <span class="comparison-row-new comparison-url-text">&rarr; {{ mod.pendingEdit.communityUrl || 'Removed' }}</span>
+                </div>
  
                 <!-- Game Change -->
                 <div v-if="mod.pendingEdit?.game && mod.pendingEdit.game !== mod.game" class="comparison-row">
@@ -419,6 +426,7 @@ interface PendingEdit {
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
+  communityUrl?: string
   createdAt: string
 }
 
@@ -437,6 +445,7 @@ interface ModItem {
   pendingEdit?: PendingEdit | null
   logo?: string
   sourceUrl?: string
+  communityUrl?: string
 }
 
 interface UserItem {

@@ -10,6 +10,7 @@ export interface IPendingModEdit {
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
+  communityUrl?: string
   createdAt?: Date
 }
 
@@ -43,6 +44,7 @@ export interface IMod {
   editRejectionReason?: string
   logo?: string
   sourceUrl?: string
+  communityUrl?: string
   downloads: number
   versions: IModVersion[]
   isFeatured?: boolean
@@ -70,6 +72,7 @@ const PendingModEditSchema = new Schema<IPendingModEdit>({
   categories: [{ type: String, enum: ['ui', 'gameplay', 'utility', 'visuals', 'library'] }],
   logo: { type: String },
   sourceUrl: { type: String },
+  communityUrl: { type: String },
   createdAt: { type: Date, default: Date.now }
 })
 
@@ -89,6 +92,7 @@ const ModSchema = new Schema<IMod>({
   editRejectionReason: { type: String, default: '' },
   logo: { type: String, default: '' },
   sourceUrl: { type: String, default: '' },
+  communityUrl: { type: String, default: '' },
   downloads: { type: Number, default: 0 },
   isFeatured: { type: Boolean, default: false, index: true },
   versions: [ModVersionSchema],
