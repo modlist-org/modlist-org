@@ -134,10 +134,19 @@ export default defineEventHandler(async (event) => {
       )
       const latestVersion = sortedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || sortedVersions[0] || null
 
+      const cleanVersions = approvedVersions.map((v: any) => {
+        const { downloadUrl, ...rest } = v
+        return rest
+      })
+      const cleanLatest = latestVersion ? { ...latestVersion } as any : null
+      if (cleanLatest) {
+        delete cleanLatest.downloadUrl
+      }
+
       return {
         ...modObj,
-        versions: approvedVersions,
-        latestVersion
+        versions: cleanVersions,
+        latestVersion: cleanLatest
       }
     })
 

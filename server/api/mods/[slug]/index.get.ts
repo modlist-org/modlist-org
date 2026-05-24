@@ -74,10 +74,27 @@ export default defineEventHandler(async (event) => {
       delete modObj.pendingEdit
     }
 
+    // Strip downloadUrl from all versions for safety & size
+    const cleanVersions = modObj.versions.map((v: any) => {
+      const { downloadUrl, ...rest } = v
+      return rest
+    })
+    modObj.versions = cleanVersions as any
+
+    const cleanLatest = latestVersion ? { ...latestVersion } as any : null
+    if (cleanLatest) {
+      delete cleanLatest.downloadUrl
+    }
+
+    const cleanLatestBeta = latestBetaVersion ? { ...latestBetaVersion } as any : null
+    if (cleanLatestBeta) {
+      delete cleanLatestBeta.downloadUrl
+    }
+
     return {
       mod: modObj,
-      latestVersion,
-      latestBetaVersion,
+      latestVersion: cleanLatest,
+      latestBetaVersion: cleanLatestBeta,
       isEditable: !!isOwnerOrAdmin
     }
   } catch (error) {

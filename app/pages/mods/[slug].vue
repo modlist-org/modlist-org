@@ -119,7 +119,7 @@
         <div class="action-buttons-group">
           <a
             v-if="latestVersion"
-            :href="`/api/mods/${mod.slug}/download?url=${encodeURIComponent(latestVersion.downloadUrl)}`"
+            :href="`/api/mods/${mod.slug}/download`"
             target="_blank"
             class="download-main-btn"
             @click="mod.downloads++"
@@ -131,7 +131,7 @@
           </a>
           <a
             v-if="latestBetaVersion"
-            :href="`/api/mods/${mod.slug}/download?url=${encodeURIComponent(latestBetaVersion.downloadUrl)}`"
+            :href="`/api/mods/${mod.slug}/download?beta=true`"
             target="_blank"
             class="download-beta-btn"
             @click="mod.downloads++"
@@ -269,7 +269,7 @@
                 />
                 <a
                   class="version-download-link"
-                  :href="`/api/mods/${mod.slug}/download?url=${encodeURIComponent(ver.downloadUrl)}`"
+                  :href="`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}`"
                   target="_blank"
                   @click="mod.downloads++"
                 >
@@ -360,7 +360,7 @@
         <div class="action-buttons-group">
           <a
             v-if="latestVersion"
-            :href="`/api/mods/${mod.slug}/download?url=${encodeURIComponent(latestVersion.downloadUrl)}`"
+            :href="`/api/mods/${mod.slug}/download`"
             target="_blank"
             class="download-main-btn"
             @click="mod.downloads++"
@@ -372,7 +372,7 @@
           </a>
           <a
             v-if="latestBetaVersion"
-            :href="`/api/mods/${mod.slug}/download?url=${encodeURIComponent(latestBetaVersion.downloadUrl)}`"
+            :href="`/api/mods/${mod.slug}/download?beta=true`"
             target="_blank"
             class="download-beta-btn"
             @click="mod.downloads++"
