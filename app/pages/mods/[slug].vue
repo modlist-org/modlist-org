@@ -56,14 +56,14 @@
           </div>
           <div class="header-info-container">
             <div class="header-text-block">
+              <h1 class="mod-title">{{ activeName }}</h1>
+              <p class="mod-summary-text">{{ (showPreviewMode && mod.pendingEdit?.summary) ? mod.pendingEdit.summary : mod.summary }}</p>
               <div class="header-badges">
                 <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
                 <span class="badge badge-game">{{ getGameLabel((showPreviewMode && mod.pendingEdit?.game) ? mod.pendingEdit.game : mod.game) }}</span>
                 <span v-for="cat in ((showPreviewMode && mod.pendingEdit?.categories && mod.pendingEdit.categories.length > 0) ? mod.pendingEdit.categories : mod.categories)" :key="cat" class="badge badge-category">{{ getCategoryLabel(cat) }}</span>
                 <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
               </div>
-              <h1 class="mod-title">{{ activeName }}</h1>
-              <p class="mod-summary-text">{{ (showPreviewMode && mod.pendingEdit?.summary) ? mod.pendingEdit.summary : mod.summary }}</p>
             </div>
 
             <div v-if="isEditable" class="header-actions">
@@ -116,29 +116,57 @@
 
       <!-- Mobile-only Download / Action Panel -->
       <div class="card sidebar-card action-card mobile-only-card">
-        <UIButton
-          v-if="latestVersion"
-          :label="`${t('mod.details.download')} (v${latestVersion.version})`"
-          class="download-main-btn"
-          @click="triggerDownload(latestVersion.downloadUrl)"
-        />
-        <UIButton
-          v-if="latestBetaVersion"
-          :label="`${t('mod.details.download_beta')} (v${latestBetaVersion.version})`"
-          class="download-beta-btn"
-          @click="triggerDownload(latestBetaVersion.downloadUrl)"
-        />
+        <div class="action-buttons-group">
+          <button
+            v-if="latestVersion"
+            class="download-main-btn"
+            @click="triggerDownload(latestVersion.downloadUrl)"
+          >
+            <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+            </svg>
+            <span>v{{ latestVersion.version }}</span>
+          </button>
+          <button
+            v-if="latestBetaVersion"
+            class="download-beta-btn"
+            @click="triggerDownload(latestBetaVersion.downloadUrl)"
+          >
+            <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+            </svg>
+            <span>v{{ latestBetaVersion.version }} ({{ t('mod.details.beta') }})</span>
+          </button>
+          <!-- Source Code Link -->
+          <a
+            v-if="activeSourceUrl && sourceInfo"
+            :href="activeSourceUrl"
+            target="_blank"
+            class="source-code-btn"
+          >
+            <!-- GitHub Icon -->
+            <svg v-if="sourceInfo.type === 'github'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+            </svg>
+            <!-- GitLab Icon -->
+            <svg v-else-if="sourceInfo.type === 'gitlab'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23.953 13.072l-1.653-5.09a.908.908 0 0 0-.317-.417.92.92 0 0 0-.52-.108.932.932 0 0 0-.486.205.918.918 0 0 0-.275.428L18.42 15.02H5.58L3.298 7.973a.918.918 0 0 0-.275-.428.932.932 0 0 0-.486-.205.92.92 0 0 0-.52.108.908.908 0 0 0-.317.417L.047 13.072a1.002 1.002 0 0 0 .356 1.107l10.913 7.94a1.144 1.144 0 0 0 1.368 0l10.913-7.94a1.002 1.002 0 0 0 .356-1.107z"/>
+            </svg>
+            <!-- Bitbucket Icon -->
+            <svg v-else-if="sourceInfo.type === 'bitbucket'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.313 3.007a1.246 1.246 0 0 0-1.226 1.01L18.59 20.306a1.07 1.07 0 0 1-1.053.864H6.467a1.07 1.07 0 0 1-1.053-.864L2.915 4.017A1.246 1.246 0 0 0 1.69 3.007c-.99 0-1.636 1.008-1.34 1.95l2.49 14.887a2.535 2.535 0 0 0 2.497 2.05H17.81a2.535 2.535 0 0 0 2.497-2.05l2.49-14.887a1.157 1.157 0 0 0-.156-.837 1.18 1.18 0 0 0-.74-.47L22.313 3z"/>
+            </svg>
+            <!-- Generic Code Icon -->
+            <svg v-else style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>{{ sourceInfo.name }}</span>
+          </a>
+        </div>
         <div v-if="!latestVersion && !latestBetaVersion" class="no-download-state">
           <p>{{ t('mod.details.no_downloads') }}</p>
         </div>
-
-        <!-- Source Code Link -->
-        <UIButton
-          v-if="activeSourceUrl"
-          :label="t('mod.details.source_code')"
-          class="source-code-btn"
-          @click="triggerSourceCodeRedirect(activeSourceUrl)"
-        />
 
         <div class="stats-sidebar-grid">
           <div class="stat-sidebar-item">
@@ -301,29 +329,57 @@
 
       <!-- Download / Action Panel -->
       <div class="card sidebar-card action-card desktop-only-card">
-        <UIButton
-          v-if="latestVersion"
-          :label="`${t('mod.details.download')} (v${latestVersion.version})`"
-          class="download-main-btn"
-          @click="triggerDownload(latestVersion.downloadUrl)"
-        />
-        <UIButton
-          v-if="latestBetaVersion"
-          :label="`${t('mod.details.download_beta')} (v${latestBetaVersion.version})`"
-          class="download-beta-btn"
-          @click="triggerDownload(latestBetaVersion.downloadUrl)"
-        />
+        <div class="action-buttons-group">
+          <button
+            v-if="latestVersion"
+            class="download-main-btn"
+            @click="triggerDownload(latestVersion.downloadUrl)"
+          >
+            <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+            </svg>
+            <span>v{{ latestVersion.version }}</span>
+          </button>
+          <button
+            v-if="latestBetaVersion"
+            class="download-beta-btn"
+            @click="triggerDownload(latestBetaVersion.downloadUrl)"
+          >
+            <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+            </svg>
+            <span>v{{ latestBetaVersion.version }} ({{ t('mod.details.beta') }})</span>
+          </button>
+          <!-- Source Code Link -->
+          <a
+            v-if="activeSourceUrl && sourceInfo"
+            :href="activeSourceUrl"
+            target="_blank"
+            class="source-code-btn"
+          >
+            <!-- GitHub Icon -->
+            <svg v-if="sourceInfo.type === 'github'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+            </svg>
+            <!-- GitLab Icon -->
+            <svg v-else-if="sourceInfo.type === 'gitlab'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23.953 13.072l-1.653-5.09a.908.908 0 0 0-.317-.417.92.92 0 0 0-.52-.108.932.932 0 0 0-.486.205.918.918 0 0 0-.275.428L18.42 15.02H5.58L3.298 7.973a.918.918 0 0 0-.275-.428.932.932 0 0 0-.486-.205.92.92 0 0 0-.52.108.908.908 0 0 0-.317.417L.047 13.072a1.002 1.002 0 0 0 .356 1.107l10.913 7.94a1.144 1.144 0 0 0 1.368 0l10.913-7.94a1.002 1.002 0 0 0 .356-1.107z"/>
+            </svg>
+            <!-- Bitbucket Icon -->
+            <svg v-else-if="sourceInfo.type === 'bitbucket'" style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.313 3.007a1.246 1.246 0 0 0-1.226 1.01L18.59 20.306a1.07 1.07 0 0 1-1.053.864H6.467a1.07 1.07 0 0 1-1.053-.864L2.915 4.017A1.246 1.246 0 0 0 1.69 3.007c-.99 0-1.636 1.008-1.34 1.95l2.49 14.887a2.535 2.535 0 0 0 2.497 2.05H17.81a2.535 2.535 0 0 0 2.497-2.05l2.49-14.887a1.157 1.157 0 0 0-.156-.837 1.18 1.18 0 0 0-.74-.47L22.313 3z"/>
+            </svg>
+            <!-- Generic Code Icon -->
+            <svg v-else style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>{{ sourceInfo.name }}</span>
+          </a>
+        </div>
         <div v-if="!latestVersion && !latestBetaVersion" class="no-download-state">
           <p>{{ t('mod.details.no_downloads') }}</p>
         </div>
-
-        <!-- Source Code Link -->
-        <UIButton
-          v-if="activeSourceUrl"
-          :label="t('mod.details.source_code')"
-          class="source-code-btn"
-          @click="triggerSourceCodeRedirect(activeSourceUrl)"
-        />
 
         <div class="stats-sidebar-grid">
           <div class="stat-sidebar-item">
@@ -617,6 +673,25 @@ const activeSourceUrl = computed(() => {
   return mod.value?.sourceUrl
 })
 
+const sourceInfo = computed(() => {
+  const url = activeSourceUrl.value
+  if (!url) return null
+  const lower = url.toLowerCase()
+  if (lower.includes('github.com')) {
+    return { name: 'GitHub', type: 'github' }
+  }
+  if (lower.includes('gitlab.com') || lower.includes('gitlab')) {
+    return { name: 'GitLab', type: 'gitlab' }
+  }
+  if (lower.includes('bitbucket.org') || lower.includes('bitbucket')) {
+    return { name: 'Bitbucket', type: 'bitbucket' }
+  }
+  if (lower.includes('gitee.com') || lower.includes('gitee')) {
+    return { name: 'Gitee', type: 'gitee' }
+  }
+  return { name: t('mod.details.source_code'), type: 'code' }
+})
+
 const triggerSourceCodeRedirect = (url: string) => {
   if (url) {
     window.open(url, '_blank')
@@ -875,7 +950,7 @@ onMounted(() => {
 /* Detail Grid Layout */
 .detail-grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.7fr;
+  grid-template-columns: 1fr 320px;
   gap: 32px;
   align-items: start;
   margin-top: 10px;
@@ -1090,11 +1165,30 @@ onMounted(() => {
   gap: 20px;
 }
 
-.download-main-btn {
+.action-buttons-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
   width: 100%;
-  padding: 16px !important;
-  font-size: 16px !important;
+}
+
+.download-main-btn {
+  flex: 1 1 100px;
+  width: auto;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
+  font-size: 15px !important;
+  font-weight: 600 !important;
   background-color: #6C78FF !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s;
 }
 
 .download-main-btn:hover {
@@ -1102,13 +1196,21 @@ onMounted(() => {
 }
 
 .download-beta-btn {
-  width: 100%;
-  padding: 16px !important;
-  font-size: 16px !important;
+  flex: 1 1 100px;
+  width: auto;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
+  font-size: 15px !important;
+  font-weight: 600 !important;
   background-color: rgba(240, 173, 78, 0.12) !important;
   color: #f0ad4e !important;
   border: 1px solid rgba(240, 173, 78, 0.25) !important;
-  margin-top: 8px;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s;
 }
 
 .download-beta-btn:hover {
@@ -1259,11 +1361,22 @@ onMounted(() => {
 }
 
 .source-code-btn {
-  width: 100%;
-  padding: 14px !important;
+  flex: 1 1 100%;
+  width: auto;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
   background-color: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .source-code-btn:hover {
@@ -1293,6 +1406,7 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-top: 12px;
   margin-bottom: 8px;
   flex-wrap: wrap;
 }

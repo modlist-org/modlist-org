@@ -528,6 +528,18 @@ label {
   }
 }
 
+@media (max-width: 420px) {
+  .main-title {
+    display: none !important;
+  }
+  .header-user-actions {
+    gap: 4px !important;
+  }
+  .user-profile-widget {
+    gap: 4px !important;
+  }
+}
+
 @media (max-width: 968px) and (min-width: 769px) {
   .showcase-header {
     flex-direction: column;

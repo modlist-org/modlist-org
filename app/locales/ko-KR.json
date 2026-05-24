@@ -34,7 +34,7 @@
   "submit.submitting": "제출 중...",
   "submit.is_beta_label": "베타 버전으로 등록",
   "mod.details.download": "다운로드",
-  "mod.details.download_beta": "베타 버전 다운로드",
+  "mod.details.beta": "베타",
   "mod.details.delete_version": "버전 제출 삭제",
   "mod.details.delete_version_confirm": "정말로 이 버전 제출을 삭제하시겠습니까?",
   "ads.advertisement": "광고",

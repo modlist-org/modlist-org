@@ -36,7 +36,7 @@
   "submit.submitting": "Submitting...",
   "submit.is_beta_label": "Mark as Beta Version",
   "mod.details.download": "Download",
-  "mod.details.download_beta": "Download Beta",
+  "mod.details.beta": "Beta",
   "mod.details.delete_version": "Delete Version",
   "mod.details.delete_version_confirm": "Are you sure you want to delete this version submission?",
   "ads.advertisement": "Advertisement",
