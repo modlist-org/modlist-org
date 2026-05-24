@@ -61,7 +61,7 @@
               </div>
               <UIButton
                 :label="t('nav.logout')"
-                style="padding: 6px 12px; font-size: 13px;"
+                class="header-logout-btn"
                 @click="logout"
               />
             </div>

@@ -36,7 +36,7 @@
             <div class="filter-dropdown-box sort-dropdown-box">
               <UIDropdown
                 v-model="sortBy"
-                default-value="updated"
+                default-value="downloads_desc"
                 :values="['updated', 'created', 'downloads_desc', 'downloads_asc', 'name_asc', 'name_desc']"
                 :display="getSortLabel"
               />
@@ -305,7 +305,7 @@ const getFallbackGradientStyle = (name: string) => {
 const activeGames = ref<string[]>([])
 const activeCategories = ref<string[]>([])
 const searchQuery = ref('')
-const sortBy = ref('updated')
+const sortBy = ref('downloads_desc')
 const mods = ref<ModItem[]>([])
 const loadingMods = ref(true)
 

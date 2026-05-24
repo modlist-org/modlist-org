@@ -75,8 +75,100 @@
         </div>
       </div>
 
+      <!-- Mobile-only Admin Controls Panel (Only Admins) -->
+      <div v-if="user?.isAdmin && mod" class="card sidebar-card admin-controls-card mobile-only-card">
+        <h3 class="admin-controls-title">
+          {{ t('admin.controls') }}
+        </h3>
+        <div class="admin-controls-buttons">
+          <UIButton
+            v-if="mod.isApproved"
+            :label="mod.isFeatured ? t('admin.unfeature_mod', 'Unfeature Mod') : t('admin.feature_mod', 'Feature Mod')"
+            :class="{ 'danger-btn': mod.isFeatured }"
+            class="admin-btn"
+            @click="adminToggleFeatured"
+          />
+          <UIButton
+            v-if="!mod.isApproved"
+            :label="t('admin.approve_mod')"
+            class="success-btn admin-btn"
+            @click="adminApprove"
+          />
+          <UIButton
+            v-if="!mod.isApproved"
+            :label="t('admin.reject_mod')"
+            class="danger-btn admin-btn"
+            @click="adminReject"
+          />
+          <UIButton
+            v-if="mod.isApproved"
+            :label="t('admin.unapprove_mod')"
+            class="danger-btn admin-btn"
+            @click="adminUnapprove"
+          />
+          <UIButton
+            :label="t('admin.delete_mod')"
+            class="danger-btn admin-btn admin-delete-btn"
+            @click="adminDelete"
+          />
+        </div>
+      </div>
+
+      <!-- Mobile-only Download / Action Panel -->
+      <div class="card sidebar-card action-card mobile-only-card">
+        <UIButton
+          v-if="latestVersion"
+          :label="`${t('mod.details.download')} (v${latestVersion.version})`"
+          class="download-main-btn"
+          @click="triggerDownload(latestVersion.downloadUrl)"
+        />
+        <UIButton
+          v-if="latestBetaVersion"
+          :label="`${t('mod.details.download_beta')} (v${latestBetaVersion.version})`"
+          class="download-beta-btn"
+          @click="triggerDownload(latestBetaVersion.downloadUrl)"
+        />
+        <div v-if="!latestVersion && !latestBetaVersion" class="no-download-state">
+          <p>{{ t('mod.details.no_downloads') }}</p>
+        </div>
+
+        <!-- Source Code Link -->
+        <UIButton
+          v-if="activeSourceUrl"
+          :label="t('mod.details.source_code')"
+          class="source-code-btn"
+          @click="triggerSourceCodeRedirect(activeSourceUrl)"
+        />
+
+        <div class="stats-sidebar-grid">
+          <div class="stat-sidebar-item">
+            <span class="stat-label">{{ t('mod.details.downloads_label') }}</span>
+            <span class="stat-val">{{ mod.downloads }}</span>
+          </div>
+          <div class="stat-sidebar-item">
+            <span class="stat-label">{{ t('mod.details.creator_label') }}</span>
+            <span class="stat-val author-tag">
+              <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="avatar-tag-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+              {{ mod.authorId?.globalName || mod.authorId?.username }}
+              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1; margin-left: 2px;">✓</span>
+            </span>
+          </div>
+          <div v-if="mod.collaboratorIds?.length > 0" class="stat-sidebar-item">
+            <span class="stat-label">{{ t('mod.details.collabs') }}</span>
+            <div class="collab-tag-list">
+              <span v-for="c in mod.collaboratorIds" :key="c._id" class="collab-tag">
+                <img :src="c.avatar || '/images/default_avatar.png'" alt="Avatar" class="avatar-tag-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+                {{ c.globalName || c.username }}
+                <span v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1; margin-left: 2px;">✓</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AdSense Advertisement -->
       <AdBanner
+        class="detail-ad-banner"
         ad-layout="in-article"
         ad-format="fluid"
         ad-slot="7347692922"
@@ -169,7 +261,7 @@
     <!-- Right Column: Sidebar & Actions -->
     <div class="detail-sidebar-pane">
       <!-- Admin Controls Panel (Only Admins) -->
-      <div v-if="user?.isAdmin && mod" class="card sidebar-card admin-controls-card">
+      <div v-if="user?.isAdmin && mod" class="card sidebar-card admin-controls-card desktop-only-card">
         <h3 class="admin-controls-title">
           {{ t('admin.controls') }}
         </h3>
@@ -208,7 +300,7 @@
       </div>
 
       <!-- Download / Action Panel -->
-      <div class="card sidebar-card action-card">
+      <div class="card sidebar-card action-card desktop-only-card">
         <UIButton
           v-if="latestVersion"
           :label="`${t('mod.details.download')} (v${latestVersion.version})`"
@@ -789,9 +881,25 @@ onMounted(() => {
   margin-top: 10px;
 }
 
+.mobile-only-card {
+  display: none !important;
+}
+
 @media (max-width: 968px) {
   .detail-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: stretch;
+  }
+  .mobile-only-card.admin-controls-card {
+    display: block !important;
+  }
+  .mobile-only-card.action-card {
+    display: flex !important;
+  }
+  .desktop-only-card {
+    display: none !important;
   }
 }
 
@@ -1273,12 +1381,6 @@ onMounted(() => {
   background-color: #7c2227 !important;
 }
 
-/* Responsive Media Queries */
-@media (max-width: 968px) {
-  .detail-sidebar-pane {
-    position: static !important;
-  }
-}
 
 @media (max-width: 768px) {
   .header-card-body {

@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
   const limit = Math.max(1, Math.min(100, parseInt(query.limit as string) || 12))
 
   // Sort parameters
-  const sortBy = query.sortBy as string || 'updated'
+  const sortBy = query.sortBy as string || 'downloads_desc'
   const sortCriteria: Record<string, 1 | -1> = { isFeatured: -1 }
 
   if (sortBy === 'downloads_desc' || sortBy === 'downloads') {

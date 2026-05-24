@@ -347,6 +347,11 @@ label {
   border-radius: 14px;
 }
 
+.header-logout-btn {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -433,7 +438,7 @@ label {
     grid-area: user-actions !important;
     justify-self: end !important;
     gap: 8px !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     justify-content: flex-end !important;
   }
 
@@ -501,6 +506,10 @@ label {
     gap: 8px !important;
     padding: 4px 6px !important;
     flex-shrink: 0 !important;
+  }
+  .header-logout-btn {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
   }
   .quick-dropdown {
     flex-shrink: 0 !important;
