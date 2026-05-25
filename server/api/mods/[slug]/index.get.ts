@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
       authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
       collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
       pendingCollaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl: string; changelog: string; submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean } }[]
+      versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl?: string; changelog: string; submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean } }[]
     }
     const isOwnerOrAdmin = currentUser && (
       currentUser.isAdmin ||
@@ -75,20 +75,22 @@ export default defineEventHandler(async (event) => {
     }
 
     // Strip downloadUrl from all versions for safety & size
-    const cleanVersions = modObj.versions.map((v: any) => {
-      const { downloadUrl, ...rest } = v
+    const cleanVersions = modObj.versions.map((v) => {
+      const { downloadUrl: _, ...rest } = v
       return rest
     })
-    modObj.versions = cleanVersions as any
+    modObj.versions = cleanVersions
 
-    const cleanLatest = latestVersion ? { ...latestVersion } as any : null
-    if (cleanLatest) {
-      delete cleanLatest.downloadUrl
+    let cleanLatest = null
+    if (latestVersion) {
+      const { downloadUrl: _, ...rest } = latestVersion
+      cleanLatest = rest
     }
 
-    const cleanLatestBeta = latestBetaVersion ? { ...latestBetaVersion } as any : null
-    if (cleanLatestBeta) {
-      delete cleanLatestBeta.downloadUrl
+    let cleanLatestBeta = null
+    if (latestBetaVersion) {
+      const { downloadUrl: _, ...rest } = latestBetaVersion
+      cleanLatestBeta = rest
     }
 
     return {

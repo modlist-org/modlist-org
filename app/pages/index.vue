@@ -94,16 +94,7 @@
           :to="`/mods/${mod.slug}`"
           class="card card-hover mod-card"
         >
-          <div class="mod-card-header">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-grow: 1; flex-shrink: 1;">
-              <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
-              <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
-              <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
-            </div>
-            <span v-if="!mod.isApproved" class="badge badge-pending" style="flex-shrink: 0; margin-left: 8px;">{{ t('mod.details.pending_approval') }}</span>
-          </div>
-
-          <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; flex-grow: 1;">
+          <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; flex-grow: 1;">
             <div class="card-logo-container" style="width: 54px; height: 54px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);">
               <img v-if="mod.logo" :src="mod.logo" alt="Mod Logo" class="card-logo-img" style="width: 100%; height: 100%; object-fit: cover;">
               <div v-else class="card-logo-fallback" :style="getFallbackGradientStyle(mod.name)" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
@@ -114,6 +105,13 @@
               <h3 class="mod-card-title">{{ mod.name }}</h3>
               <p class="mod-card-summary">{{ mod.summary }}</p>
             </div>
+          </div>
+
+          <div class="mod-card-tags" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;">
+            <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
+            <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
+            <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
+            <span v-if="!mod.isApproved" class="badge badge-pending" style="flex-shrink: 0; margin-left: auto;">{{ t('mod.details.pending_approval') }}</span>
           </div>
 
           <div class="mod-card-footer">
@@ -715,13 +713,7 @@ onMounted(() => {
   padding: 24px;
 }
 
-.mod-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
+
 
 .mod-card-body {
   flex-grow: 1;
