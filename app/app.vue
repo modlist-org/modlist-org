@@ -3,11 +3,10 @@
     <NuxtPage />
   </NuxtLayout>
 </template>
-
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from '#imports'
 import { useOverlayerState } from 'overlayer-ui'
-import { useHead, useI18n } from '#imports'
 
 const { locale } = useI18n()
 const { state, loadSettings } = useOverlayerState()
