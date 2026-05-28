@@ -7,29 +7,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useOverlayerState } from 'overlayer-ui'
-import { useHead, useRuntimeConfig, useI18n } from '#imports'
+import { useHead, useI18n } from '#imports'
 
-const config = useRuntimeConfig()
 const { locale } = useI18n()
 const { state, loadSettings } = useOverlayerState()
-
-const rawClientId = config.public.adsenseClientId
-const formattedClientId = rawClientId && !rawClientId.startsWith('ca-pub-')
-  ? `ca-pub-${rawClientId}`
-  : rawClientId
-
-if (formattedClientId) {
-  useHead({
-    script: [
-      {
-        async: true,
-        src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${formattedClientId}`,
-        crossorigin: 'anonymous'
-      }
-    ]
-  })
-}
-
 onMounted(() => {
   // If no language is explicitly saved in localStorage, sync overlayer state with Nuxt i18n locale
   if (typeof window !== 'undefined') {

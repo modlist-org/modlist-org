@@ -71,14 +71,6 @@
       </div>
     </div>
 
-    <!-- AdSense Advertisement -->
-    <AdBanner
-      ad-layout="in-article"
-      ad-format="fluid"
-      ad-slot="7347692922"
-      :ad-style="{ display: 'block', textAlign: 'center' }"
-    />
-
     <!-- Loading Indicator -->
     <div v-if="loadingMods" class="mods-loading-state">
       <div class="spinner" />

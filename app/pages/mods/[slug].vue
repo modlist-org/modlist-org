@@ -216,14 +216,7 @@
         </div>
       </div>
 
-      <!-- AdSense Advertisement -->
-      <AdBanner
-        class="detail-ad-banner"
-        ad-layout="in-article"
-        ad-format="fluid"
-        ad-slot="7347692922"
-        :ad-style="{ display: 'block', textAlign: 'center' }"
-      />
+
 
       <!-- Description Block -->
       <div class="card detail-desc-card">
