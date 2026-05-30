@@ -9,23 +9,10 @@
             <span class="control-label">{{ t('filter.game') }}</span>
             <div class="filter-dropdown-box game-dropdown-box">
               <UIDropdown
-                v-model="gameFilterModel"
+                v-model="activeGame"
                 default-value="all"
                 :values="['all', 'adofai', 'rhythm-doctor']"
                 :display="getGameLabel"
-              />
-            </div>
-          </div>
-
-          <!-- Category Dropdown -->
-          <div class="filter-dropdown-wrap">
-            <span class="control-label">{{ t('filter.category') }}</span>
-            <div class="filter-dropdown-box category-dropdown-box">
-              <UIDropdown
-                v-model="categoryFilterModel"
-                default-value="all"
-                :values="['all', 'ui', 'gameplay', 'utility', 'visuals', 'library']"
-                :display="getCategoryLabel"
               />
             </div>
           </div>
@@ -55,20 +42,22 @@
         </div>
       </div>
 
-      <!-- Active Filter Tags -->
-      <div v-if="activeCategories.length > 0 || activeGames.length > 0" class="active-tags-row">
-        <div v-for="game in activeGames" :key="game" class="active-tag-badge">
-          <span>{{ getGameLabelOnly(game) }}</span>
-          <button type="button" class="remove-tag-btn" @click="toggleGame(game)">&times;</button>
-        </div>
-        <div v-for="cat in activeCategories" :key="cat" class="active-tag-badge">
+      <!-- Category Chips -->
+      <div class="category-chips-row">
+        <button
+          v-for="cat in ['all', 'ui', 'gameplay', 'utility', 'visuals', 'library']"
+          :key="cat"
+          type="button"
+          class="category-chip"
+          :class="{ active: isCategoryActive(cat) }"
+          @click="selectCategory(cat)"
+        >
+          <span v-if="isCategoryActive(cat)" class="check-icon">✓</span>
           <span>{{ getCategoryLabelOnly(cat) }}</span>
-          <button type="button" class="remove-tag-btn" @click="toggleCategory(cat)">&times;</button>
-        </div>
-        <button type="button" class="clear-all-tags-btn" @click="clearAllFilters">
-          {{ t('categories.clear_all') }}
         </button>
       </div>
+
+
     </div>
 
     <!-- Loading Indicator -->
@@ -292,7 +281,7 @@ const getFallbackGradientStyle = (name: string) => {
   }
 }
 
-const activeGames = ref<string[]>([])
+const activeGame = ref('all')
 const activeCategories = ref<string[]>([])
 const searchQuery = ref('')
 const sortBy = ref('downloads_desc')
@@ -312,8 +301,8 @@ const fetchMods = async () => {
       limit: '12',
       sortBy: sortBy.value
     }
-    if (activeGames.value.length > 0) {
-      params.game = activeGames.value.join(',')
+    if (activeGame.value !== 'all') {
+      params.game = activeGame.value
     }
     if (activeCategories.value.length > 0) {
       params.categories = activeCategories.value.join(',')
@@ -374,70 +363,31 @@ const debouncedFetch = () => {
   }, 300)
 }
 
-const gameFilterModel = computed({
-  get() {
-    if (activeGames.value.length === 0) return 'all'
-    return 'selected:' + activeGames.value.join(',')
-  },
-  set(val: string) {
-    if (val === 'all') {
-      activeGames.value = []
+
+
+
+
+const isCategoryActive = (cat: string) => {
+  if (cat === 'all') return activeCategories.value.length === 0
+  return activeCategories.value.includes(cat)
+}
+
+const selectCategory = (cat: string) => {
+  if (cat === 'all') {
+    activeCategories.value = []
+  } else {
+    const index = activeCategories.value.indexOf(cat)
+    if (index > -1) {
+      activeCategories.value.splice(index, 1)
     } else {
-      const actualVal = val.startsWith('selected:') ? val.slice(9) : val
-      const index = activeGames.value.indexOf(actualVal)
-      if (index > -1) {
-        activeGames.value.splice(index, 1)
-      } else {
-        activeGames.value.push(actualVal)
-      }
+      activeCategories.value.push(cat)
     }
   }
-})
-
-const categoryFilterModel = computed({
-  get() {
-    if (activeCategories.value.length === 0) return 'all'
-    return 'selected:' + activeCategories.value.join(',')
-  },
-  set(val: string) {
-    if (val === 'all') {
-      activeCategories.value = []
-    } else {
-      const actualVal = val.startsWith('selected:') ? val.slice(9) : val
-      const index = activeCategories.value.indexOf(actualVal)
-      if (index > -1) {
-        activeCategories.value.splice(index, 1)
-      } else {
-        activeCategories.value.push(actualVal)
-      }
-    }
-  }
-})
-
-const toggleGame = (game: string) => {
-  const index = activeGames.value.indexOf(game)
-  if (index > -1) {
-    activeGames.value.splice(index, 1)
-  } else {
-    activeGames.value.push(game)
-  }
 }
 
-const toggleCategory = (cat: string) => {
-  const index = activeCategories.value.indexOf(cat)
-  if (index > -1) {
-    activeCategories.value.splice(index, 1)
-  } else {
-    activeCategories.value.push(cat)
-  }
-}
 
-const clearAllFilters = () => {
-  activeGames.value = []
-  activeCategories.value = []
-}
 
-watch([activeGames, activeCategories], () => {
+watch([activeGame, activeCategories], () => {
   currentPage.value = 1
   fetchMods()
 }, { deep: true })
@@ -464,21 +414,12 @@ const getGameLabelOnly = (game: string) => {
 }
 
 const getGameLabel = (val: string) => {
-  if (!val) return ''
   if (val === 'all') return t('games.all')
-  if (val.startsWith('selected:')) {
-    const listStr = val.slice(9)
-    if (!listStr) return t('games.all')
-    return listStr.split(',').map(getGameLabelOnly).join(', ')
-  }
-  const label = getGameLabelOnly(val)
-  if (activeGames.value.includes(val)) {
-    return `✓ ${label}`
-  }
-  return label
+  return getGameLabelOnly(val)
 }
 
 const getCategoryLabelOnly = (val: string) => {
+  if (val === 'all') return t('categories.all')
   if (val === 'ui') return t('categories.ui')
   if (val === 'gameplay') return t('categories.gameplay')
   if (val === 'utility') return t('categories.utility')
@@ -487,20 +428,7 @@ const getCategoryLabelOnly = (val: string) => {
   return val
 }
 
-const getCategoryLabel = (val: string) => {
-  if (!val) return ''
-  if (val === 'all') return t('categories.all')
-  if (val.startsWith('selected:')) {
-    const listStr = val.slice(9)
-    if (!listStr) return t('categories.all')
-    return listStr.split(',').map(getCategoryLabelOnly).join(', ')
-  }
-  const label = getCategoryLabelOnly(val)
-  if (activeCategories.value.includes(val)) {
-    return `✓ ${label}`
-  }
-  return label
-}
+
 
 onMounted(() => {
   fetchMods()
@@ -866,5 +794,56 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   color: rgba(255, 255, 255, 0.2);
+}
+
+/* Category Chips styling */
+.category-chips-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.category-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #1e1c28;
+  color: #7e808f;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.category-chip:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.category-chip.active {
+  background-color: rgba(145, 154, 255, 0.15);
+  color: #919aff;
+  border-color: #919aff;
+  font-weight: 600;
+}
+
+.check-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 </style>
