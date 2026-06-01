@@ -18,7 +18,7 @@
                 <span>{{ t('games.all') }}</span>
               </button>
               <button
-                v-for="game in ['adofai', 'rhythm-doctor']"
+                v-for="game in ['adofai', 'rhythm-doctor', 'dancing-line']"
                 :key="game"
                 type="button"
                 class="game-chip"
@@ -217,7 +217,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
-  game: 'adofai' | 'rhythm-doctor'
+  game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId?: {
     _id: string
@@ -454,6 +454,7 @@ const getSortLabel = (val: string) => {
 const getGameLabelOnly = (game: string) => {
   if (game === 'adofai') return t('games.adofai')
   if (game === 'rhythm-doctor') return t('games.rhythm_doctor')
+  if (game === 'dancing-line') return t('games.dancing_line')
   return game
 }
 
@@ -479,7 +480,7 @@ onMounted(() => {
       try {
         const parsed = JSON.parse(savedGames)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const filtered = parsed.filter((g: string) => ['adofai', 'rhythm-doctor'].includes(g))
+          const filtered = parsed.filter((g: string) => ['adofai', 'rhythm-doctor', 'dancing-line'].includes(g))
           if (JSON.stringify(filtered) !== JSON.stringify(activeGames.value)) {
             activeGames.value = filtered
             hasChanges = true

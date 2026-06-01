@@ -77,7 +77,7 @@
             <UIDropdown
               v-model="form.game"
               default-value="adofai"
-              :values="['adofai', 'rhythm-doctor']"
+              :values="['adofai', 'rhythm-doctor', 'dancing-line']"
               :display="getGameLabel"
               disable-reset
             />
@@ -367,6 +367,7 @@ const clearLogo = () => {
 const getGameLabel = (val: string) => {
   if (val === 'adofai') return t('games.adofai')
   if (val === 'rhythm-doctor') return t('games.rhythm_doctor')
+  if (val === 'dancing-line') return t('games.dancing_line')
   return val
 }
 

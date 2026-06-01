@@ -62,7 +62,9 @@ export async function sendDiscordWebhook(
     ? 'A Dance of Fire and Ice'
     : mod.game === 'rhythm-doctor'
       ? 'Rhythm Doctor'
-      : mod.game
+      : mod.game === 'dancing-line'
+        ? 'Dancing Line'
+        : mod.game
 
   // Format Categories
   const categoryNames = Array.isArray(mod.categories)
@@ -178,7 +180,24 @@ export async function sendDiscordWebhook(
     })
   }
 
-  const pingRoleId = isBeta ? config.discordModAllRoleId : config.discordModPingRoleId
+  let pingRoleId = ''
+  if (isBeta) {
+    if (mod.game === 'adofai') {
+      pingRoleId = (config.discordModAllRoleIdAdofai as string) || ''
+    } else if (mod.game === 'rhythm-doctor') {
+      pingRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
+    } else if (mod.game === 'dancing-line') {
+      pingRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
+    }
+  } else {
+    if (mod.game === 'adofai') {
+      pingRoleId = (config.discordModPingRoleIdAdofai as string) || ''
+    } else if (mod.game === 'rhythm-doctor') {
+      pingRoleId = (config.discordModPingRoleIdRhythmDoctor as string) || ''
+    } else if (mod.game === 'dancing-line') {
+      pingRoleId = (config.discordModPingRoleIdDancingLine as string) || ''
+    }
+  }
   const content = pingRoleId ? `<@&${pingRoleId}>` : undefined
 
   try {
@@ -215,7 +234,9 @@ export async function sendFeaturedWebhook(
     ? 'A Dance of Fire and Ice'
     : mod.game === 'rhythm-doctor'
       ? 'Rhythm Doctor'
-      : mod.game
+      : mod.game === 'dancing-line'
+        ? 'Dancing Line'
+        : mod.game
 
   let authorName = 'Unknown'
   if (mod.authorId) {

@@ -157,7 +157,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
-  game: 'adofai' | 'rhythm-doctor'
+  game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId?: {
     _id: string
@@ -275,6 +275,7 @@ const respondInvitation = async (slug: string, action: 'accept' | 'reject') => {
 const getGameLabel = (game: string) => {
   if (game === 'adofai') return t('games.adofai')
   if (game === 'rhythm-doctor') return t('games.rhythm_doctor')
+  if (game === 'dancing-line') return t('games.dancing_line')
   return game
 }
 

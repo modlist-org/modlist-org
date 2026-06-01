@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
       if (name) mod.name = name
       if (summary) mod.summary = summary
       if (description !== undefined) mod.description = description
-      if (game && ['adofai', 'rhythm-doctor'].includes(game)) mod.game = game
+      if (game && ['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) mod.game = game
       if (logo !== undefined) mod.logo = logo
       if (sourceUrl !== undefined) mod.sourceUrl = sourceUrl
       if (communityUrl !== undefined) mod.communityUrl = communityUrl
@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
         proposedEdit.description = description
         isChanged = true
       }
-      if (game && game !== mod.game && ['adofai', 'rhythm-doctor'].includes(game)) {
+      if (game && game !== mod.game && ['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) {
         proposedEdit.game = game
         isChanged = true
       }

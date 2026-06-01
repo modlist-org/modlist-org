@@ -67,7 +67,7 @@
             <UIDropdown
               v-model="form.game"
               default-value="adofai"
-              :values="['adofai', 'rhythm-doctor']"
+              :values="['adofai', 'rhythm-doctor', 'dancing-line']"
               :display="getGameLabel"
             />
           </div>
@@ -269,7 +269,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
-  game: 'adofai' | 'rhythm-doctor'
+  game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId: {
     _id: string
@@ -290,7 +290,7 @@ interface ModItem {
     name?: string
     summary?: string
     description?: string
-    game?: 'adofai' | 'rhythm-doctor'
+    game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
     categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
     logo?: string
     sourceUrl?: string
@@ -311,7 +311,7 @@ const form = ref({
   logo: '',
   sourceUrl: '',
   communityUrl: '',
-  game: 'adofai' as 'adofai' | 'rhythm-doctor',
+  game: 'adofai' as 'adofai' | 'rhythm-doctor' | 'dancing-line',
   categories: ['ui'] as string[],
   summary: '',
   description: ''
@@ -364,6 +364,7 @@ const isAuthorOrAdmin = computed(() => {
 const getGameLabel = (val: string) => {
   if (val === 'adofai') return t('games.adofai')
   if (val === 'rhythm-doctor') return t('games.rhythm_doctor')
+  if (val === 'dancing-line') return t('games.dancing_line')
   return val
 }
 

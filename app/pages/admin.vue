@@ -422,7 +422,7 @@ interface PendingEdit {
   name?: string
   summary?: string
   description?: string
-  game?: 'adofai' | 'rhythm-doctor'
+  game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
@@ -436,7 +436,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
-  game: 'adofai' | 'rhythm-doctor'
+  game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId: CreatorUser
   isApproved: boolean
@@ -671,6 +671,7 @@ const getCategoryLabelOnly = (val: string) => {
 const getGameLabel = (val: string) => {
   if (val === 'adofai') return t('games.adofai')
   if (val === 'rhythm-doctor') return t('games.rhythm_doctor')
+  if (val === 'dancing-line') return t('games.dancing_line')
   return val
 }
 

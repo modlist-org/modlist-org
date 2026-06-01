@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   // Filter by game
   if (game && game !== 'all') {
     const games = game.split(',').filter(Boolean)
-    const validGames = games.filter((g) => ['adofai', 'rhythm-doctor'].includes(g))
+    const validGames = games.filter((g) => ['adofai', 'rhythm-doctor', 'dancing-line'].includes(g))
     if (validGames.length > 0) {
       filter.game = { $in: validGames }
     }

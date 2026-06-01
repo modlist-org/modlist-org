@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (!['adofai', 'rhythm-doctor'].includes(game)) {
+  if (!['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid game selected.'

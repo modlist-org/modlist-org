@@ -44,8 +44,12 @@ export default defineNuxtConfig({
     jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret-replace-in-production',
     adminDiscordIds: process.env.ADMIN_DISCORD_IDS || '',
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
-    discordModAllRoleId: process.env.DISCORD_MOD_ALL_ROLE_ID || '',
-    discordModPingRoleId: process.env.DISCORD_MOD_PING_ROLE_ID || '',
+    discordModPingRoleIdAdofai: process.env.DISCORD_MOD_PING_ROLE_ID_ADOFAI || '',
+    discordModPingRoleIdRhythmDoctor: process.env.DISCORD_MOD_PING_ROLE_ID_RHYTHM_DOCTOR || '',
+    discordModPingRoleIdDancingLine: process.env.DISCORD_MOD_PING_ROLE_ID_DANCING_LINE || '',
+    discordModAllRoleIdAdofai: process.env.DISCORD_MOD_ALL_ROLE_ID_ADOFAI || '',
+    discordModAllRoleIdRhythmDoctor: process.env.DISCORD_MOD_ALL_ROLE_ID_RHYTHM_DOCTOR || '',
+    discordModAllRoleIdDancingLine: process.env.DISCORD_MOD_ALL_ROLE_ID_DANCING_LINE || '',
     appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
     public: {}
   }

@@ -6,7 +6,7 @@ export interface IPendingModEdit {
   name?: string
   summary?: string
   description?: string
-  game?: 'adofai' | 'rhythm-doctor'
+  game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
@@ -33,7 +33,7 @@ export interface IMod {
   slug: string
   summary: string
   description: string
-  game: 'adofai' | 'rhythm-doctor'
+  game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId: Types.ObjectId
   collaboratorIds: Types.ObjectId[]
@@ -68,7 +68,7 @@ const PendingModEditSchema = new Schema<IPendingModEdit>({
   name: { type: String },
   summary: { type: String },
   description: { type: String },
-  game: { type: String, enum: ['adofai', 'rhythm-doctor'] },
+  game: { type: String, enum: ['adofai', 'rhythm-doctor', 'dancing-line'] },
   categories: [{ type: String, enum: ['ui', 'gameplay', 'utility', 'visuals', 'library'] }],
   logo: { type: String },
   sourceUrl: { type: String },
@@ -81,7 +81,7 @@ const ModSchema = new Schema<IMod>({
   slug: { type: String, required: true, unique: true, lowercase: true, index: true },
   summary: { type: String, required: true },
   description: { type: String, default: '' },
-  game: { type: String, required: true, enum: ['adofai', 'rhythm-doctor'], index: true },
+  game: { type: String, required: true, enum: ['adofai', 'rhythm-doctor', 'dancing-line'], index: true },
   categories: [{ type: String, enum: ['ui', 'gameplay', 'utility', 'visuals', 'library'], index: true, default: ['ui'] }],
   authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   collaboratorIds: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
