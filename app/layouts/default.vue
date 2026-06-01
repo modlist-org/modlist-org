@@ -78,7 +78,7 @@
                 <UIDropdown
                   v-model="state.language"
                   default-value="en-US"
-                  :values="['en-US', 'ko-KR']"
+                  :values="['en-US', 'ko-KR', 'zh-CN']"
                   :display="getLanguageName"
                   disable-reset
                 />
@@ -150,7 +150,7 @@ setI18nLocaleRef(locale)
 // Two-way synchronization between overlayer state language and Nuxt i18n locale
 watch(() => state.language, (newLang) => {
   if (newLang && locale.value !== newLang) {
-    locale.value = newLang as 'en-US' | 'ko-KR'
+    (locale as { value: string }).value = newLang
   }
 })
 
@@ -165,6 +165,7 @@ const { user, loading, fetchUser, logout, invitationsCount } = useAuth()
 const getLanguageName = (lang: string) => {
   if (lang === 'en-US') return 'English'
   if (lang === 'ko-KR') return '한국어'
+  if (lang === 'zh-CN') return '简体中文'
   return lang
 }
 

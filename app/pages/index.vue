@@ -4,16 +4,30 @@
     <div class="filter-controls card">
       <div class="filter-controls-top">
         <div class="filter-dropdowns-group">
-          <!-- Game Dropdown -->
+          <!-- Game Chips Group -->
           <div class="filter-dropdown-wrap">
             <span class="control-label">{{ t('filter.game') }}</span>
-            <div class="filter-dropdown-box game-dropdown-box">
-              <UIDropdown
-                v-model="activeGame"
-                default-value="all"
-                :values="['all', 'adofai', 'rhythm-doctor']"
-                :display="getGameLabel"
-              />
+            <div class="game-chips-group">
+              <button
+                type="button"
+                class="game-chip"
+                :class="{ active: isAllGamesActive }"
+                @click="selectAllGames"
+              >
+                <span v-if="isAllGamesActive" class="check-icon">✓</span>
+                <span>{{ t('games.all') }}</span>
+              </button>
+              <button
+                v-for="game in ['adofai', 'rhythm-doctor']"
+                :key="game"
+                type="button"
+                class="game-chip"
+                :class="{ active: isGameActive(game) }"
+                @click="toggleGame(game)"
+              >
+                <span v-if="isGameActive(game)" class="check-icon">✓</span>
+                <span>{{ getGameLabelOnly(game) }}</span>
+              </button>
             </div>
           </div>
 
@@ -281,7 +295,34 @@ const getFallbackGradientStyle = (name: string) => {
   }
 }
 
-const activeGame = ref('all')
+const activeGames = ref<string[]>([])
+
+const isAllGamesActive = computed(() => {
+  return activeGames.value.length === 0
+})
+
+const selectAllGames = () => {
+  activeGames.value = []
+}
+
+const isGameActive = (game: string) => {
+  return activeGames.value.includes(game)
+}
+
+const toggleGame = (game: string) => {
+  const isAllActive = activeGames.value.length === 0
+  if (isAllActive) {
+    activeGames.value = [game]
+  } else {
+    const index = activeGames.value.indexOf(game)
+    if (index > -1) {
+      activeGames.value.splice(index, 1)
+    } else {
+      activeGames.value.push(game)
+    }
+  }
+}
+
 const activeCategories = ref<string[]>([])
 const searchQuery = ref('')
 const sortBy = ref('downloads_desc')
@@ -301,8 +342,8 @@ const fetchMods = async () => {
       limit: '12',
       sortBy: sortBy.value
     }
-    if (activeGame.value !== 'all') {
-      params.game = activeGame.value
+    if (activeGames.value.length > 0) {
+      params.game = activeGames.value.join(',')
     }
     if (activeCategories.value.length > 0) {
       params.categories = activeCategories.value.join(',')
@@ -387,7 +428,10 @@ const selectCategory = (cat: string) => {
 
 
 
-watch([activeGame, activeCategories], () => {
+watch([activeGames, activeCategories], () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('selected_games', JSON.stringify(activeGames.value))
+  }
   currentPage.value = 1
   fetchMods()
 }, { deep: true })
@@ -413,10 +457,7 @@ const getGameLabelOnly = (game: string) => {
   return game
 }
 
-const getGameLabel = (val: string) => {
-  if (val === 'all') return t('games.all')
-  return getGameLabelOnly(val)
-}
+
 
 const getCategoryLabelOnly = (val: string) => {
   if (val === 'all') return t('categories.all')
@@ -431,7 +472,28 @@ const getCategoryLabelOnly = (val: string) => {
 
 
 onMounted(() => {
-  fetchMods()
+  let hasChanges = false
+  if (typeof window !== 'undefined') {
+    const savedGames = localStorage.getItem('selected_games')
+    if (savedGames) {
+      try {
+        const parsed = JSON.parse(savedGames)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((g: string) => ['adofai', 'rhythm-doctor'].includes(g))
+          if (JSON.stringify(filtered) !== JSON.stringify(activeGames.value)) {
+            activeGames.value = filtered
+            hasChanges = true
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse selected games:', e)
+      }
+    }
+  }
+  
+  if (!hasChanges) {
+    fetchMods()
+  }
 })
 </script>
 
@@ -536,8 +598,54 @@ onMounted(() => {
   gap: 8px;
 }
 
-.game-dropdown-box {
-  width: 170px;
+.game-chips-group {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.game-chips-group::-webkit-scrollbar {
+  display: none;
+}
+
+.game-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #1e1c28;
+  color: #7e808f;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.game-chip:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.game-chip.active {
+  background-color: rgba(145, 154, 255, 0.15);
+  color: #919aff;
+  border-color: #919aff;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .game-chips-group {
+    justify-content: flex-end;
+    max-width: 70%;
+  }
 }
 
 .category-dropdown-box {

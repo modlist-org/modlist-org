@@ -26,7 +26,7 @@ export default defineNuxtConfig({
   i18n: {
     restructureDir: 'app',
     vueI18n: './i18n.config.ts',
-    locales: ['en-US', 'ko-KR'],
+    locales: ['en-US', 'ko-KR', 'zh-CN'],
     defaultLocale: 'en-US',
     strategy: 'no_prefix',
     detectBrowserLanguage: {
