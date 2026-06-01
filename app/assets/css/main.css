@@ -347,6 +347,7 @@ label {
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 6px 14px;
   border-radius: 14px;
+  flex-shrink: 0;
 }
 
 .header-logout-btn {
@@ -405,18 +406,11 @@ label {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Responsive navigation and Mobile layout */
-@media (max-width: 768px) {
-  .overlayer-app-container {
-    padding: 12px 12px 60px 12px !important;
-  }
-  
-  .card {
-    padding: 20px 16px !important;
-  }
-
+@media (max-width: 1150px) {
   .showcase-header {
     display: grid !important;
     grid-template-areas:
@@ -483,6 +477,16 @@ label {
   
   .quick-dropdown {
     margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .overlayer-app-container {
+    padding: 12px 12px 60px 12px !important;
+  }
+  
+  .card {
+    padding: 20px 16px !important;
   }
 }
 
