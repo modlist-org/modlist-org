@@ -643,7 +643,7 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .game-chips-group {
-    justify-content: flex-end;
+    margin-left: auto;
     max-width: 70%;
   }
 }
