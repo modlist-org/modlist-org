@@ -410,7 +410,7 @@ label {
 }
 
 /* Responsive navigation and Mobile layout */
-@media (max-width: 1150px) {
+@media (max-width: 1340px) {
   .showcase-header {
     display: grid !important;
     grid-template-areas:
