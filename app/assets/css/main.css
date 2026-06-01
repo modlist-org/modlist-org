@@ -626,7 +626,12 @@ label {
 .dropdown-header,
 .dropdown-row,
 .dropdown-list,
-.overlayer-toggle {
+.overlayer-toggle,
+[class*="overlayer-"],
+[class*="overlayer-"] *,
+.dropdown-header *,
+.dropdown-row *,
+.dropdown-list * {
   font-family: 'SUIT', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
