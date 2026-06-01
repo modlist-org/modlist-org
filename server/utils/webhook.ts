@@ -180,25 +180,34 @@ export async function sendDiscordWebhook(
     })
   }
 
-  let pingRoleId = ''
+  const pings: string[] = []
   if (isBeta) {
+    let allRoleId = ''
     if (mod.game === 'adofai') {
-      pingRoleId = (config.discordModAllRoleIdAdofai as string) || ''
+      allRoleId = (config.discordModAllRoleIdAdofai as string) || ''
     } else if (mod.game === 'rhythm-doctor') {
-      pingRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
+      allRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
     } else if (mod.game === 'dancing-line') {
-      pingRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
+      allRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
     }
+    if (allRoleId) pings.push(`<@&${allRoleId}>`)
   } else {
+    let pingRoleId = ''
+    let allRoleId = ''
     if (mod.game === 'adofai') {
       pingRoleId = (config.discordModPingRoleIdAdofai as string) || ''
+      allRoleId = (config.discordModAllRoleIdAdofai as string) || ''
     } else if (mod.game === 'rhythm-doctor') {
       pingRoleId = (config.discordModPingRoleIdRhythmDoctor as string) || ''
+      allRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
     } else if (mod.game === 'dancing-line') {
       pingRoleId = (config.discordModPingRoleIdDancingLine as string) || ''
+      allRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
     }
+    if (pingRoleId) pings.push(`<@&${pingRoleId}>`)
+    if (allRoleId) pings.push(`<@&${allRoleId}>`)
   }
-  const content = pingRoleId ? `<@&${pingRoleId}>` : undefined
+  const content = pings.length > 0 ? pings.join(' ') : undefined
 
   try {
     const payload = {
