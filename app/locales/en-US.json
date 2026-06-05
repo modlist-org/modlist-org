@@ -158,5 +158,12 @@
   "seo.description": "An open-source mod repository for everyone. Explore, download, and share mods for various games.",
   "nav.privacy": "Privacy Policy",
   "nav.terms": "Terms of Service",
-  "nav.contact": "Contact Us"
+  "nav.contact": "Contact Us",
+  "mod.download_modal.title": "Manage Mods Faster & Easier",
+  "mod.download_modal.desc": "With the modlist.org Desktop App, you can install and update all mods automatically with a single click.",
+  "mod.download_modal.feature_1": "One-click instant installation",
+  "mod.download_modal.feature_2": "Auto updates to the latest version",
+  "mod.download_modal.feature_3": "Install mod loaders easily with one click",
+  "mod.download_modal.app_btn": "Get modlist.org App",
+  "mod.download_modal.direct_btn": "Just download mod file directly"
 }

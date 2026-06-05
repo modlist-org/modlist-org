@@ -158,5 +158,12 @@
   "seo.description": "面向所有人的开源模组仓库。浏览、下载并分享各种游戏的模组。",
   "nav.privacy": "隐私政策",
   "nav.terms": "服务条款",
-  "nav.contact": "联系我们"
+  "nav.contact": "联系我们",
+  "mod.download_modal.title": "更简单、快捷的模组管理",
+  "mod.download_modal.desc": "使用 modlist.org 桌面客户端，一键自动安装并轻松更新所有模组。",
+  "mod.download_modal.feature_1": "一键立即自动安装",
+  "mod.download_modal.feature_2": "自动更新至最新版本",
+  "mod.download_modal.feature_3": "一键轻松安装模组加载器 (Mod Loader)",
+  "mod.download_modal.app_btn": "下载 modlist.org 客户端",
+  "mod.download_modal.direct_btn": "直接下载模组文件"
 }

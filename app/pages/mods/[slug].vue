@@ -119,10 +119,9 @@
         <div class="action-buttons-group">
           <a
             v-if="latestVersion"
-            :href="`/api/mods/${mod.slug}/download`"
-            target="_blank"
+            href="#"
             class="download-main-btn"
-            @click="mod.downloads++"
+            @click.prevent="triggerDownloadModal(`/api/mods/${mod.slug}/download`)"
           >
             <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
@@ -131,10 +130,9 @@
           </a>
           <a
             v-if="latestBetaVersion"
-            :href="`/api/mods/${mod.slug}/download?beta=true`"
-            target="_blank"
+            href="#"
             class="download-beta-btn"
-            @click="mod.downloads++"
+            @click.prevent="triggerDownloadModal(`/api/mods/${mod.slug}/download?beta=true`)"
           >
             <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
@@ -262,9 +260,8 @@
                 />
                 <a
                   class="version-download-link"
-                  :href="`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}`"
-                  target="_blank"
-                  @click="mod.downloads++"
+                  href="#"
+                  @click.prevent="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}`)"
                 >
                   <UIButton
                     :label="t('mod.details.download')"
@@ -353,10 +350,9 @@
         <div class="action-buttons-group">
           <a
             v-if="latestVersion"
-            :href="`/api/mods/${mod.slug}/download`"
-            target="_blank"
+            href="#"
             class="download-main-btn"
-            @click="mod.downloads++"
+            @click.prevent="triggerDownloadModal(`/api/mods/${mod.slug}/download`)"
           >
             <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
@@ -365,10 +361,9 @@
           </a>
           <a
             v-if="latestBetaVersion"
-            :href="`/api/mods/${mod.slug}/download?beta=true`"
-            target="_blank"
+            href="#"
             class="download-beta-btn"
-            @click="mod.downloads++"
+            @click.prevent="triggerDownloadModal(`/api/mods/${mod.slug}/download?beta=true`)"
           >
             <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
@@ -523,6 +518,55 @@
         </form>
       </div>
     </div>
+
+    <!-- App Recommendation Modal -->
+    <transition name="modal-fade">
+      <div v-if="showAppRecommendModal" class="modal-overlay" @click.self="showAppRecommendModal = false">
+        <div class="modal-content card app-recommend-card">
+          <!-- Close Button -->
+          <button class="modal-close-btn" aria-label="Close modal" @click="showAppRecommendModal = false">
+            <svg style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <h3 class="modal-recommend-title">
+            {{ t('mod.download_modal.title') }}
+          </h3>
+          <p class="modal-recommend-desc">
+            {{ t('mod.download_modal.desc') }}
+          </p>
+
+          <!-- Features list -->
+          <div class="app-features-list">
+            <div class="app-feature-item">
+              <span class="feature-icon">⚡</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_1') }}</span>
+            </div>
+            <div class="app-feature-item">
+              <span class="feature-icon">🔄</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_2') }}</span>
+            </div>
+            <div class="app-feature-item">
+              <span class="feature-icon">🧩</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_3') }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="modal-actions-group">
+            <UIButton
+              :label="t('mod.download_modal.app_btn')"
+              class="modal-app-btn"
+              @click="handleAppDownload"
+            />
+            <button class="modal-direct-btn" @click="handleDirectDownload">
+              {{ t('mod.download_modal.direct_btn') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 
   <div v-else class="card detail-not-found-state">
@@ -614,6 +658,30 @@ const latestBetaVersion = ref<ModVersion | null>(null)
 const isEditable = ref(false)
 const showPreviewMode = ref(false)
 const loading = ref(true)
+
+// App Recommendation Modal State
+const showAppRecommendModal = ref(false)
+const pendingDownloadUrl = ref('')
+
+const triggerDownloadModal = (downloadUrl: string) => {
+  pendingDownloadUrl.value = downloadUrl
+  showAppRecommendModal.value = true
+}
+
+const handleAppDownload = () => {
+  window.open('https://github.com/modlist-org/modlist_org_app/releases/latest', '_blank')
+  showAppRecommendModal.value = false
+}
+
+const handleDirectDownload = () => {
+  if (pendingDownloadUrl.value) {
+    if (mod.value) {
+      mod.value.downloads++
+    }
+    window.open(pendingDownloadUrl.value, '_blank')
+  }
+  showAppRecommendModal.value = false
+}
 
 watch([modData, fetchError], ([newVal, err]) => {
   if (newVal) {
@@ -1675,5 +1743,226 @@ onMounted(() => {
   color: #FFD700 !important;
   border: 1px solid rgba(255, 215, 0, 0.35) !important;
   font-weight: 700;
+}
+
+/* App Recommendation Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 9, 14, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 24px;
+}
+
+.app-recommend-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(30, 29, 38, 0.75) !important;
+  border: 1px solid rgba(145, 154, 255, 0.15) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 
+              0 0 40px rgba(145, 154, 255, 0.1) !important;
+  border-radius: 24px !important;
+  padding: 40px 32px 32px 32px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  backdrop-filter: blur(20px) !important;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.modal-header-icon-container {
+  margin-bottom: 24px;
+}
+
+.app-logo-glow-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(145, 154, 255, 0.15), rgba(108, 120, 255, 0.05));
+  border: 1px solid rgba(145, 154, 255, 0.25);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(145, 154, 255, 0.15);
+}
+
+.app-logo-glow-wrap::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background: radial-gradient(circle, var(--accent-purple-glow) 0%, transparent 70%);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.app-logo-svg {
+  width: 44px;
+  height: 44px;
+}
+
+.modal-recommend-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff !important;
+  margin: 0 0 12px 0 !important;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.modal-recommend-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 28px 0;
+  padding: 0 8px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.app-features-list {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.app-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.feature-icon {
+  font-size: 16px;
+}
+
+.feature-text {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-actions-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-app-btn {
+  width: 100% !important;
+  background-color: var(--accent-blue) !important;
+  height: 46px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 20px rgba(108, 120, 255, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-app-btn:hover {
+  background-color: var(--accent-purple) !important;
+  box-shadow: 0 6px 24px rgba(145, 154, 255, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.modal-direct-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: color 0.2s ease;
+}
+
+.modal-direct-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Modal Transition */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active .app-recommend-card,
+.modal-fade-leave-active .app-recommend-card {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-fade-enter-from .app-recommend-card {
+  transform: scale(0.9) translateY(10px);
+}
+
+.modal-fade-leave-to .app-recommend-card {
+  transform: scale(0.95) translateY(5px);
+}
+
+@media (max-width: 480px) {
+  .app-recommend-card {
+    padding: 32px 20px 24px 20px !important;
+  }
+  
+  .modal-recommend-title {
+    font-size: 19px;
+  }
+  
+  .app-features-list {
+    padding: 12px 14px;
+  }
+  
+  .feature-text {
+    font-size: 12.5px;
+  }
 }
 </style>
