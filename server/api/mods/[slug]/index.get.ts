@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
       .populate('collaboratorIds', 'username globalName avatar isVerifiedDeveloper')
       .populate('pendingCollaboratorIds', 'username globalName avatar isVerifiedDeveloper')
       .populate('versions.submittedBy', 'username globalName avatar isVerifiedDeveloper')
+      .populate('dependencies', 'slug')
+      .populate('pendingEdit.dependencies', 'slug')
 
     if (!mod) {
       throw createError({
@@ -28,12 +30,53 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'pendingCollaboratorIds' | 'versions'> & {
+    type VersionType = {
+      isApproved: boolean
+      isBeta?: boolean
+      createdAt: Date | string
+      version: string
+      downloadUrl?: string
+      changelog: string
+      submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
+    }
+
+    const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'pendingCollaboratorIds' | 'versions' | 'dependencies' | 'pendingEdit'> & {
       authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
       collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
       pendingCollaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl?: string; changelog: string; submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean } }[]
+      versions: Omit<VersionType, 'downloadUrl'>[]
+      dependencies: string[]
+      pendingEdit?: {
+        name?: string
+        summary?: string
+        description?: string
+        game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+        categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
+        logo?: string
+        sourceUrl?: string
+        communityUrl?: string
+        dependencies?: string[]
+      } | null
     }
+
+    const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
+    modObj.dependencies = rawDeps.map((d) => {
+      if (typeof d === 'object' && d && 'slug' in d) {
+        return d.slug as string
+      }
+      return String(d)
+    })
+
+    if (modObj.pendingEdit && mod.pendingEdit && mod.pendingEdit.dependencies) {
+      const rawPendingDeps = (mod.pendingEdit.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
+      modObj.pendingEdit.dependencies = rawPendingDeps.map((d) => {
+        if (typeof d === 'object' && d && 'slug' in d) {
+          return d.slug as string
+        }
+        return String(d)
+      })
+    }
+
     const isOwnerOrAdmin = currentUser && (
       currentUser.isAdmin ||
       modObj.authorId._id.toString() === currentUser.id ||
@@ -75,7 +118,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Strip downloadUrl from all versions for safety & size
-    const cleanVersions = modObj.versions.map((v) => {
+    const rawVersions = mod.versions as unknown as VersionType[]
+    const cleanVersions = (rawVersions || []).map((v) => {
       const { downloadUrl: _, ...rest } = v
       return rest
     })
@@ -83,14 +127,12 @@ export default defineEventHandler(async (event) => {
 
     let cleanLatest = null
     if (latestVersion) {
-      const { downloadUrl: _, ...rest } = latestVersion
-      cleanLatest = rest
+      cleanLatest = latestVersion
     }
 
     let cleanLatestBeta = null
     if (latestBetaVersion) {
-      const { downloadUrl: _, ...rest } = latestBetaVersion
-      cleanLatestBeta = rest
+      cleanLatestBeta = latestBetaVersion
     }
 
     return {

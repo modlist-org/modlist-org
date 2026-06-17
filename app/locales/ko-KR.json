@@ -165,5 +165,9 @@
   "mod.download_modal.feature_2": "최신 버전으로 자동 업데이트",
   "mod.download_modal.feature_3": "클릭 한 번으로 모드 로더 간편 설치",
   "mod.download_modal.app_btn": "modlist.org 앱 다운로드",
-  "mod.download_modal.direct_btn": "그냥 모드 파일만 다운로드"
+  "mod.download_modal.direct_btn": "그냥 모드 파일만 다운로드",
+  "submit.dependencies": "의존성 모드 (Dependencies)",
+  "submit.dependencies_placeholder": "검색하여 의존성 모드를 추가하세요...",
+  "submit.dependencies_help": "이 모드가 작동하기 위해 필수적인 다른 모드들을 추가하세요. (같은 게임의 모드만 지정 가능)",
+  "mod.details.dependencies": "의존성 모드"
 }

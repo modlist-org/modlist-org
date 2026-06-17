@@ -1,4 +1,5 @@
 import { Mod } from '../../models/Mod'
+import type { IMod } from '../../models/Mod'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User } from '../../models/User'
 
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
       ]
     })
       .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
+      .populate('dependencies', 'slug')
       .sort({ createdAt: -1 })
 
     // 2. Fetch mods that have pending versions (even if the mod itself is approved)
@@ -76,12 +78,62 @@ export default defineEventHandler(async (event) => {
       pendingEdit: { $ne: null }
     })
       .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
+      .populate('dependencies', 'slug')
+      .populate('pendingEdit.dependencies', 'slug')
       .sort({ updatedAt: -1 })
 
+    const sanitizedPendingMods = pendingMods.map(mod => {
+      const modObj = mod.toObject() as unknown as Omit<IMod, 'dependencies'> & {
+        dependencies: string[]
+      }
+      const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
+      modObj.dependencies = rawDeps.map((d) => {
+        if (typeof d === 'object' && d && 'slug' in d) {
+          return d.slug as string
+        }
+        return String(d)
+      })
+      return modObj
+    })
+
+    const sanitizedPendingEdits = pendingEdits.map(mod => {
+      const modObj = mod.toObject() as unknown as Omit<IMod, 'dependencies' | 'pendingEdit'> & {
+        dependencies: string[]
+        pendingEdit?: {
+          name?: string
+          summary?: string
+          description?: string
+          game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+          categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
+          logo?: string
+          sourceUrl?: string
+          communityUrl?: string
+          dependencies?: string[]
+        } | null
+      }
+      const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
+      modObj.dependencies = rawDeps.map((d) => {
+        if (typeof d === 'object' && d && 'slug' in d) {
+          return d.slug as string
+        }
+        return String(d)
+      })
+      if (modObj.pendingEdit && mod.pendingEdit && mod.pendingEdit.dependencies) {
+        const rawPendingDeps = (mod.pendingEdit.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
+        modObj.pendingEdit.dependencies = rawPendingDeps.map((d) => {
+          if (typeof d === 'object' && d && 'slug' in d) {
+            return d.slug as string
+          }
+          return String(d)
+        })
+      }
+      return modObj
+    })
+
     return {
-      pendingMods,
+      pendingMods: sanitizedPendingMods,
       pendingVersions,
-      pendingEdits
+      pendingEdits: sanitizedPendingEdits
     }
   } catch (error) {
     console.error('Fetch pending submissions error:', error)

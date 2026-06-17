@@ -263,6 +263,47 @@
 
         <div class="card-divider-sub" />
 
+        <!-- Dependencies Section -->
+        <div class="form-group">
+          <label>{{ t('submit.dependencies') }}</label>
+          
+          <!-- Selected Dependencies List -->
+          <div v-if="selectedDependencies.length > 0" class="collabs-tags-container">
+            <div v-for="dep in selectedDependencies" :key="dep._id" class="collab-tag-item">
+              <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+              <span>{{ dep.name }}</span>
+              <button type="button" class="remove-collab-btn" @click="removeDependency(dep._id)">&times;</button>
+            </div>
+          </div>
+
+          <!-- Dependency Search Input -->
+          <div class="collab-search-wrapper">
+            <input
+              v-model="dependencySearchQuery"
+              type="text"
+              :placeholder="t('submit.dependencies_placeholder')"
+              class="collab-search-input"
+              @input="searchDependencies"
+            >
+            
+            <!-- Search Results Dropdown -->
+            <div v-if="dependencySearchResults.length > 0" class="search-results-dropdown">
+              <div
+                v-for="dep in dependencySearchResults"
+                :key="dep._id"
+                class="search-result-item"
+                @click="addDependency(dep)"
+              >
+                <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+                <span>{{ dep.name }} ({{ dep.slug }})</span>
+              </div>
+            </div>
+          </div>
+          <span class="form-help-text">{{ t('submit.dependencies_help') }}</span>
+        </div>
+
+        <div class="card-divider-sub" />
+
         <!-- Form Messages -->
         <div v-if="errorMsg" class="form-error-msg">
           {{ errorMsg }}
@@ -283,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIButton, UIDropdown, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
@@ -324,9 +365,22 @@ const form = ref({
   isBeta: false
 })
 
+interface DependencyMod {
+  _id: string
+  name: string
+  slug: string
+  logo?: string
+  summary?: string
+}
+
 const selectedCollabs = ref<SearchUserItem[]>([])
 const collabSearchQuery = ref('')
 const searchResults = ref<SearchUserItem[]>([])
+
+const selectedDependencies = ref<DependencyMod[]>([])
+const dependencySearchQuery = ref('')
+const dependencySearchResults = ref<DependencyMod[]>([])
+let dependencySearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const submitting = ref(false)
 const errorMsg = ref('')
@@ -460,6 +514,47 @@ const removeCollab = (userId: string) => {
   selectedCollabs.value = selectedCollabs.value.filter((sc) => sc._id !== userId)
 }
 
+const searchDependencies = () => {
+  clearTimeout(dependencySearchTimeout || undefined)
+  if (dependencySearchQuery.value.trim().length < 2) {
+    dependencySearchResults.value = []
+    return
+  }
+
+  dependencySearchTimeout = setTimeout(async () => {
+    try {
+      const data = await $fetch<{ mods: DependencyMod[] }>('/api/mods', {
+        params: {
+          game: form.value.game,
+          search: dependencySearchQuery.value,
+          limit: 10
+        }
+      })
+      dependencySearchResults.value = (data.mods || []).filter(
+        (m) => !selectedDependencies.value.some((sd) => sd._id === m._id)
+      )
+    } catch (e) {
+      console.error(e)
+    }
+  }, 300)
+}
+
+const addDependency = (dep: DependencyMod) => {
+  selectedDependencies.value.push(dep)
+  dependencySearchQuery.value = ''
+  dependencySearchResults.value = []
+}
+
+const removeDependency = (depId: string) => {
+  selectedDependencies.value = selectedDependencies.value.filter((sd) => sd._id !== depId)
+}
+
+watch(() => form.value.game, () => {
+  selectedDependencies.value = []
+  dependencySearchQuery.value = ''
+  dependencySearchResults.value = []
+})
+
 const handleSubmit = async () => {
   if (form.value.categories.length === 0) {
     errorMsg.value = t('submit.error_category_required') || 'Please select at least one category.'
@@ -473,7 +568,8 @@ const handleSubmit = async () => {
   try {
     const payload = {
       ...form.value,
-      collaboratorIds: selectedCollabs.value.map((c) => c._id)
+      collaboratorIds: selectedCollabs.value.map((c) => c._id),
+      dependencies: selectedDependencies.value.map((d) => d._id)
     }
 
     const response = await $fetch<{ success: boolean; mod: { slug: string; isApproved: boolean } }>('/api/mods', {

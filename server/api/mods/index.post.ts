@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
     logo,
     sourceUrl,
     communityUrl,
+    dependencies,
     isBeta
   } = body
 
@@ -116,6 +117,18 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Validate dependencies
+  const validatedDepIds: mongoose.Types.ObjectId[] = []
+  if (Array.isArray(dependencies) && dependencies.length > 0) {
+    for (const depId of dependencies) {
+      if (!mongoose.Types.ObjectId.isValid(depId)) continue
+      const depMod = await Mod.findById(depId)
+      if (depMod && depMod.game === game) {
+        validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
+      }
+    }
+  }
+
   // 2. Determine approval status
   // Mod approval bypass is allowed only for verified developers or admins.
   const isAutoApproved = currentUser.isVerifiedDeveloper || currentUser.isAdmin
@@ -135,6 +148,7 @@ export default defineEventHandler(async (event) => {
       logo: logo || '',
       sourceUrl: sourceUrl || '',
       communityUrl: communityUrl || '',
+      dependencies: validatedDepIds,
       downloads: 0,
       versions: [
         {

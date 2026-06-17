@@ -49,6 +49,9 @@ export default defineEventHandler(async (event) => {
     if (edit.categories && edit.categories.length > 0) {
       mod.categories = edit.categories
     }
+    if (edit.dependencies !== undefined) {
+      mod.dependencies = edit.dependencies
+    }
 
     mod.pendingEdit = null
     mod.editRejectionReason = ''

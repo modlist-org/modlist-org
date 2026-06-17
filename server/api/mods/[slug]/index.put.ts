@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl, communityUrl } = body
+  const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
 
   if (logo && typeof logo === 'string' && logo.length > 1500000) {
     throw createError({
@@ -87,6 +87,19 @@ export default defineEventHandler(async (event) => {
         }
         mod.categories = categories
       }
+      if (dependencies !== undefined) {
+        const validatedDepIds: mongoose.Types.ObjectId[] = []
+        if (Array.isArray(dependencies)) {
+          for (const depId of dependencies) {
+            if (!mongoose.Types.ObjectId.isValid(depId)) continue
+            const depMod = await Mod.findById(depId)
+            if (depMod && depMod.game === (game || mod.game)) {
+              validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
+            }
+          }
+        }
+        mod.dependencies = validatedDepIds
+      }
       if (!mod.isApproved) {
         mod.rejectionReason = '' // Reset rejection reason on update
       }
@@ -136,6 +149,25 @@ export default defineEventHandler(async (event) => {
           isChanged = true
         }
       }
+      if (dependencies !== undefined) {
+        const validatedDepIds: mongoose.Types.ObjectId[] = []
+        if (Array.isArray(dependencies)) {
+          for (const depId of dependencies) {
+            if (!mongoose.Types.ObjectId.isValid(depId)) continue
+            const depMod = await Mod.findById(depId)
+            if (depMod && depMod.game === (game || mod.game)) {
+              validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
+            }
+          }
+        }
+        const currentDepIds = mod.dependencies.map(id => id.toString())
+        const newDepIds = validatedDepIds.map(id => id.toString())
+        const depChanged = currentDepIds.length !== newDepIds.length || newDepIds.some(id => !currentDepIds.includes(id))
+        if (depChanged) {
+          proposedEdit.dependencies = validatedDepIds
+          isChanged = true
+        }
+      }
 
       if (isChanged) {
         const prevPending = mod.pendingEdit ? {
@@ -146,7 +178,8 @@ export default defineEventHandler(async (event) => {
           logo: mod.pendingEdit.logo,
           sourceUrl: mod.pendingEdit.sourceUrl,
           communityUrl: mod.pendingEdit.communityUrl,
-          categories: mod.pendingEdit.categories ? [...mod.pendingEdit.categories] : undefined
+          categories: mod.pendingEdit.categories ? [...mod.pendingEdit.categories] : undefined,
+          dependencies: mod.pendingEdit.dependencies ? [...mod.pendingEdit.dependencies] : undefined
         } : {}
         mod.pendingEdit = {
           ...prevPending,

@@ -165,5 +165,9 @@
   "mod.download_modal.feature_2": "Auto updates to the latest version",
   "mod.download_modal.feature_3": "Install mod loaders easily with one click",
   "mod.download_modal.app_btn": "Get modlist.org App",
-  "mod.download_modal.direct_btn": "Just download mod file directly"
+  "mod.download_modal.direct_btn": "Just download mod file directly",
+  "submit.dependencies": "Dependencies",
+  "submit.dependencies_placeholder": "Search and add dependency mods...",
+  "submit.dependencies_help": "Select mods that must be installed before this mod can function (only mods for the same game can be selected)",
+  "mod.details.dependencies": "Dependencies"
 }

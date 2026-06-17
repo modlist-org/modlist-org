@@ -165,5 +165,9 @@
   "mod.download_modal.feature_2": "自动更新至最新版本",
   "mod.download_modal.feature_3": "一键轻松安装模组加载器 (Mod Loader)",
   "mod.download_modal.app_btn": "下载 modlist.org 客户端",
-  "mod.download_modal.direct_btn": "直接下载模组文件"
+  "mod.download_modal.direct_btn": "直接下载模组文件",
+  "submit.dependencies": "依赖模组",
+  "submit.dependencies_placeholder": "搜索并添加依赖模组...",
+  "submit.dependencies_help": "选择在运行此模组前必须安装的其他模组（仅能选择相同游戏的模组）",
+  "mod.details.dependencies": "依赖模组"
 }

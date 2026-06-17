@@ -211,6 +211,15 @@
               </span>
             </div>
           </div>
+          <div v-if="loadedDependencies && loadedDependencies.length > 0" class="stat-sidebar-item">
+            <span class="stat-label">{{ t('mod.details.dependencies') }}</span>
+            <div class="collab-tag-list">
+              <NuxtLink v-for="dep in loadedDependencies" :key="dep._id" :to="`/mods/${dep.slug}`" class="collab-tag" style="text-decoration: none;">
+                <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="avatar-tag-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+                {{ dep.name }}
+              </NuxtLink>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -442,6 +451,15 @@
               </span>
             </div>
           </div>
+          <div v-if="loadedDependencies && loadedDependencies.length > 0" class="stat-sidebar-item">
+            <span class="stat-label">{{ t('mod.details.dependencies') }}</span>
+            <div class="collab-tag-list">
+              <NuxtLink v-for="dep in loadedDependencies" :key="dep._id" :to="`/mods/${dep.slug}`" class="collab-tag" style="text-decoration: none;">
+                <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="avatar-tag-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
+                {{ dep.name }}
+              </NuxtLink>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -610,6 +628,14 @@ interface ModVersion {
   createdAt: string
 }
 
+interface DependencyMod {
+  _id: string
+  name: string
+  slug: string
+  logo?: string
+  summary?: string
+}
+
 interface PendingEdit {
   name?: string
   summary?: string
@@ -619,6 +645,7 @@ interface PendingEdit {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
+  dependencies?: string[]
   createdAt: string
 }
 
@@ -639,6 +666,7 @@ interface ModItem {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
+  dependencies: string[]
   downloads: number
   versions: ModVersion[]
   isFeatured?: boolean
@@ -792,6 +820,34 @@ const activeCommunityUrl = computed(() => {
   }
   return mod.value?.communityUrl
 })
+
+const loadedDependencies = ref<DependencyMod[]>([])
+
+const activeDependencySlugs = computed(() => {
+  if (showPreviewMode.value && mod.value?.pendingEdit?.dependencies !== undefined) {
+    return mod.value.pendingEdit.dependencies
+  }
+  return mod.value?.dependencies || []
+})
+
+watch(activeDependencySlugs, async (slugs) => {
+  if (!slugs || slugs.length === 0) {
+    loadedDependencies.value = []
+    return
+  }
+  try {
+    const data = await $fetch<{ mods: DependencyMod[] }>('/api/mods', {
+      query: {
+        slugs: slugs.join(','),
+        limit: slugs.length
+      }
+    })
+    loadedDependencies.value = data.mods || []
+  } catch (err) {
+    console.error('Failed to fetch dynamic dependencies:', err)
+    loadedDependencies.value = []
+  }
+}, { immediate: true })
 
 const sourceInfo = computed(() => {
   const url = activeSourceUrl.value

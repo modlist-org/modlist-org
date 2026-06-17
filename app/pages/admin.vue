@@ -225,6 +225,13 @@
                   <span class="comparison-row-new">&rarr; {{ mod.pendingEdit.categories.map(getCategoryLabelOnly).join(', ') }}</span>
                 </div>
  
+                <!-- Dependencies Change -->
+                <div v-if="mod.pendingEdit?.dependencies !== undefined && JSON.stringify(mod.pendingEdit.dependencies) !== JSON.stringify(mod.dependencies || [])" class="comparison-row">
+                  <span class="comparison-row-label">Dependencies</span>
+                  <span class="comparison-row-old">{{ mod.dependencies?.join(', ') || 'None' }}</span>
+                  <span class="comparison-row-new">&rarr; {{ mod.pendingEdit.dependencies?.join(', ') || 'None' }}</span>
+                </div>
+ 
                 <!-- Summary Change -->
                 <div v-if="mod.pendingEdit?.summary && mod.pendingEdit.summary !== mod.summary" class="comparison-row">
                   <span class="comparison-row-label">Summary</span>
@@ -427,6 +434,7 @@ interface PendingEdit {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
+  dependencies?: string[]
   createdAt: string
 }
 
@@ -446,6 +454,7 @@ interface ModItem {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
+  dependencies?: string[]
 }
 
 interface UserItem {

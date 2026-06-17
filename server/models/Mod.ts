@@ -11,6 +11,7 @@ export interface IPendingModEdit {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
+  dependencies?: Types.ObjectId[]
   createdAt?: Date
 }
 
@@ -47,6 +48,7 @@ export interface IMod {
   communityUrl?: string
   downloads: number
   versions: IModVersion[]
+  dependencies: Types.ObjectId[]
   isFeatured?: boolean
   createdAt: Date
   updatedAt: Date
@@ -73,6 +75,7 @@ const PendingModEditSchema = new Schema<IPendingModEdit>({
   logo: { type: String },
   sourceUrl: { type: String },
   communityUrl: { type: String },
+  dependencies: [{ type: Schema.Types.ObjectId, ref: 'Mod' }],
   createdAt: { type: Date, default: Date.now }
 })
 
@@ -96,6 +99,7 @@ const ModSchema = new Schema<IMod>({
   downloads: { type: Number, default: 0 },
   isFeatured: { type: Boolean, default: false, index: true },
   versions: [ModVersionSchema],
+  dependencies: [{ type: Schema.Types.ObjectId, ref: 'Mod', default: [] }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 })

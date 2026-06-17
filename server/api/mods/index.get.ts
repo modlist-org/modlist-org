@@ -7,9 +7,18 @@ export default defineEventHandler(async (event) => {
   const game = query.game as string // 'adofai' | 'rhythm-doctor'
   const categories = query.categories as string
   const search = query.search as string
+  const slugs = query.slugs as string
   const currentUser = event.context.user
 
   const filter: import('mongoose').FilterQuery<IMod> = {}
+
+  // Filter by slugs if provided
+  if (slugs) {
+    const slugList = slugs.split(',').filter(Boolean)
+    if (slugList.length > 0) {
+      filter.slug = { $in: slugList }
+    }
+  }
 
   // Filter by game
   if (game && game !== 'all') {
