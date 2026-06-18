@@ -235,6 +235,8 @@
   "preset.details.not_found_title": "Preset Not Found",
   "preset.details.not_found_desc": "The shared mod preset you are trying to view does not exist or has been deleted.",
   "preset.details.back_home": "Back to Home",
+  "preset.details.saves_included_title": "Game Saves & Settings Included",
+  "preset.details.saves_included_desc": "This preset includes game saves and configuration files (UserData). When launching it via the desktop app, you can restore and apply them along with the mods.",
   "profile.role_admin": "Admin",
   "profile.role_verified_dev": "Verified Developer",
   "profile.sync_status": "Sync Discord Status",

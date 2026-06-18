@@ -235,6 +235,8 @@
   "preset.details.not_found_title": "未找到预设",
   "preset.details.not_found_desc": "您尝试查看的共享模组预设不存在或已被删除。",
   "preset.details.back_home": "返回首页",
+  "preset.details.saves_included_title": "包含游戏存档与配置",
+  "preset.details.saves_included_desc": "此预设包含游戏存档和配置文件 (UserData)。在桌面端应用打开时，您可以与模组一同恢复并应用它们。",
   "profile.role_admin": "管理员",
   "profile.role_verified_dev": "已验证开发者",
   "profile.sync_status": "同步 Discord 状态",

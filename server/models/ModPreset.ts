@@ -16,6 +16,7 @@ export interface IModPreset {
   mods: IPresetMod[]
   fileKey?: string
   sourceFileKey?: string
+  fileSize?: number
   createdAt: Date
 }
 
@@ -33,6 +34,7 @@ const ModPresetSchema = new Schema<IModPreset>({
   mods: [PresetModSchema],
   fileKey: { type: String },
   sourceFileKey: { type: String },
+  fileSize: { type: Number },
   createdAt: { type: Date, default: Date.now }
 })
 

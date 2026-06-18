@@ -1,4 +1,5 @@
 import { ModPreset } from '../../../models/ModPreset'
+import { User } from '../../../models/User'
 import { checkUserPremium } from '../../../utils/premium'
 import { deleteR2Object } from '../../../utils/r2'
 
@@ -49,6 +50,18 @@ export default defineEventHandler(async (event) => {
         await deleteR2Object(event, preset.fileKey)
       } catch (err) {
         console.error('Failed to delete preset R2 save file:', err)
+      }
+    }
+
+    if (preset.fileSize) {
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: currentUser.id },
+        { $inc: { premiumSavingUsedBytes: -preset.fileSize } },
+        { new: true }
+      )
+      if (updatedUser && (updatedUser.premiumSavingUsedBytes || 0) < 0) {
+        updatedUser.premiumSavingUsedBytes = 0
+        await updatedUser.save()
       }
     }
 

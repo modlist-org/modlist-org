@@ -1,6 +1,7 @@
 import { ModPreset } from '../../../models/ModPreset'
 import { Mod } from '../../../models/Mod'
 import { CloudSaveFile } from '../../../models/CloudSaveFile'
+import { User } from '../../../models/User'
 import { checkUserPremium } from '../../../utils/premium'
 import { copyR2Object } from '../../../utils/r2'
 import crypto from 'crypto'
@@ -58,6 +59,7 @@ export default defineEventHandler(async (event) => {
 
   let presetFileKey: string | undefined = undefined
   let sourceFileKey: string | undefined = undefined
+  let fileSize = 0
 
   // 2. Validate fileKey if attached
   if (fileKey) {
@@ -69,6 +71,30 @@ export default defineEventHandler(async (event) => {
       })
     }
     sourceFileKey = fileKey
+    fileSize = cloudFile.fileSize || 0
+  }
+
+  // Validate storage quota and update user's storage usage atomically if save is attached
+  if (sourceFileKey && fileSize > 0) {
+    const maxBytes = 10 * 1024 * 1024 * 1024 // 10 GB
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: currentUser.id,
+        $or: [
+          { premiumSavingUsedBytes: { $exists: false } },
+          { premiumSavingUsedBytes: { $lte: maxBytes - fileSize } }
+        ]
+      },
+      { $inc: { premiumSavingUsedBytes: fileSize } },
+      { new: true }
+    )
+
+    if (!updatedUser) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Storage quota exceeded. Cannot attach this backup to the preset.'
+      })
+    }
   }
 
   try {
@@ -81,7 +107,18 @@ export default defineEventHandler(async (event) => {
 
     if (sourceFileKey) {
       presetFileKey = `presets/${presetId}/save.zip`
-      await copyR2Object(event, sourceFileKey, presetFileKey)
+      try {
+        await copyR2Object(event, sourceFileKey, presetFileKey)
+      } catch (copyErr) {
+        // Revert user storage usage
+        if (fileSize > 0) {
+          await User.updateOne(
+            { _id: currentUser.id },
+            { $inc: { premiumSavingUsedBytes: -fileSize } }
+          )
+        }
+        throw copyErr
+      }
     }
 
     const preset = new ModPreset({
@@ -91,7 +128,8 @@ export default defineEventHandler(async (event) => {
       game,
       mods: filteredMods,
       fileKey: presetFileKey,
-      sourceFileKey
+      sourceFileKey,
+      fileSize: fileSize > 0 ? fileSize : undefined
     })
 
     await preset.save()

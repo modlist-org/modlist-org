@@ -26,6 +26,14 @@
         </div>
       </div>
 
+      <div v-if="preset.fileKey" class="preset-saves-notice-card">
+        <span class="notice-icon">💡</span>
+        <div class="notice-text">
+          <strong>{{ t('preset.details.saves_included_title') }}</strong>
+          <span>{{ t('preset.details.saves_included_desc') }}</span>
+        </div>
+      </div>
+
       <div class="divider" />
 
       <!-- Preset Mod List -->
@@ -306,5 +314,34 @@ useSeoMeta({
   background: rgba(255, 165, 0, 0.1);
   color: #FFA500;
   margin-left: 8px;
+}
+
+.preset-saves-notice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 165, 0, 0.08);
+  border: 1px solid rgba(255, 165, 0, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 10px;
+}
+
+.notice-icon {
+  font-size: 20px;
+}
+
+.notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+}
+
+.notice-text strong {
+  color: #FFA500;
+  font-weight: 600;
 }
 </style>
