@@ -17,12 +17,13 @@
         </div>
 
         <div class="app-integration-action">
-          <a :href="`modlist://presets/${preset.id}`" class="open-app-btn-link">
-            <UIButton :label="t('preset.details.open_app')" class="open-app-btn" />
-          </a>
-          <p class="app-help-text">
-            {{ t('preset.details.requires_app') }}
-          </p>
+          <UIButton :label="t('preset.details.open_app')" class="open-app-btn" @click="handleOpenApp" />
+          <div class="app-links-row">
+            <span class="app-help-text">{{ t('preset.details.requires_app') }}</span>
+            <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" class="download-app-link">
+              {{ t('mod.download_modal.get_app_btn') }}
+            </a>
+          </div>
         </div>
       </div>
 
@@ -77,6 +78,65 @@
         <UIButton :label="t('preset.details.back_home')" />
       </NuxtLink>
     </div>
+
+    <!-- Roblox-style App Launch / Download Recommendation Modal -->
+    <transition name="modal-fade">
+      <div v-if="showDownloadRecommendation && preset" class="modal-overlay" @click.self="showDownloadRecommendation = false">
+        <div class="modal-content card app-recommend-card">
+          <!-- Close Button -->
+          <button class="modal-close-btn" aria-label="Close modal" @click="showDownloadRecommendation = false">
+            <svg style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <!-- Header Logo / Icon -->
+          <div class="modal-header-icon-container">
+            <div class="app-logo-glow-wrap">
+              <svg class="app-logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <h3 class="modal-recommend-title">
+            {{ t('mod.download_modal.title') }}
+          </h3>
+          <p class="modal-recommend-desc">
+            {{ t('mod.download_modal.desc') }}
+          </p>
+
+          <!-- Features list -->
+          <div class="app-features-list">
+            <div class="app-feature-item">
+              <span class="feature-icon">⚡</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_1') }}</span>
+            </div>
+            <div class="app-feature-item">
+              <span class="feature-icon">🔄</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_2') }}</span>
+            </div>
+            <div class="app-feature-item">
+              <span class="feature-icon">🧩</span>
+              <span class="feature-text">{{ t('mod.download_modal.feature_3') }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
+            <UIButton
+              :label="t('mod.download_modal.get_app_btn')"
+              class="modal-app-btn"
+              style="width: 100%;"
+              @click="handleAppDownload"
+            />
+            <a :href="`modlist://presets/${preset.id}`" class="modal-direct-btn" @click="showDownloadRecommendation = false">
+              {{ t('preset.details.open_app') }}
+            </a>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -112,6 +172,20 @@ const { t } = useI18n()
 
 const preset = ref<PresetItem | null>(null)
 const loading = ref(true)
+const showDownloadRecommendation = ref(false)
+
+const handleOpenApp = () => {
+  if (!preset.value) return
+  const protocolUrl = `modlist://presets/${preset.value.id}`
+  
+  showDownloadRecommendation.value = true
+  window.location.href = protocolUrl
+}
+
+const handleAppDownload = () => {
+  window.open('https://github.com/modlist-org/modlist_org_app/releases/latest', '_blank')
+  showDownloadRecommendation.value = false
+}
 
 const getGameLabel = (game: string) => {
   if (game === 'adofai') return 'A Dance of Fire and Ice'
@@ -206,6 +280,32 @@ useSeoMeta({
   .open-app-btn-link {
     width: 100%;
   }
+  .app-links-row {
+    justify-content: flex-start;
+  }
+}
+
+.app-links-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.download-app-link {
+  font-size: 11px;
+  color: #919AFF;
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(145, 154, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.download-app-link:hover {
+  color: #b3b9ff;
+  border-bottom-color: #b3b9ff;
 }
 
 .open-app-btn {
@@ -343,5 +443,248 @@ useSeoMeta({
 .notice-text strong {
   color: #FFA500;
   font-weight: 600;
+}
+
+/* Modal Overlay / Replicated Styles from [slug].vue */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 9, 14, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 24px;
+}
+
+.app-recommend-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(30, 29, 38, 0.75) !important;
+  border: 1px solid rgba(145, 154, 255, 0.15) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 
+              0 0 40px rgba(145, 154, 255, 0.1) !important;
+  border-radius: 24px !important;
+  padding: 40px 32px 32px 32px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  backdrop-filter: blur(20px) !important;
+  box-sizing: border-box;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.modal-header-icon-container {
+  margin-bottom: 24px;
+}
+
+.app-logo-glow-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(145, 154, 255, 0.15), rgba(108, 120, 255, 0.05));
+  border: 1px solid rgba(145, 154, 255, 0.25);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(145, 154, 255, 0.15);
+}
+
+.app-logo-glow-wrap::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background: radial-gradient(circle, rgba(145, 154, 255, 0.3) 0%, transparent 70%);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.app-logo-svg {
+  width: 44px;
+  height: 44px;
+  stroke: rgba(145, 154, 255, 0.8);
+}
+
+.modal-recommend-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff !important;
+  margin: 0 0 12px 0 !important;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.modal-recommend-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 28px 0;
+  padding: 0 8px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.app-features-list {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.app-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.feature-text {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-actions-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-app-btn {
+  width: 100% !important;
+  background-color: #6c78ff !important;
+  height: 46px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 20px rgba(108, 120, 255, 0.25) !important;
+  transition: all 0.2s ease !important;
+  color: #ffffff !important;
+}
+
+.modal-app-btn:hover {
+  background-color: #919aff !important;
+  box-shadow: 0 6px 24px rgba(145, 154, 255, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.modal-secondary-btn {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.modal-secondary-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.modal-direct-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: color 0.2s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.modal-direct-btn:hover {
+  color: #ffffff;
+}
+
+/* Modal Transition */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active .app-recommend-card,
+.modal-fade-leave-active .app-recommend-card {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-fade-enter-from .app-recommend-card {
+  transform: scale(0.9) translateY(10px);
+}
+
+.modal-fade-leave-to .app-recommend-card {
+  transform: scale(0.95) translateY(5px);
+}
+
+@media (max-width: 480px) {
+  .app-recommend-card {
+    padding: 32px 20px 24px 20px !important;
+  }
+  
+  .modal-recommend-title {
+    font-size: 19px;
+  }
+  
+  .app-features-list {
+    padding: 12px 14px;
+  }
+  
+  .feature-text {
+    font-size: 12.5px;
+  }
 }
 </style>

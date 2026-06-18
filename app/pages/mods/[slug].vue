@@ -572,22 +572,16 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-            <a :href="installLink" style="text-decoration: none; width: 100%;" @click="showAppRecommendModal = false">
-              <UIButton
-                :label="t('mod.download_modal.install_btn')"
-                class="modal-app-btn"
-                style="width: 100%;"
-              />
-            </a>
-            <div style="display: flex; gap: 10px; width: 100%; justify-content: space-between;">
-              <button class="modal-direct-btn" style="flex: 1; min-height: 40px; padding: 0 10px;" @click="handleDirectDownload">
-                {{ t('mod.download_modal.direct_btn') }}
-              </button>
-              <button class="modal-secondary-btn" style="flex: 1; min-height: 40px;" @click="handleAppDownload">
-                {{ t('mod.download_modal.get_app_btn') }}
-              </button>
-            </div>
+          <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
+            <UIButton
+              :label="t('mod.download_modal.get_app_btn')"
+              class="modal-app-btn"
+              style="width: 100%;"
+              @click="handleAppDownload"
+            />
+            <button class="modal-direct-btn" @click="handleDirectDownload">
+              {{ t('mod.download_modal.direct_btn') }}
+            </button>
           </div>
         </div>
       </div>
@@ -695,15 +689,15 @@ const loading = ref(true)
 const showAppRecommendModal = ref(false)
 const pendingDownloadUrl = ref('')
 
-const installLink = computed(() => {
-  if (!mod.value) return ''
-  const isBeta = pendingDownloadUrl.value.includes('beta=true')
-  return `modlist://install/${mod.value.slug}${isBeta ? '?beta=true' : ''}`
-})
-
 const triggerDownloadModal = (downloadUrl: string) => {
   pendingDownloadUrl.value = downloadUrl
+  if (!mod.value) return
+
+  const isBeta = downloadUrl.includes('beta=true')
+  const protocolUrl = `modlist://install/${mod.value.slug}${isBeta ? '?beta=true' : ''}`
+
   showAppRecommendModal.value = true
+  window.location.href = protocolUrl
 }
 
 const handleAppDownload = () => {
