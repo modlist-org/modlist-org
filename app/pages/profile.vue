@@ -25,7 +25,15 @@
 
       <!-- Premium Benefits Info -->
       <div class="premium-benefits-section">
-        <h3>{{ t('profile.benefits_title') }}</h3>
+        <div class="benefits-header-row">
+          <h3>{{ t('profile.benefits_title') }}</h3>
+          <UIButton 
+            :label="refreshingPremium ? 'Syncing...' : 'Sync Discord Status'" 
+            :blocked="refreshingPremium"
+            class="sync-roles-btn"
+            @click="refreshPremium"
+          />
+        </div>
         <div class="benefits-grid">
           <div class="benefit-item" :class="{ locked: !isPremium }">
             <span class="benefit-icon">☁️</span>
@@ -109,6 +117,24 @@ const { user, loading } = useAuth()
 const isPremium = computed(() => {
   return user.value?.isPremium || false
 })
+
+const refreshingPremium = ref(false)
+const refreshPremium = async () => {
+  refreshingPremium.value = true
+  try {
+    const res = await $fetch<{ success: boolean; isPremium: boolean }>('/api/auth/refresh-premium', {
+      method: 'POST'
+    })
+    if (user.value) {
+      user.value.isPremium = res.isPremium
+    }
+    alert(res.isPremium ? 'Premium status synchronized successfully!' : 'Premium status checked. You do not have the required Discord role yet.')
+  } catch (err: any) {
+    alert(`Sync failed: ${err?.data?.message || err?.message || err}`)
+  } finally {
+    refreshingPremium.value = false
+  }
+}
 
 const integrationToken = ref('')
 const generating = ref(false)
@@ -328,5 +354,19 @@ const linkDesktopApp = () => {
   display: inline-block;
   margin-top: 16px;
   text-decoration: none;
+}
+
+.benefits-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.benefits-header-row h3 {
+  margin-bottom: 0 !important;
+}
+.sync-roles-btn {
+  padding: 6px 12px !important;
+  font-size: 12.5px !important;
 }
 </style>
