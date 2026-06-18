@@ -15,6 +15,7 @@ export interface IModPreset {
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   mods: IPresetMod[]
   fileKey?: string
+  sourceFileKey?: string
   createdAt: Date
 }
 
@@ -31,6 +32,7 @@ const ModPresetSchema = new Schema<IModPreset>({
   game: { type: String, required: true, enum: ['adofai', 'rhythm-doctor', 'dancing-line'], index: true },
   mods: [PresetModSchema],
   fileKey: { type: String },
+  sourceFileKey: { type: String },
   createdAt: { type: Date, default: Date.now }
 })
 

@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { H3Event } from 'h3'
 
@@ -77,6 +77,20 @@ export async function deleteR2Object(event: H3Event, fileKey: string): Promise<v
   const command = new DeleteObjectCommand({
     Bucket: bucketName,
     Key: fileKey
+  })
+
+  await client.send(command)
+}
+
+export async function copyR2Object(event: H3Event, sourceKey: string, destKey: string): Promise<void> {
+  const client = getR2Client(event)
+  const config = useRuntimeConfig(event)
+  const bucketName = config.r2BucketName
+
+  const command = new CopyObjectCommand({
+    Bucket: bucketName,
+    CopySource: encodeURI(`${bucketName}/${sourceKey}`),
+    Key: destKey
   })
 
   await client.send(command)

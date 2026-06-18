@@ -1,5 +1,6 @@
 import { ModPreset } from '../../../models/ModPreset'
 import { checkUserPremium } from '../../../utils/premium'
+import { deleteR2Object } from '../../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -41,6 +42,14 @@ export default defineEventHandler(async (event) => {
         statusCode: 403,
         statusMessage: 'Access denied. You do not own this preset.'
       })
+    }
+
+    if (preset.fileKey) {
+      try {
+        await deleteR2Object(event, preset.fileKey)
+      } catch (err) {
+        console.error('Failed to delete preset R2 save file:', err)
+      }
     }
 
     await ModPreset.findByIdAndDelete(id)

@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
         game: p.game,
         modsCount: p.mods.length,
         fileKey: p.fileKey,
+        sourceFileKey: p.sourceFileKey,
         createdAt: p.createdAt
       }))
     }

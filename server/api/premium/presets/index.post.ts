@@ -2,6 +2,7 @@ import { ModPreset } from '../../../models/ModPreset'
 import { Mod } from '../../../models/Mod'
 import { CloudSaveFile } from '../../../models/CloudSaveFile'
 import { checkUserPremium } from '../../../utils/premium'
+import { copyR2Object } from '../../../utils/r2'
 import crypto from 'crypto'
 
 function generateShortId(): string {
@@ -55,6 +56,9 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  let presetFileKey: string | undefined = undefined
+  let sourceFileKey: string | undefined = undefined
+
   // 2. Validate fileKey if attached
   if (fileKey) {
     const cloudFile = await CloudSaveFile.findOne({ fileKey, userId: currentUser.id })
@@ -64,6 +68,7 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'Attached configuration file not found or permission denied.'
       })
     }
+    sourceFileKey = fileKey
   }
 
   try {
@@ -74,13 +79,19 @@ export default defineEventHandler(async (event) => {
       attempts++
     }
 
+    if (sourceFileKey) {
+      presetFileKey = `presets/${presetId}/save.zip`
+      await copyR2Object(event, sourceFileKey, presetFileKey)
+    }
+
     const preset = new ModPreset({
       _id: presetId,
       ownerId: currentUser.id,
       name,
       game,
       mods: filteredMods,
-      fileKey
+      fileKey: presetFileKey,
+      sourceFileKey
     })
 
     await preset.save()
