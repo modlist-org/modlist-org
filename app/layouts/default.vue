@@ -26,6 +26,9 @@
             <NuxtLink to="/" class="nav-link" active-class="active">
               {{ t('nav.home') }}
             </NuxtLink>
+            <NuxtLink to="/premium" class="nav-link" active-class="active">
+              {{ t('nav.premium') }}
+            </NuxtLink>
             <NuxtLink v-if="user" to="/submit" class="nav-link" active-class="active">
               {{ t('nav.submit') }}
             </NuxtLink>

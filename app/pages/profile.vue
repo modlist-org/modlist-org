@@ -15,8 +15,8 @@
           <div class="profile-badges">
             <span v-if="user.isAdmin" class="badge badge-admin">Admin</span>
             <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">Verified Developer</span>
-            <span v-if="isPremium" class="badge badge-premium">✨ Premium Member</span>
-            <span v-else class="badge badge-normal">Normal Member</span>
+            <span v-if="isPremium" class="badge badge-premium">{{ t('profile.premium_member') }}</span>
+            <span v-else class="badge badge-normal">{{ t('profile.normal_member') }}</span>
           </div>
         </div>
       </div>
@@ -25,36 +25,41 @@
 
       <!-- Premium Benefits Info -->
       <div class="premium-benefits-section">
-        <h3>Premium Benefits</h3>
+        <h3>{{ t('profile.benefits_title') }}</h3>
         <div class="benefits-grid">
           <div class="benefit-item" :class="{ locked: !isPremium }">
             <span class="benefit-icon">☁️</span>
             <div class="benefit-desc">
-              <h4>Cloud Saving (10GB)</h4>
-              <p>Automatically backup and restore game settings and configuration files. Large assemblies/dlls and heavy assetbundles are excluded to optimize space.</p>
+              <h4>{{ t('profile.cloud_title') }}</h4>
+              <p>{{ t('profile.cloud_desc') }}</p>
             </div>
           </div>
           <div class="benefit-item" :class="{ locked: !isPremium }">
             <span class="benefit-icon">🔗</span>
             <div class="benefit-desc">
-              <h4>Mod Preset Sharing</h4>
-              <p>Share your active mod list via link presets so others can sync to your exact setup instantly.</p>
+              <h4>{{ t('profile.presets_title') }}</h4>
+              <p>{{ t('profile.presets_desc') }}</p>
             </div>
           </div>
         </div>
         
-        <p v-if="!isPremium" class="premium-help-text">
-          Join our Discord server and acquire the required premium role to unlock these features.
-        </p>
+        <div v-if="!isPremium" class="premium-help-container">
+          <p class="premium-help-text">
+            {{ t('profile.become_patron_help') }}
+          </p>
+          <a href="https://www.patreon.com/c/modlist_org/membership" target="_blank" class="patreon-cta-link-wrapper">
+            <UIButton :label="t('premium.cta')" class="patreon-profile-btn" />
+          </a>
+        </div>
       </div>
 
       <div class="divider" />
 
       <!-- Desktop Integration Token Section -->
       <div class="integration-section">
-        <h3>App Integration Token</h3>
+        <h3>{{ t('profile.integration_title') }}</h3>
         <p class="section-desc">
-          Paste this token inside the desktop client's Settings tab to activate premium features. Keep this token secret.
+          {{ t('profile.integration_desc') }}
         </p>
 
         <div v-if="integrationToken" class="token-box">
@@ -62,12 +67,12 @@
           <div class="action-buttons-row">
             <UIButton 
               class="copy-btn"
-              :label="copied ? 'Copied!' : 'Copy Token'" 
+              :label="copied ? t('profile.token_copied') : t('profile.token_copy')" 
               @click="copyToken"
             />
             <UIButton 
               class="link-app-btn"
-              label="Link Desktop App" 
+              :label="t('profile.token_link_app')" 
               @click="linkDesktopApp"
             />
           </div>
@@ -75,7 +80,7 @@
         <div v-else class="token-actions">
           <UIButton 
             :blocked="generating"
-            label="Generate Integration Token" 
+            :label="t('profile.token_generate')" 
             @click="generateToken"
           />
         </div>
@@ -83,10 +88,10 @@
     </div>
 
     <div v-else class="card detail-not-found-state">
-      <h2>Not Logged In</h2>
-      <p>Please log in with Discord first to view your profile.</p>
+      <h2>{{ t('profile.not_logged_in_title') }}</h2>
+      <p>{{ t('profile.not_logged_in_desc') }}</p>
       <a href="/api/auth/login" class="login-action-btn">
-        <UIButton label="Login with Discord" />
+        <UIButton :label="t('nav.login')" />
       </a>
     </div>
   </div>
@@ -261,11 +266,27 @@ const linkDesktopApp = () => {
   line-height: 1.4;
 }
 
+.premium-help-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 .premium-help-text {
-  font-size: 13px;
-  color: #FFA500;
-  margin-top: 12px;
+  font-size: 14px;
+  color: #FFD700;
   text-align: center;
+  font-weight: 600;
+}
+
+.patreon-cta-link-wrapper {
+  text-decoration: none;
+}
+
+.patreon-profile-btn {
+  box-shadow: 0 4px 15px rgba(255, 165, 0, 0.2);
 }
 
 .section-desc {
