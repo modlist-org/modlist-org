@@ -13,9 +13,14 @@
           <p class="profile-discord-tag">@{{ user.username }}</p>
           
           <div class="profile-badges">
-            <span v-if="user.isAdmin" class="badge badge-admin">Admin</span>
-            <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">Verified Developer</span>
-            <span v-if="isPremium" class="badge badge-premium">{{ t('profile.premium_member') }}</span>
+            <span v-if="user.isAdmin" class="badge badge-admin">{{ t('profile.role_admin') }}</span>
+            <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">{{ t('profile.role_verified_dev') }}</span>
+            <span v-if="isPremium" class="badge badge-premium">
+              <svg class="badge-crown-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.55 18.55 20 18 20H6C5.45 20 5 19.55 5 19V18H19V19Z"/>
+              </svg>
+              {{ t('profile.premium_member') }}
+            </span>
             <span v-else class="badge badge-normal">{{ t('profile.normal_member') }}</span>
           </div>
         </div>
@@ -28,7 +33,7 @@
         <div class="benefits-header-row">
           <h3>{{ t('profile.benefits_title') }}</h3>
           <UIButton 
-            :label="refreshingPremium ? 'Syncing...' : 'Sync Discord Status'" 
+            :label="refreshingPremium ? t('profile.syncing') : t('profile.sync_status')" 
             :blocked="refreshingPremium"
             class="sync-roles-btn"
             @click="refreshPremium"
@@ -336,6 +341,15 @@ watch(user, (newUser) => {
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 12px;
+}
+
+.badge-crown-icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: -2px;
 }
 
 .badge-normal {

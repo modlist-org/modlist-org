@@ -3,7 +3,12 @@
     <!-- Hero Header -->
     <div class="premium-hero">
       <div class="premium-badge-wrapper">
-        <span class="premium-gold-badge">{{ t('premium.badge') }}</span>
+        <span class="premium-gold-badge">
+          <svg class="badge-crown-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.55 18.55 20 18 20H6C5.45 20 5 19.55 5 19V18H19V19Z"/>
+          </svg>
+          {{ t('premium.badge') }}
+        </span>
       </div>
       <h1 class="premium-title">{{ t('premium.title') }}</h1>
       <p class="premium-subtitle">
@@ -139,6 +144,15 @@ const renderMarkdown = (text: string) => {
   font-size: 13px;
   letter-spacing: 1.5px;
   box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+}
+
+.badge-crown-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: -2px;
 }
 
 .premium-title {

@@ -12,16 +12,16 @@
           <span v-if="preset.fileKey" class="badge badge-saves">{{ t('profile.presets_has_attached_saves') }}</span>
           <h1 class="preset-name">{{ preset.name }}</h1>
           <p class="preset-creator">
-            Created by <span class="creator-name">{{ preset.owner?.globalName || preset.owner?.username || 'Unknown' }}</span> on {{ formatDate(preset.createdAt) }}
+            {{ t('preset.details.created_by_user') }}<span class="creator-name">{{ preset.owner?.globalName || preset.owner?.username || 'Unknown' }}</span>{{ t('preset.details.created_by_date') }}{{ formatDate(preset.createdAt) }}{{ t('preset.details.created_by_end') }}
           </p>
         </div>
 
         <div class="app-integration-action">
           <a :href="`modlist://presets/${preset.id}`" class="open-app-btn-link">
-            <UIButton label="Open in modlist.org App" class="open-app-btn" />
+            <UIButton :label="t('preset.details.open_app')" class="open-app-btn" />
           </a>
           <p class="app-help-text">
-            Requires modlist.org desktop app installed.
+            {{ t('preset.details.requires_app') }}
           </p>
         </div>
       </div>
@@ -30,15 +30,15 @@
 
       <!-- Preset Mod List -->
       <div class="preset-mods-section">
-        <h3 class="section-title">Included Mods ({{ preset.mods?.length || 0 }})</h3>
+        <h3 class="section-title">{{ t('preset.details.included_mods', { count: preset.mods?.length || 0 }) }}</h3>
         
         <div class="table-container">
           <table class="presets-table">
             <thead>
               <tr>
-                <th>Mod Slug</th>
-                <th>Required Version</th>
-                <th>Status</th>
+                <th>{{ t('preset.details.mod_slug') }}</th>
+                <th>{{ t('preset.details.required_version') }}</th>
+                <th>{{ t('preset.details.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -52,8 +52,8 @@
                   <span class="version-badge">v{{ mod.version }}</span>
                 </td>
                 <td class="mod-status-cell">
-                  <span v-if="mod.isEnabled" class="status-indicator enabled">Enabled</span>
-                  <span v-else class="status-indicator disabled">Disabled</span>
+                  <span v-if="mod.isEnabled" class="status-indicator enabled">{{ t('preset.details.enabled') }}</span>
+                  <span v-else class="status-indicator disabled">{{ t('preset.details.disabled') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -63,10 +63,10 @@
     </div>
 
     <div v-else class="card detail-not-found-state">
-      <h2>Preset Not Found</h2>
-      <p>The shared mod preset you are trying to view does not exist or has been deleted.</p>
+      <h2>{{ t('preset.details.not_found_title') }}</h2>
+      <p>{{ t('preset.details.not_found_desc') }}</p>
       <NuxtLink to="/">
-        <UIButton label="Back to Home" />
+        <UIButton :label="t('preset.details.back_home')" />
       </NuxtLink>
     </div>
   </div>

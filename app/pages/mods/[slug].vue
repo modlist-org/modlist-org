@@ -575,7 +575,7 @@
           <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
             <a :href="installLink" style="text-decoration: none; width: 100%;" @click="showAppRecommendModal = false">
               <UIButton
-                label="Install with modlist.org App"
+                :label="t('mod.download_modal.install_btn')"
                 class="modal-app-btn"
                 style="width: 100%;"
               />
@@ -584,8 +584,8 @@
               <button class="modal-direct-btn" style="flex: 1; min-height: 40px; padding: 0 10px;" @click="handleDirectDownload">
                 {{ t('mod.download_modal.direct_btn') }}
               </button>
-              <button class="modal-direct-btn" style="flex: 1; min-height: 40px; padding: 0 10px; border-color: rgba(255, 255, 255, 0.1); background: transparent; color: rgba(255, 255, 255, 0.6);" @click="handleAppDownload">
-                Get Desktop App
+              <button class="modal-secondary-btn" style="flex: 1; min-height: 40px;" @click="handleAppDownload">
+                {{ t('mod.download_modal.get_app_btn') }}
               </button>
             </div>
           </div>
@@ -1991,6 +1991,27 @@ onMounted(() => {
 
 .modal-direct-btn:hover {
   color: var(--text-primary);
+}
+
+.modal-secondary-btn {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.modal-secondary-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 /* Modal Transition */

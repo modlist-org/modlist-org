@@ -297,8 +297,8 @@
 
               <div class="user-card-roles">
                 <div style="display: flex; gap: 4px; margin-bottom: 10px;">
-                  <span v-if="u.isAdmin" class="badge badge-admin">Admin</span>
-                  <span v-if="u.isVerifiedDeveloper" class="badge badge-verified">Verified Dev</span>
+                  <span v-if="u.isAdmin" class="badge badge-admin">{{ t('profile.role_admin') }}</span>
+                  <span v-if="u.isVerifiedDeveloper" class="badge badge-verified">{{ t('profile.role_verified_dev') }}</span>
                 </div>
 
                 <div class="user-actions-btns">
