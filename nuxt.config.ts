@@ -51,6 +51,12 @@ export default defineNuxtConfig({
     discordModAllRoleIdRhythmDoctor: process.env.DISCORD_MOD_ALL_ROLE_ID_RHYTHM_DOCTOR || '',
     discordModAllRoleIdDancingLine: process.env.DISCORD_MOD_ALL_ROLE_ID_DANCING_LINE || '',
     appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+    discordGuildId: process.env.DISCORD_GUILD_ID || '',
+    discordPremiumRoleId: process.env.DISCORD_PREMIUM_ROLE_ID || '',
+    r2AccountId: process.env.R2_ACCOUNT_ID || '',
+    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    r2BucketName: process.env.R2_BUCKET_NAME || '',
     public: {}
   }
 })

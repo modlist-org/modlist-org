@@ -572,15 +572,22 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="modal-actions-group">
-            <UIButton
-              :label="t('mod.download_modal.app_btn')"
-              class="modal-app-btn"
-              @click="handleAppDownload"
-            />
-            <button class="modal-direct-btn" @click="handleDirectDownload">
-              {{ t('mod.download_modal.direct_btn') }}
-            </button>
+          <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+            <a :href="installLink" style="text-decoration: none; width: 100%;" @click="showAppRecommendModal = false">
+              <UIButton
+                label="Install with modlist.org App"
+                class="modal-app-btn"
+                style="width: 100%;"
+              />
+            </a>
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: space-between;">
+              <button class="modal-direct-btn" style="flex: 1; min-height: 40px; padding: 0 10px;" @click="handleDirectDownload">
+                {{ t('mod.download_modal.direct_btn') }}
+              </button>
+              <button class="modal-direct-btn" style="flex: 1; min-height: 40px; padding: 0 10px; border-color: rgba(255, 255, 255, 0.1); background: transparent; color: rgba(255, 255, 255, 0.6);" @click="handleAppDownload">
+                Get Desktop App
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -690,6 +697,12 @@ const loading = ref(true)
 // App Recommendation Modal State
 const showAppRecommendModal = ref(false)
 const pendingDownloadUrl = ref('')
+
+const installLink = computed(() => {
+  if (!mod.value) return ''
+  const isBeta = pendingDownloadUrl.value.includes('beta=true')
+  return `modlist://install/${mod.value.slug}${isBeta ? '?beta=true' : ''}`
+})
 
 const triggerDownloadModal = (downloadUrl: string) => {
   pendingDownloadUrl.value = downloadUrl

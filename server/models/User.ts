@@ -10,6 +10,9 @@ export interface IUser {
   avatar?: string
   isVerifiedDeveloper: boolean
   isAdmin: boolean
+  premiumSavingUsedBytes?: number
+  isPremium?: boolean
+  premiumLastCheckedAt?: Date
   lastSyncedAt?: Date
   createdAt: Date
 }
@@ -21,6 +24,9 @@ const UserSchema = new Schema<IUser>({
   avatar: { type: String },
   isVerifiedDeveloper: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
+  premiumSavingUsedBytes: { type: Number, default: 0 },
+  isPremium: { type: Boolean, default: false, index: true },
+  premiumLastCheckedAt: { type: Date },
   lastSyncedAt: { type: Date },
   createdAt: { type: Date, default: Date.now }
 })

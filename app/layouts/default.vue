@@ -33,6 +33,9 @@
               {{ t('nav.pending_mods') }}
               <span v-if="invitationsCount > 0" class="nav-badge" style="background-color: var(--danger-red); color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 20px; line-height: 1;">{{ invitationsCount }}</span>
             </NuxtLink>
+            <NuxtLink v-if="user" to="/profile" class="nav-link" active-class="active">
+              Profile
+            </NuxtLink>
             <NuxtLink v-if="user && user.isAdmin" to="/admin" class="nav-link" active-class="active">
               {{ t('nav.admin') }}
             </NuxtLink>
@@ -61,6 +64,7 @@
               <div class="user-name-box">
                 <span class="user-display-name">{{ user.globalName || user.username }}</span>
                 <div style="display: flex; gap: 4px;">
+                  <span v-if="user.isPremium" class="badge badge-premium-mini" style="font-size: 8px; padding: 1px 4px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a1a1a; font-weight: 700; border-radius: 4px;">Premium</span>
                   <span v-if="user.isAdmin" class="badge badge-admin" style="font-size: 8px; padding: 1px 4px;">Admin</span>
                   <span v-else-if="user.isVerifiedDeveloper" class="badge badge-verified" style="font-size: 8px; padding: 1px 4px;">Dev</span>
                 </div>
