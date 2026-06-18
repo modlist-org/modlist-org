@@ -1,4 +1,4 @@
-import { getCookie } from 'h3'
+import { getCookie, getHeader } from 'h3'
 import { verifyJwt } from '../utils/jwt'
 import { User } from '../models/User'
 import { checkUserPremium } from '../utils/premium'
@@ -23,7 +23,14 @@ declare module 'h3' {
 export default defineEventHandler(async (event) => {
   event.context.user = null
 
-  const token = getCookie(event, 'token')
+  let token = getCookie(event, 'token')
+  if (!token) {
+    const authHeader = getHeader(event, 'authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7)
+    }
+  }
+
   if (!token) {
     return
   }
