@@ -113,7 +113,7 @@ export default defineEventHandler(async (event) => {
       if (decoded.accessToken && (!lastPremiumChecked || (Date.now() - new Date(lastPremiumChecked).getTime()) > checkPremiumInterval)) {
         const premiumPromise = (async () => {
           try {
-            const isPremium = await checkUserPremium(event, userObj._id.toString(), userObj.discordId, decoded.accessToken)
+            const isPremium = await checkUserPremium(event, userObj._id.toString(), userObj.discordId, decoded.accessToken || '')
             await User.updateOne(
               { _id: userObj._id },
               {

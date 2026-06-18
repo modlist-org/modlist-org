@@ -129,8 +129,9 @@ const refreshPremium = async () => {
       user.value.isPremium = res.isPremium
     }
     alert(res.isPremium ? 'Premium status synchronized successfully!' : 'Premium status checked. You do not have the required Discord role yet.')
-  } catch (err: any) {
-    alert(`Sync failed: ${err?.data?.message || err?.message || err}`)
+  } catch (err) {
+    const error = err as { data?: { message?: string }; message?: string }
+    alert(`Sync failed: ${error?.data?.message || error?.message || String(err)}`)
   } finally {
     refreshingPremium.value = false
   }
