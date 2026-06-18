@@ -1,4 +1,6 @@
 import { ModPreset } from '../../../models/ModPreset'
+import { Mod } from '../../../models/Mod'
+import { CloudSaveFile } from '../../../models/CloudSaveFile'
 import { checkUserPremium } from '../../../utils/premium'
 import crypto from 'crypto'
 
@@ -25,7 +27,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, game, mods } = body
+  const { name, game, mods, fileKey } = body
 
   if (!name || !game || !Array.isArray(mods) || mods.length === 0) {
     throw createError({
@@ -41,6 +43,29 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // 1. Filter out mods not registered on modlist.org
+  const approvedMods = await Mod.find({ game, isApproved: true }, 'slug')
+  const approvedSlugs = new Set(approvedMods.map(m => m.slug.toLowerCase()))
+  const filteredMods = mods.filter(m => m && m.slug && approvedSlugs.has(m.slug.toLowerCase()))
+
+  if (filteredMods.length === 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'None of the mods in the preset are registered or approved on modlist.org.'
+    })
+  }
+
+  // 2. Validate fileKey if attached
+  if (fileKey) {
+    const cloudFile = await CloudSaveFile.findOne({ fileKey, userId: currentUser.id })
+    if (!cloudFile) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Attached configuration file not found or permission denied.'
+      })
+    }
+  }
+
   try {
     let presetId = generateShortId()
     let attempts = 0
@@ -54,7 +79,8 @@ export default defineEventHandler(async (event) => {
       ownerId: currentUser.id,
       name,
       game,
-      mods
+      mods: filteredMods,
+      fileKey
     })
 
     await preset.save()

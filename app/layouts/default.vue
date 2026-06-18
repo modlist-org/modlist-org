@@ -37,7 +37,7 @@
               <span v-if="invitationsCount > 0" class="nav-badge" style="background-color: var(--danger-red); color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 20px; line-height: 1;">{{ invitationsCount }}</span>
             </NuxtLink>
             <NuxtLink v-if="user" to="/profile" class="nav-link" active-class="active">
-              Profile
+              {{ t('nav.profile') }}
             </NuxtLink>
             <NuxtLink v-if="user && user.isAdmin" to="/admin" class="nav-link" active-class="active">
               {{ t('nav.admin') }}

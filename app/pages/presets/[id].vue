@@ -9,6 +9,7 @@
       <div class="preset-header">
         <div class="preset-title-wrap">
           <span class="badge badge-game">{{ getGameLabel(preset.game) }}</span>
+          <span v-if="preset.fileKey" class="badge badge-saves">{{ t('profile.presets_has_attached_saves') }}</span>
           <h1 class="preset-name">{{ preset.name }}</h1>
           <p class="preset-creator">
             Created by <span class="creator-name">{{ preset.owner?.globalName || preset.owner?.username || 'Unknown' }}</span> on {{ formatDate(preset.createdAt) }}
@@ -92,6 +93,7 @@ interface PresetItem {
   name: string
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   mods: PresetMod[]
+  fileKey?: string
   owner: PresetUser
   createdAt: string
 }
@@ -100,23 +102,8 @@ const route = useRoute()
 const presetId = route.params.id as string
 const { t } = useI18n()
 
-const { data: presetData } = await useFetch<{ success: boolean; preset: PresetItem }>(`/api/premium/presets/${presetId}`)
-
 const preset = ref<PresetItem | null>(null)
 const loading = ref(true)
-
-if (presetData.value && presetData.value.success) {
-  preset.value = presetData.value.preset
-  loading.value = false
-} else {
-  preset.value = null
-  loading.value = false
-}
-
-useSeoMeta({
-  title: () => preset.value ? `Mod Preset: ${preset.value.name}` : 'Preset Not Found',
-  description: () => preset.value ? `A shared mod list preset containing ${preset.value.mods.length} mods for ${getGameLabel(preset.value.game)}.` : 'Mod Preset Shared Link'
-})
 
 const getGameLabel = (game: string) => {
   if (game === 'adofai') return 'A Dance of Fire and Ice'
@@ -134,6 +121,22 @@ const formatDate = (dateStr: string) => {
     day: 'numeric'
   })
 }
+
+// Fetch preset data
+const { data: presetData } = await useFetch<{ success: boolean; preset: PresetItem }>(`/api/premium/presets/${presetId}`)
+
+if (presetData.value && presetData.value.success) {
+  preset.value = presetData.value.preset
+  loading.value = false
+} else {
+  preset.value = null
+  loading.value = false
+}
+
+useSeoMeta({
+  title: () => preset.value ? `Mod Preset: ${preset.value.name}` : 'Preset Not Found',
+  description: () => preset.value ? `A shared mod list preset containing ${preset.value.mods.length} mods for ${getGameLabel(preset.value.game)}.` : 'Mod Preset Shared Link'
+})
 </script>
 
 <style scoped>
@@ -286,5 +289,22 @@ const formatDate = (dateStr: string) => {
 
 .status-indicator.disabled {
   color: rgba(255, 255, 255, 0.4);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.badge-game {
+  background: rgba(145, 154, 255, 0.1);
+  color: #919AFF;
+}
+.badge-saves {
+  background: rgba(255, 165, 0, 0.1);
+  color: #FFA500;
+  margin-left: 8px;
 }
 </style>

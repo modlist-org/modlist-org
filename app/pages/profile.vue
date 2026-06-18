@@ -36,14 +36,23 @@
         </div>
         <div class="benefits-grid">
           <div class="benefit-item" :class="{ locked: !isPremium }">
-            <span class="benefit-icon">☁️</span>
+            <span class="benefit-icon">
+              <svg class="benefit-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
             <div class="benefit-desc">
               <h4>{{ t('profile.cloud_title') }}</h4>
               <p>{{ t('profile.cloud_desc') }}</p>
             </div>
           </div>
           <div class="benefit-item" :class="{ locked: !isPremium }">
-            <span class="benefit-icon">🔗</span>
+            <span class="benefit-icon">
+              <svg class="benefit-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
             <div class="benefit-desc">
               <h4>{{ t('profile.presets_title') }}</h4>
               <p>{{ t('profile.presets_desc') }}</p>
@@ -93,6 +102,37 @@
           />
         </div>
       </div>
+
+      <div class="divider" />
+
+      <!-- My Shared Presets Section -->
+      <div class="presets-section">
+        <h3>{{ t('profile.my_presets_title') }}</h3>
+        <div v-if="myPresets.length === 0" class="presets-empty">
+          <p>{{ t('profile.presets_empty') }}</p>
+        </div>
+        <div v-else class="presets-list">
+          <div v-for="preset in myPresets" :key="preset.id" class="preset-item-card">
+            <div class="preset-info">
+              <div class="preset-name-row">
+                <NuxtLink :to="`/presets/${preset.id}`" class="preset-link">{{ preset.name }}</NuxtLink>
+                <span class="badge-game-mini">{{ getGameLabel(preset.game) }}</span>
+                <span v-if="preset.fileKey" class="badge-saves-mini">{{ t('profile.presets_has_attached_saves') }}</span>
+              </div>
+              <div class="preset-meta-row">
+                <span>Mods: {{ preset.modsCount }}</span>
+                <span class="meta-dot">•</span>
+                <span>{{ formatDate(preset.createdAt) }}</span>
+              </div>
+            </div>
+            <UIButton 
+              label="Delete" 
+              class="delete-preset-btn" 
+              @click="deletePreset(preset.id)"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="card detail-not-found-state">
@@ -106,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '#imports'
 import { UIButton } from 'overlayer-ui'
@@ -170,6 +210,76 @@ const linkDesktopApp = () => {
   if (!integrationToken.value) return
   window.location.href = `modlist://auth?token=${encodeURIComponent(integrationToken.value)}`
 }
+
+const myPresets = ref<Array<{
+  id: string
+  name: string
+  game: string
+  modsCount: number
+  fileKey?: string
+  createdAt: string
+}>>([])
+
+const fetchMyPresets = async () => {
+  if (!user.value) return
+  try {
+    const res = await $fetch<{
+      success: boolean
+      presets: Array<{
+        id: string
+        name: string
+        game: string
+        modsCount: number
+        fileKey?: string
+        createdAt: string
+      }>
+    }>('/api/premium/presets/my')
+    if (res.success) {
+      myPresets.value = res.presets
+    }
+  } catch (err) {
+    console.error('Failed to fetch presets:', err)
+  }
+}
+
+const deletePreset = async (presetId: string) => {
+  if (!confirm(t('profile.presets_delete_confirm'))) return
+  try {
+    const res = await $fetch<{ success: boolean }>(`/api/premium/presets/${presetId}`, {
+      method: 'DELETE'
+    })
+    if (res.success) {
+      myPresets.value = myPresets.value.filter(p => p.id !== presetId)
+    }
+  } catch (err) {
+    console.error('Failed to delete preset:', err)
+    alert('Failed to delete preset')
+  }
+}
+
+const getGameLabel = (game: string) => {
+  if (game === 'adofai') return 'A Dance of Fire and Ice'
+  if (game === 'rhythm-doctor') return 'Rhythm Doctor'
+  if (game === 'dancing-line') return 'Dancing Line'
+  return game
+}
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+// Fetch presets when user becomes available
+watch(user, (newUser) => {
+  if (newUser) {
+    fetchMyPresets()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -369,5 +479,108 @@ const linkDesktopApp = () => {
 .sync-roles-btn {
   padding: 6px 12px !important;
   font-size: 12.5px !important;
+}
+
+.benefit-icon-svg {
+  width: 28px;
+  height: 28px;
+  color: #919AFF;
+}
+
+.presets-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.presets-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0;
+}
+.presets-empty {
+  padding: 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+.presets-empty p {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13.5px;
+  margin: 0;
+}
+.presets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.preset-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  gap: 16px;
+}
+.preset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.preset-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.preset-link {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.preset-link:hover {
+  color: #919AFF;
+}
+.badge-game-mini {
+  background: rgba(145, 154, 255, 0.1);
+  color: #919AFF;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.badge-saves-mini {
+  background: rgba(255, 165, 0, 0.1);
+  color: #FFA500;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.preset-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.meta-dot {
+  color: rgba(255, 255, 255, 0.2);
+}
+.delete-preset-btn {
+  background: rgba(255, 68, 68, 0.1) !important;
+  color: #ff4444 !important;
+  border: 1px solid rgba(255, 68, 68, 0.2) !important;
+  padding: 6px 12px !important;
+  font-size: 12.5px !important;
+}
+.delete-preset-btn:hover {
+  background: rgba(255, 68, 68, 0.2) !important;
 }
 </style>

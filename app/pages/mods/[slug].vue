@@ -684,9 +684,6 @@ const slug = route.params.slug as string
 const { t } = useI18n()
 const { user } = useAuth()
 
-// Fetch mod details on both server and client side
-const { data: modData, error: fetchError } = await useFetch<{ mod: ModItem; latestVersion: ModVersion | null; latestBetaVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
-
 const mod = ref<ModItem | null>(null)
 const latestVersion = ref<ModVersion | null>(null)
 const latestBetaVersion = ref<ModVersion | null>(null)
@@ -723,6 +720,9 @@ const handleDirectDownload = () => {
   }
   showAppRecommendModal.value = false
 }
+
+// Fetch mod details on both server and client side
+const { data: modData, error: fetchError } = await useFetch<{ mod: ModItem; latestVersion: ModVersion | null; latestBetaVersion: ModVersion | null; isEditable: boolean }>(`/api/mods/${slug}`)
 
 watch([modData, fetchError], ([newVal, err]) => {
   if (newVal) {

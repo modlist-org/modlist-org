@@ -9,6 +9,7 @@
   "nav.login": "Login",
   "nav.logout": "Logout",
   "nav.download": "Get App",
+  "nav.profile": "Profile",
   "games.all": "All Games",
   "games.adofai": "A Dance of Fire and Ice",
   "games.rhythm_doctor": "Rhythm Doctor",
@@ -185,7 +186,7 @@
   "premium.feature_presets_title": "Mod Preset Sharing",
   "premium.feature_presets_desc": "Share your active mod layout and exact version configurations with friends or the community in one click.",
   "premium.feature_presets_detail_1": "Generate unique, shareable preset links directly from your Installed tab.",
-  "premium.feature_presets_detail_2": "Others can open the preset in their Desktop Client to synchronize instantly.",
+  "premium.feature_presets_detail_2": "Others can open the preset in their Desktop Client to synchronize instantly. (Importing and syncing is free for everyone)",
   "premium.feature_presets_detail_3": "Automatically downloads missing mods and sets the active/inactive states to match yours.",
   "premium.feature_presets_detail_4": "Perfect for multiplayer matches, speedruns, and content creators.",
   "premium.how_to_activate": "How to Activate",
@@ -210,5 +211,9 @@
   "profile.normal_member": "Normal Member",
   "profile.premium_member": "✨ Premium Member",
   "profile.not_logged_in_title": "Not Logged In",
-  "profile.not_logged_in_desc": "Please log in with Discord first to view your profile."
+  "profile.not_logged_in_desc": "Please log in with Discord first to view your profile.",
+  "profile.my_presets_title": "My Shared Presets",
+  "profile.presets_empty": "You have not shared any presets yet. Share your preset from the desktop app!",
+  "profile.presets_delete_confirm": "Are you sure you want to delete this preset? This action cannot be undone.",
+  "profile.presets_has_attached_saves": "Includes Save/Configs"
 }

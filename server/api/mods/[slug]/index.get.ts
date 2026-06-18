@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
       authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
       collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
       pendingCollaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      versions: Omit<VersionType, 'downloadUrl'>[]
+      versions: VersionType[]
       dependencies: string[]
       pendingEdit?: {
         name?: string
@@ -118,25 +118,28 @@ export default defineEventHandler(async (event) => {
     }
 
     // Strip downloadUrl from all versions for safety & size
-    const rawVersions = mod.versions as unknown as VersionType[]
-    const cleanVersions = (rawVersions || []).map((v) => {
+    const cleanVersions = (modObj.versions || []).map((v) => {
       const { downloadUrl: _, ...rest } = v
       return rest
     })
-    modObj.versions = cleanVersions
 
     let cleanLatest = null
     if (latestVersion) {
-      cleanLatest = latestVersion
+      const { downloadUrl: _, ...rest } = latestVersion
+      cleanLatest = rest
     }
 
     let cleanLatestBeta = null
     if (latestBetaVersion) {
-      cleanLatestBeta = latestBetaVersion
+      const { downloadUrl: _, ...rest } = latestBetaVersion
+      cleanLatestBeta = rest
     }
 
     return {
-      mod: modObj,
+      mod: {
+        ...modObj,
+        versions: cleanVersions
+      },
       latestVersion: cleanLatest,
       latestBetaVersion: cleanLatestBeta,
       isEditable: !!isOwnerOrAdmin

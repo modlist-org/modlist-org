@@ -9,6 +9,7 @@
   "nav.login": "로그인",
   "nav.logout": "로그아웃",
   "nav.download": "앱 다운로드",
+  "nav.profile": "프로필",
   "games.all": "전체 게임",
   "games.adofai": "얼불춤 (ADOFAI)",
   "games.rhythm_doctor": "리듬 닥터",
@@ -185,7 +186,7 @@
   "premium.feature_presets_title": "모드 프리셋 공유",
   "premium.feature_presets_desc": "현재 사용 중인 모드 배치와 정확한 버전 설정을 친구나 커뮤니티에 클릭 한 번으로 공유하세요.",
   "premium.feature_presets_detail_1": "설치 관리 탭에서 클릭 한 번으로 고유하고 공유 가능한 프리셋 링크 생성.",
-  "premium.feature_presets_detail_2": "다른 사용자가 링크를 클릭하여 데스크톱 앱을 열면 즉시 자동으로 모드 동기화 진행.",
+  "premium.feature_presets_detail_2": "다른 사용자가 링크를 클릭하여 데스크톱 앱을 열면 즉시 자동으로 모드 동기화 진행. (다운로드 및 동기화는 일반 유저도 무료)",
   "premium.feature_presets_detail_3": "부족한 모드를 자동 다운로드하고 활성화/비활성화 상태까지 완벽 동기화.",
   "premium.feature_presets_detail_4": "멀티플레이 참여, 스피드런 경쟁, 콘텐츠 제작자에게 적합.",
   "premium.how_to_activate": "활성화 방법",
@@ -210,5 +211,9 @@
   "profile.normal_member": "일반 회원",
   "profile.premium_member": "✨ 프리미엄 회원",
   "profile.not_logged_in_title": "로그인되지 않음",
-  "profile.not_logged_in_desc": "프로필을 보려면 먼저 디스코드로 로그인해 주세요."
+  "profile.not_logged_in_desc": "프로필을 보려면 먼저 디스코드로 로그인해 주세요.",
+  "profile.my_presets_title": "내가 공유한 프리셋",
+  "profile.presets_empty": "아직 공유한 프리셋이 없습니다. 데스크톱 앱에서 나의 모드 배치를 프리셋으로 공유해 보세요!",
+  "profile.presets_delete_confirm": "이 프리셋을 삭제하시겠습니까? 삭제된 프리셋 링크는 더 이상 작동하지 않습니다.",
+  "profile.presets_has_attached_saves": "세이브/설정 파일 포함"
 }

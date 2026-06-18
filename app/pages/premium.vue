@@ -25,7 +25,9 @@
         <!-- Feature 1: Cloud Backup -->
         <div class="feature-card glass-panel">
           <div class="feature-icon-wrapper">
-            <span class="feature-icon">☁️</span>
+            <svg class="feature-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
           <h3 class="feature-name">{{ t('premium.feature_cloud_title') }}</h3>
           <p class="feature-description">
@@ -44,7 +46,10 @@
         <!-- Feature 2: Preset Sharing -->
         <div class="feature-card glass-panel">
           <div class="feature-icon-wrapper">
-            <span class="feature-icon">🔗</span>
+            <svg class="feature-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
           <h3 class="feature-name">{{ t('premium.feature_presets_title') }}</h3>
           <p class="feature-description">
@@ -228,6 +233,11 @@ const renderMarkdown = (text: string) => {
 
 .feature-icon {
   font-size: 32px;
+}
+.feature-icon-svg {
+  width: 32px;
+  height: 32px;
+  color: #919AFF;
 }
 
 .feature-name {
