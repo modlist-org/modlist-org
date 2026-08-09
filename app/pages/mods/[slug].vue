@@ -317,6 +317,77 @@
           </button>
         </div>
       </div>
+
+      <!-- Submit Update (Author / Collab only) -->
+      <div v-if="isEditable" class="card update-submission-card">
+        <h3>{{ t('update.title') }}</h3>
+
+        <form class="update-form" @submit.prevent="submitUpdate">
+          <div class="update-meta-grid">
+            <div class="form-group">
+              <label for="new-version">{{ t('update.version') }}</label>
+              <input
+                id="new-version"
+                v-model="updateForm.version"
+                type="text"
+                :placeholder="t('submit.version_placeholder')"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="new-game-version">{{ t('submit.game_version') }}</label>
+              <input
+                id="new-game-version"
+                v-model="updateForm.gameVersion"
+                type="text"
+                :placeholder="t('submit.game_version_placeholder')"
+              >
+            </div>
+          </div>
+
+          <div class="form-group platform-downloads-group">
+            <DownloadLinksInput
+              v-model:mode="updateForm.downloadMode"
+              v-model:unified-url="updateForm.downloadUrl"
+              v-model:platform-downloads="updateForm.platformDownloads"
+            />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px; width: 220px;">
+            <UIToggle
+              v-model="updateForm.isBeta"
+              :default-value="false"
+              :label="t('submit.is_beta_label', 'Mark as Beta Version')"
+              :font-size="14"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="new-changelog">{{ t('submit.changelog') }}</label>
+            <textarea
+              id="new-changelog"
+              v-model="updateForm.changelog"
+              rows="4"
+              :placeholder="t('update.changelog_placeholder')"
+            />
+          </div>
+
+          <div v-if="formError" class="form-error-msg">
+            {{ formError }}
+          </div>
+          <div v-if="formSuccess" class="form-success-msg">
+            {{ formSuccess }}
+          </div>
+
+          <UIButton
+            :label="submittingUpdate ? t('update.submitting') : t('update.submit')"
+            :blocked="submittingUpdate"
+            type="submit"
+            style="width: 100%;"
+          />
+        </form>
+      </div>
     </div>
 
     <!-- Right Column: Sidebar & Actions -->
@@ -469,74 +540,6 @@
         </div>
       </div>
 
-      <!-- Submit Update (Author / Collab only) -->
-      <div v-if="isEditable" class="card sidebar-card update-submission-card">
-        <h3>{{ t('update.title') }}</h3>
-
-        <form class="update-form" @submit.prevent="submitUpdate">
-          <div class="form-group">
-            <label for="new-version">{{ t('update.version') }}</label>
-            <input
-              id="new-version"
-              v-model="updateForm.version"
-              type="text"
-              :placeholder="t('submit.version_placeholder')"
-              required
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="new-game-version">{{ t('submit.game_version') }}</label>
-            <input
-              id="new-game-version"
-              v-model="updateForm.gameVersion"
-              type="text"
-              :placeholder="t('submit.game_version_placeholder')"
-            >
-          </div>
-
-          <div class="form-group platform-downloads-group">
-            <DownloadLinksInput
-              v-model:mode="updateForm.downloadMode"
-              v-model:unified-url="updateForm.downloadUrl"
-              v-model:platform-downloads="updateForm.platformDownloads"
-            />
-          </div>
-
-          <div class="form-group" style="margin-bottom: 20px; width: 220px;">
-            <UIToggle
-              v-model="updateForm.isBeta"
-              :default-value="false"
-              :label="t('submit.is_beta_label', 'Mark as Beta Version')"
-              :font-size="14"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="new-changelog">{{ t('submit.changelog') }}</label>
-            <textarea
-              id="new-changelog"
-              v-model="updateForm.changelog"
-              rows="4"
-              :placeholder="t('update.changelog_placeholder')"
-            />
-          </div>
-
-          <div v-if="formError" class="form-error-msg">
-            {{ formError }}
-          </div>
-          <div v-if="formSuccess" class="form-success-msg">
-            {{ formSuccess }}
-          </div>
-
-          <UIButton
-            :label="submittingUpdate ? t('update.submitting') : t('update.submit')"
-            :blocked="submittingUpdate"
-            type="submit"
-            style="width: 100%;"
-          />
-        </form>
-      </div>
     </div>
 
     <!-- App Recommendation Modal -->
@@ -1498,6 +1501,10 @@ onMounted(() => {
 }
 
 /* Update release form */
+.update-submission-card {
+  padding: 24px;
+}
+
 .update-submission-card h3 {
   margin-bottom: 20px;
 }
@@ -1505,6 +1512,12 @@ onMounted(() => {
 .update-form {
   display: flex;
   flex-direction: column;
+}
+
+.update-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .form-help-text {
@@ -1804,6 +1817,10 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
+  .update-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
   .version-row-header {
     flex-direction: column;
     align-items: flex-start;
