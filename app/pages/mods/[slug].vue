@@ -496,20 +496,11 @@
           </div>
 
           <div class="form-group platform-downloads-group">
-            <label>{{ t('submit.platform_downloads', 'OS Download Links') }}</label>
-            <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Add direct download links for each supported OS. At least one link is required.') }}</span>
-            <div class="platform-downloads-grid">
-              <div v-for="platform in platformEntries" :key="platform.key" class="platform-download-field">
-                <label :for="`new-download-${platform.key}`">{{ platform.label }}</label>
-                <input
-                  :id="`new-download-${platform.key}`"
-                  v-model="updateForm.platformDownloads[platform.key]"
-                  type="url"
-                  :placeholder="t('submit.download_placeholder')"
-                  :required="!hasUpdatePlatformDownload"
-                >
-              </div>
-            </div>
+            <DownloadLinksInput
+              v-model:mode="updateForm.downloadMode"
+              v-model:unified-url="updateForm.downloadUrl"
+              v-model:platform-downloads="updateForm.platformDownloads"
+            />
           </div>
 
           <div class="form-group" style="margin-bottom: 20px; width: 220px;">
@@ -801,14 +792,9 @@ useSeoMeta({
 })
 
 // Update Release form state
-const platformEntries = [
-  { key: 'windows' as const, label: 'Windows' },
-  { key: 'macos' as const, label: 'macOS' },
-  { key: 'linux' as const, label: 'Linux' }
-]
-
 const updateForm = ref({
   version: '',
+  downloadMode: 'unified' as 'unified' | 'platform',
   downloadUrl: '',
   platformDownloads: {
     windows: '',
@@ -819,7 +805,9 @@ const updateForm = ref({
   gameVersion: '',
   isBeta: false
 })
-const hasUpdatePlatformDownload = computed(() => Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0))
+const hasUpdateDownload = computed(() => updateForm.value.downloadMode === 'unified'
+  ? updateForm.value.downloadUrl.trim().length > 0
+  : Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0))
 const submittingUpdate = ref(false)
 const formError = ref('')
 const formSuccess = ref('')
@@ -1022,21 +1010,23 @@ const submitUpdate = async () => {
   formError.value = ''
   formSuccess.value = ''
 
-  if (!hasUpdatePlatformDownload.value) {
-    formError.value = t('submit.platform_downloads_required', 'Add at least one OS download link.')
+  if (!hasUpdateDownload.value) {
+    formError.value = t('submit.download_required', 'Add a download link.')
     submittingUpdate.value = false
     return
   }
 
   try {
-    const platformDownloads = Object.fromEntries(
-      Object.entries(updateForm.value.platformDownloads).filter(([, url]) => url.trim())
-    )
+    const platformDownloads = updateForm.value.downloadMode === 'platform'
+      ? Object.fromEntries(Object.entries(updateForm.value.platformDownloads).filter(([, url]) => url.trim()))
+      : {}
     await $fetch(`/api/mods/${slug}/versions`, {
       method: 'POST',
       body: {
         ...updateForm.value,
-        downloadUrl: Object.values(updateForm.value.platformDownloads).find((url) => url.trim()) || '',
+        downloadUrl: updateForm.value.downloadMode === 'unified'
+          ? updateForm.value.downloadUrl.trim()
+          : Object.values(updateForm.value.platformDownloads).find((url) => url.trim()) || '',
         platformDownloads
       }
     })
@@ -1048,6 +1038,7 @@ const submitUpdate = async () => {
     // Reset Form
     updateForm.value = {
       version: '',
+      downloadMode: 'unified',
       downloadUrl: '',
       platformDownloads: {
         windows: '',
@@ -2027,24 +2018,6 @@ onMounted(() => {
 
 .modal-direct-btn:hover {
   color: var(--text-primary);
-}
-
-.platform-downloads-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.platform-download-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.platform-download-field label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .modal-secondary-btn {

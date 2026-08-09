@@ -187,20 +187,11 @@
         </span>
 
         <div class="form-group platform-downloads-group">
-          <label>{{ t('submit.platform_downloads', 'OS Download Links') }}</label>
-          <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Add direct download links for each supported OS. At least one link is required.') }}</span>
-          <div class="platform-downloads-grid">
-            <div v-for="platform in platformEntries" :key="platform.key" class="platform-download-field">
-              <label :for="`mod-download-${platform.key}`">{{ platform.label }}</label>
-              <input
-                :id="`mod-download-${platform.key}`"
-                v-model="form.platformDownloads[platform.key]"
-                type="url"
-                :placeholder="t('submit.download_placeholder')"
-                :required="!hasPlatformDownload"
-              >
-            </div>
-          </div>
+          <DownloadLinksInput
+            v-model:mode="form.downloadMode"
+            v-model:unified-url="form.downloadUrl"
+            v-model:platform-downloads="form.platformDownloads"
+          />
         </div>
 
         <!-- Beta Option -->
@@ -362,6 +353,8 @@ const form = ref({
   summary: '',
   description: '',
   version: '',
+  downloadMode: 'unified' as 'unified' | 'platform',
+  downloadUrl: '',
   platformDownloads: {
     windows: '',
     macos: '',
@@ -395,13 +388,9 @@ const successMsg = ref('')
 
 const logoInput = ref<HTMLInputElement | null>(null)
 
-const platformEntries = [
-  { key: 'windows' as const, label: 'Windows' },
-  { key: 'macos' as const, label: 'macOS' },
-  { key: 'linux' as const, label: 'Linux' }
-]
-
-const hasPlatformDownload = computed(() => Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0))
+const hasDownload = computed(() => form.value.downloadMode === 'unified'
+  ? form.value.downloadUrl.trim().length > 0
+  : Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0))
 
 const triggerLogoSelect = () => {
   if (logoInput.value) {
@@ -576,8 +565,8 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!hasPlatformDownload.value) {
-    errorMsg.value = t('submit.platform_downloads_required', 'Add at least one OS download link.')
+  if (!hasDownload.value) {
+    errorMsg.value = t('submit.download_required', 'Add a download link.')
     return
   }
 
@@ -588,10 +577,12 @@ const handleSubmit = async () => {
   try {
     const payload = {
       ...form.value,
-      downloadUrl: Object.values(form.value.platformDownloads).find((url) => url.trim()) || '',
-      platformDownloads: Object.fromEntries(
-        Object.entries(form.value.platformDownloads).filter(([, url]) => url.trim())
-      ),
+      downloadUrl: form.value.downloadMode === 'unified'
+        ? form.value.downloadUrl.trim()
+        : Object.values(form.value.platformDownloads).find((url) => url.trim()) || '',
+      platformDownloads: form.value.downloadMode === 'platform'
+        ? Object.fromEntries(Object.entries(form.value.platformDownloads).filter(([, url]) => url.trim()))
+        : {},
       collaboratorIds: selectedCollabs.value.map((c) => c._id),
       dependencies: selectedDependencies.value.map((d) => d._id)
     }
@@ -659,24 +650,6 @@ onMounted(() => {
 
 .platform-downloads-group {
   margin-top: 8px;
-}
-
-.platform-downloads-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.platform-download-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.platform-download-field label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Collaborators styles */
@@ -775,12 +748,6 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 14px;
   margin-bottom: 24px;
-}
-
-@media (max-width: 700px) {
-  .platform-downloads-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Logo Upload Custom Styles */
