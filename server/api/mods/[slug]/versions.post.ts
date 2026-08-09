@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { Mod } from '../../../models/Mod'
+import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -20,21 +21,34 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { version, downloadUrl, changelog, gameVersion, isBeta } = body
+  const { version, downloadUrl, platformDownloads, changelog, gameVersion, isBeta } = body
+
+  const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
+  const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
+  const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
   // Validations
-  if (!version || !downloadUrl) {
+  if (!version || (!normalizedDownloadUrl && availablePlatforms.length === 0)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Version string and direct download URL are required.'
+      statusMessage: 'Version string and at least one platform download link are required.'
     })
   }
 
-  if (!downloadUrl.startsWith('http://') && !downloadUrl.startsWith('https://')) {
+  if (downloadUrl && !isHttpUrl(downloadUrl)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Download link must be a valid direct HTTP/HTTPS URL.'
     })
+  }
+
+  for (const platform of availablePlatforms) {
+    if (!isHttpUrl(normalizedPlatformDownloads[platform])) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `${platform} download link must be a valid direct HTTP/HTTPS URL.`
+      })
+    }
   }
 
   try {
@@ -81,7 +95,8 @@ export default defineEventHandler(async (event) => {
       }
 
       // Update existing unapproved/rejected version in-place
-      existingVer.downloadUrl = downloadUrl
+      existingVer.downloadUrl = normalizedDownloadUrl as string
+      existingVer.platformDownloads = normalizedPlatformDownloads
       existingVer.changelog = changelog || ''
       existingVer.gameVersion = gameVersion || ''
       existingVer.isApproved = isAutoApproved
@@ -98,7 +113,7 @@ export default defineEventHandler(async (event) => {
         if (populatedMod) {
           sendDiscordWebhook(
             populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-            { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
+            { version, downloadUrl: normalizedDownloadUrl as string, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
             true
           ).catch((err) => {
             console.error('Failed to send Discord webhook on version update:', err)
@@ -115,7 +130,8 @@ export default defineEventHandler(async (event) => {
     // Construct version object
     const newVersion = {
       version,
-      downloadUrl,
+      downloadUrl: normalizedDownloadUrl as string,
+      platformDownloads: normalizedPlatformDownloads,
       changelog: changelog || '',
       gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
@@ -134,7 +150,7 @@ export default defineEventHandler(async (event) => {
       if (populatedMod) {
         sendDiscordWebhook(
           populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version, downloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
+          { version, downloadUrl: normalizedDownloadUrl as string, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
           true
         ).catch((err) => {
           console.error('Failed to send Discord webhook on version update:', err)

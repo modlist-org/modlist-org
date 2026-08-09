@@ -242,6 +242,12 @@
                 <span class="version-number">v{{ ver.version }}</span>
                 <span v-if="ver.isBeta" class="badge badge-beta version-beta-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 6px; background-color: rgba(240, 173, 78, 0.15); color: #f0ad4e; border: 1px solid rgba(240, 173, 78, 0.3); text-transform: uppercase;">BETA</span>
                 <span v-if="ver.gameVersion" class="badge badge-category version-game-version-badge" style="font-size: 11px; padding: 2px 6px; border-radius: 6px;">{{ ver.gameVersion }}</span>
+                <span
+                  v-for="platform in ver.availablePlatforms"
+                  :key="platform"
+                  class="badge badge-category version-platform-badge"
+                  style="font-size: 11px; padding: 2px 6px; border-radius: 6px; text-transform: uppercase;"
+                >{{ platform }}</span>
                 <span v-if="!ver.isApproved" class="badge badge-pending version-pending-badge">{{ t('mod.details.pending_approval') }}</span>
               </div>
               <span class="version-date">{{ formatDate(ver.createdAt) }}</span>
@@ -489,16 +495,21 @@
             >
           </div>
 
-          <div class="form-group">
-            <label for="new-download">{{ t('submit.download_url') }}</label>
-            <input
-              id="new-download"
-              v-model="updateForm.downloadUrl"
-              type="text"
-              :placeholder="t('submit.download_placeholder')"
-              required
-            >
-            <span class="form-help-text">{{ t('submit.download_url_help') }}</span>
+          <div class="form-group platform-downloads-group">
+            <label>{{ t('submit.platform_downloads', 'OS Download Links') }}</label>
+            <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Add direct download links for each supported OS. At least one link is required.') }}</span>
+            <div class="platform-downloads-grid">
+              <div v-for="platform in platformEntries" :key="platform.key" class="platform-download-field">
+                <label :for="`new-download-${platform.key}`">{{ platform.label }}</label>
+                <input
+                  :id="`new-download-${platform.key}`"
+                  v-model="updateForm.platformDownloads[platform.key]"
+                  type="url"
+                  :placeholder="t('submit.download_placeholder')"
+                  :required="!hasUpdatePlatformDownload"
+                >
+              </div>
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom: 20px; width: 220px;">
@@ -619,6 +630,7 @@ interface ModVersion {
   changelog: string
   gameVersion?: string
   isApproved: boolean
+  availablePlatforms?: Array<'windows' | 'macos' | 'linux'>
   isBeta?: boolean
   rejectionReason?: string
   submittedBy?: {
@@ -789,13 +801,25 @@ useSeoMeta({
 })
 
 // Update Release form state
+const platformEntries = [
+  { key: 'windows' as const, label: 'Windows' },
+  { key: 'macos' as const, label: 'macOS' },
+  { key: 'linux' as const, label: 'Linux' }
+]
+
 const updateForm = ref({
   version: '',
   downloadUrl: '',
+  platformDownloads: {
+    windows: '',
+    macos: '',
+    linux: ''
+  },
   changelog: '',
   gameVersion: '',
   isBeta: false
 })
+const hasUpdatePlatformDownload = computed(() => Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0))
 const submittingUpdate = ref(false)
 const formError = ref('')
 const formSuccess = ref('')
@@ -998,10 +1022,23 @@ const submitUpdate = async () => {
   formError.value = ''
   formSuccess.value = ''
 
+  if (!hasUpdatePlatformDownload.value) {
+    formError.value = t('submit.platform_downloads_required', 'Add at least one OS download link.')
+    submittingUpdate.value = false
+    return
+  }
+
   try {
+    const platformDownloads = Object.fromEntries(
+      Object.entries(updateForm.value.platformDownloads).filter(([, url]) => url.trim())
+    )
     await $fetch(`/api/mods/${slug}/versions`, {
       method: 'POST',
-      body: updateForm.value
+      body: {
+        ...updateForm.value,
+        downloadUrl: Object.values(updateForm.value.platformDownloads).find((url) => url.trim()) || '',
+        platformDownloads
+      }
     })
 
     formSuccess.value = user.value?.isVerifiedDeveloper || user.value?.isAdmin
@@ -1012,6 +1049,11 @@ const submitUpdate = async () => {
     updateForm.value = {
       version: '',
       downloadUrl: '',
+      platformDownloads: {
+        windows: '',
+        macos: '',
+        linux: ''
+      },
       changelog: '',
       gameVersion: '',
       isBeta: false
@@ -1985,6 +2027,24 @@ onMounted(() => {
 
 .modal-direct-btn:hover {
   color: var(--text-primary);
+}
+
+.platform-downloads-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.platform-download-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.platform-download-field label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .modal-secondary-btn {

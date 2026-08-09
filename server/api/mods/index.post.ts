@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { Mod } from '../../models/Mod'
 import { User } from '../../models/User'
+import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -22,6 +23,7 @@ export default defineEventHandler(async (event) => {
     description,
     version,
     downloadUrl,
+    platformDownloads,
     changelog,
     gameVersion,
     collaboratorIds,
@@ -33,10 +35,13 @@ export default defineEventHandler(async (event) => {
   } = body
 
   // 1. Validations
-  if (!name || !slug || !game || !categories || !summary || !version || !downloadUrl) {
+  const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
+  const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
+
+  if (!name || !slug || !game || !categories || !summary || !version || (!downloadUrl && availablePlatforms.length === 0)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Required fields: name, slug, game, categories, summary, version, and downloadUrl.'
+      statusMessage: 'Required fields: name, slug, game, categories, summary, version, and at least one platform download link.'
     })
   }
 
@@ -97,13 +102,23 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Check downloadUrl format
-  if (!downloadUrl.startsWith('http://') && !downloadUrl.startsWith('https://')) {
+  if (downloadUrl && !isHttpUrl(downloadUrl)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Download link must be a valid direct HTTP/HTTPS URL (e.g. GitHub release).'
     })
   }
+
+  for (const platform of availablePlatforms) {
+    if (!isHttpUrl(normalizedPlatformDownloads[platform])) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `${platform} download link must be a valid direct HTTP/HTTPS URL.`
+      })
+    }
+  }
+
+  const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
   // Validate collaborators
   const validatedCollabIds: mongoose.Types.ObjectId[] = []
@@ -153,7 +168,8 @@ export default defineEventHandler(async (event) => {
       versions: [
         {
           version,
-          downloadUrl,
+          downloadUrl: normalizedDownloadUrl,
+          platformDownloads: normalizedPlatformDownloads,
           changelog: changelog || 'Initial release',
           gameVersion: gameVersion || '',
           isApproved: isAutoApproved,
@@ -173,7 +189,7 @@ export default defineEventHandler(async (event) => {
       if (populatedMod) {
         sendDiscordWebhook(
           populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version, downloadUrl, changelog: changelog || 'Initial release', gameVersion: gameVersion || '', isBeta: !!isBeta }
+          { version, downloadUrl: normalizedDownloadUrl, changelog: changelog || 'Initial release', gameVersion: gameVersion || '', isBeta: !!isBeta }
         ).catch((err) => {
           console.error('Failed to send Discord webhook on creation:', err)
         })

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import type { Types, Model } from 'mongoose'
+import type { PlatformDownloads } from '../utils/mod-platform'
 const { Schema, model, models } = mongoose
 
 export interface IPendingModEdit {
@@ -19,6 +20,7 @@ export interface IModVersion {
   _id?: Types.ObjectId
   version: string
   downloadUrl: string
+  platformDownloads?: PlatformDownloads
   changelog: string
   gameVersion?: string
   isApproved: boolean
@@ -57,6 +59,11 @@ export interface IMod {
 const ModVersionSchema = new Schema<IModVersion>({
   version: { type: String, required: true },
   downloadUrl: { type: String, required: true },
+  platformDownloads: {
+    windows: { type: String, default: '' },
+    macos: { type: String, default: '' },
+    linux: { type: String, default: '' }
+  },
   changelog: { type: String, default: '' },
   gameVersion: { type: String, default: '' },
   isApproved: { type: Boolean, default: false, index: true },

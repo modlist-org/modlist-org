@@ -1,10 +1,22 @@
 import { Mod } from '../../../models/Mod'
+import { detectPlatform, getVersionDownloadUrl, normalizePlatform } from '../../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
   const query = getQuery(event)
   const versionStr = query.version as string
   const isBeta = query.beta === 'true'
+  const platformQuery = query.platform as string | undefined
+  const platform = platformQuery
+    ? normalizePlatform(platformQuery)
+    : detectPlatform(getRequestHeader(event, 'user-agent') || '')
+
+  if (platformQuery && !platform) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid platform. Supported platforms: windows, macos, linux.'
+    })
+  }
 
   if (!slug) {
     throw createError({
@@ -14,11 +26,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOneAndUpdate(
-      { slug, isApproved: true },
-      { $inc: { downloads: 1 } },
-      { new: true }
-    )
+    const mod = await Mod.findOne({ slug, isApproved: true })
 
     if (!mod) {
       throw createError({
@@ -42,15 +50,23 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    if (!targetVersion || !targetVersion.downloadUrl) {
+    const targetDownloadUrl = targetVersion
+      ? getVersionDownloadUrl(targetVersion, platform)
+      : undefined
+
+    if (!targetVersion || !targetDownloadUrl) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'Requested version not found or download link is missing.'
+        statusMessage: platform
+          ? `Requested version has no ${platform} download link.`
+          : 'Requested version not found or download link is missing.'
       })
     }
 
+    await Mod.updateOne({ _id: mod._id }, { $inc: { downloads: 1 } })
+
     // Redirect to the actual download URL
-    return sendRedirect(event, targetVersion.downloadUrl, 302)
+    return sendRedirect(event, targetDownloadUrl, 302)
   } catch (error) {
     console.error('Redirect and increment download count error:', error)
     const err = error as { statusCode?: number }

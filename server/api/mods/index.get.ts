@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { Mod } from '../../models/Mod'
 import type { IMod } from '../../models/Mod'
+import { getAvailablePlatforms } from '../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -123,7 +124,7 @@ export default defineEventHandler(async (event) => {
       const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'versions'> & {
         authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
         collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-        versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl?: string; changelog: string }[]
+        versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl?: string; platformDownloads?: unknown; changelog: string }[]
       }
       
       // Filter approved versions for regular users
@@ -144,13 +145,13 @@ export default defineEventHandler(async (event) => {
       const latestVersion = sortedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || sortedVersions[0] || null
 
       const cleanVersions = approvedVersions.map((v) => {
-        const { downloadUrl: _, ...rest } = v
-        return rest
+        const { downloadUrl: _, platformDownloads, ...rest } = v
+        return { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
       })
       let cleanLatest = null
       if (latestVersion) {
-        const { downloadUrl: _, ...rest } = latestVersion
-        cleanLatest = rest
+        const { downloadUrl: _, platformDownloads, ...rest } = latestVersion
+        cleanLatest = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
       }
 
       return {

@@ -1,5 +1,6 @@
 import { Mod } from '../../../models/Mod'
 import type { IMod } from '../../../models/Mod'
+import { getAvailablePlatforms } from '../../../utils/mod-platform'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User } from '../../../models/User'
 
@@ -36,6 +37,7 @@ export default defineEventHandler(async (event) => {
       createdAt: Date | string
       version: string
       downloadUrl?: string
+      platformDownloads?: unknown
       changelog: string
       submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
     }
@@ -119,20 +121,20 @@ export default defineEventHandler(async (event) => {
 
     // Strip downloadUrl from all versions for safety & size
     const cleanVersions = (modObj.versions || []).map((v) => {
-      const { downloadUrl: _, ...rest } = v
-      return rest
+      const { downloadUrl: _, platformDownloads, ...rest } = v
+      return { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
     })
 
     let cleanLatest = null
     if (latestVersion) {
-      const { downloadUrl: _, ...rest } = latestVersion
-      cleanLatest = rest
+      const { downloadUrl: _, platformDownloads, ...rest } = latestVersion
+      cleanLatest = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
     }
 
     let cleanLatestBeta = null
     if (latestBetaVersion) {
-      const { downloadUrl: _, ...rest } = latestBetaVersion
-      cleanLatestBeta = rest
+      const { downloadUrl: _, platformDownloads, ...rest } = latestBetaVersion
+      cleanLatestBeta = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
     }
 
     return {
