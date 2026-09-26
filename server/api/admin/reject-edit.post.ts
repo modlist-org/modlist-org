@@ -44,11 +44,11 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('Reject mod edits error:', error)
-    const err = error as { statusCode?: number; message?: string }
+    const err = error as { statusCode?: number }
     if (err.statusCode) throw error
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to reject mod edits: ${err.message || String(error)}`
+      statusMessage: 'Failed to reject mod edits.'
     })
   }
 })

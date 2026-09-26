@@ -52,11 +52,11 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('Reject version error:', error)
-    const err = error as { statusCode?: number; message?: string }
+    const err = error as { statusCode?: number }
     if (err.statusCode) throw error
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to reject version: ${err.message || String(error)}`
+      statusMessage: 'Failed to reject version.'
     })
   }
 })

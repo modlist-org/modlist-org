@@ -1,4 +1,5 @@
 import { User } from '../../models/User'
+import { literalRegex } from '../../utils/regex'
 
 export default defineEventHandler(async (event) => {
   // Require login to search users
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const q = query.q as string
 
-  if (!q || q.trim().length === 0) {
+  if (typeof q !== 'string' || q.trim().length === 0) {
     return { users: [] }
   }
 
@@ -20,8 +21,8 @@ export default defineEventHandler(async (event) => {
     // Search by username or globalName (case-insensitive)
     const users = await User.find({
       $or: [
-        { username: { $regex: q, $options: 'i' } },
-        { globalName: { $regex: q, $options: 'i' } }
+        { username: literalRegex(q) },
+        { globalName: literalRegex(q) }
       ]
     })
       .limit(10)

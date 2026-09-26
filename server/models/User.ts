@@ -14,6 +14,7 @@ export interface IUser {
   isPremium?: boolean
   premiumLastCheckedAt?: Date
   lastSyncedAt?: Date
+  discordAccessToken?: string
   createdAt: Date
 }
 
@@ -28,6 +29,7 @@ const UserSchema = new Schema<IUser>({
   isPremium: { type: Boolean, default: false, index: true },
   premiumLastCheckedAt: { type: Date },
   lastSyncedAt: { type: Date },
+  discordAccessToken: { type: String, select: false },
   createdAt: { type: Date, default: Date.now }
 })
 

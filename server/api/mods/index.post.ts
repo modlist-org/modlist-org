@@ -52,22 +52,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (sourceUrl && typeof sourceUrl === 'string') {
-    if (!sourceUrl.startsWith('http://') && !sourceUrl.startsWith('https://')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
-      })
-    }
+  if (sourceUrl && !isHttpUrl(sourceUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
+    })
   }
 
-  if (communityUrl && typeof communityUrl === 'string') {
-    if (!communityUrl.startsWith('http://') && !communityUrl.startsWith('https://')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
-      })
-    }
+  if (communityUrl && !isHttpUrl(communityUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
+    })
   }
 
   if (!['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) {
@@ -206,10 +202,9 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('Error creating mod:', error)
-    const err = error as { message?: string }
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to create mod: ${err.message || String(error)}`
+      statusMessage: 'Failed to create mod.'
     })
   }
 })

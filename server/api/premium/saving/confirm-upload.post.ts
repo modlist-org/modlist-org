@@ -32,6 +32,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // fileKey must point inside the caller's own storage prefix
+  if (typeof fileKey !== 'string' || !fileKey.startsWith(`users/${currentUser.id}/`) || fileKey.includes('..')) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Invalid fileKey.'
+    })
+  }
+
   try {
     const user = await User.findById(currentUser.id)
     if (!user) {
@@ -57,7 +65,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const existingFile = await CloudSaveFile.findOne({ fileKey })
+    const existingFile = await CloudSaveFile.findOne({ fileKey, userId: user._id })
     const oldSize = existingFile ? existingFile.fileSize : 0
     const sizeDiff = actualFileSize - oldSize
 

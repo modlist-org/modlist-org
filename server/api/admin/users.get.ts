@@ -1,4 +1,5 @@
 import { User } from '../../models/User'
+import { literalRegex } from '../../utils/regex'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -14,8 +15,8 @@ export default defineEventHandler(async (event) => {
   const search = query.search as string
   const filter: Record<string, unknown> = {}
 
-  if (search && search.trim().length > 0) {
-    const searchRegex = { $regex: search, $options: 'i' }
+  if (typeof search === 'string' && search.trim().length > 0) {
+    const searchRegex = literalRegex(search)
     filter.$or = [
       { username: searchRegex },
       { globalName: searchRegex },

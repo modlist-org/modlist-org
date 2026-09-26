@@ -63,6 +63,12 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validate fileKey if attached
   if (fileKey) {
+    if (typeof fileKey !== 'string') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid fileKey.'
+      })
+    }
     const cloudFile = await CloudSaveFile.findOne({ fileKey, userId: currentUser.id })
     if (!cloudFile) {
       throw createError({

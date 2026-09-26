@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { Mod } from '../../../models/Mod'
 import { User } from '../../../models/User'
+import { isHttpUrl } from '../../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -30,22 +31,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (sourceUrl && typeof sourceUrl === 'string') {
-    if (!sourceUrl.startsWith('http://') && !sourceUrl.startsWith('https://')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
-      })
-    }
+  if (sourceUrl && !isHttpUrl(sourceUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Source code link must be a valid HTTP/HTTPS URL.'
+    })
   }
 
-  if (communityUrl && typeof communityUrl === 'string') {
-    if (!communityUrl.startsWith('http://') && !communityUrl.startsWith('https://')) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
-      })
-    }
+  if (communityUrl && !isHttpUrl(communityUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Community link must be a valid HTTP/HTTPS URL.'
+    })
   }
 
   try {
@@ -236,11 +233,11 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('Update mod error:', error)
-    const err = error as { statusCode?: number; message?: string }
+    const err = error as { statusCode?: number }
     if (err.statusCode) throw error
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to update mod: ${err.message || String(error)}`
+      statusMessage: 'Failed to update mod.'
     })
   }
 })

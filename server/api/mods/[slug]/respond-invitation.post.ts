@@ -64,11 +64,11 @@ export default defineEventHandler(async (event) => {
     return { success: true }
   } catch (error) {
     console.error('Respond to invitation error:', error)
-    const err = error as { statusCode?: number; message?: string }
+    const err = error as { statusCode?: number }
     if (err.statusCode) throw error
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to respond to invitation: ${err.message || String(error)}`
+      statusMessage: 'Failed to respond to invitation.'
     })
   }
 })

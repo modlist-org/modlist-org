@@ -80,11 +80,11 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('Delete version submission error:', error)
-    const err = error as { statusCode?: number; message?: string }
+    const err = error as { statusCode?: number }
     if (err.statusCode) throw error
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to delete version submission: ${err.message || String(error)}`
+      statusMessage: 'Failed to delete version submission.'
     })
   }
 })

@@ -6,7 +6,7 @@ services:
     container_name: modlist-mongodb
     restart: always
     ports:
-      - '27017:27017'
+      - '127.0.0.1:27017:27017'
     env_file:
       - .env
     environment:
@@ -20,7 +20,7 @@ services:
     container_name: modlist-mongo-express
     restart: always
     ports:
-      - '8081:8081'
+      - '127.0.0.1:8081:8081'
     env_file:
       - .env
     environment:

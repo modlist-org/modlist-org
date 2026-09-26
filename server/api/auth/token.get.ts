@@ -17,8 +17,7 @@ export default defineEventHandler(async (event) => {
     const tokenPayload = {
       id: currentUser.id,
       discordId: currentUser.discordId,
-      username: currentUser.username,
-      accessToken: currentUser.accessToken
+      username: currentUser.username
     }
 
     // 1 Year expiry for desktop convenience

@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { presetId } = body
 
-  if (!presetId) {
+  if (!presetId || typeof presetId !== 'string') {
     throw createError({
       statusCode: 400,
       statusMessage: 'Missing presetId in request body.'

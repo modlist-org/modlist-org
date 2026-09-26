@@ -42,8 +42,10 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const userObj = await User.findById(decoded.id)
+    const userObj = await User.findById(decoded.id).select('+discordAccessToken')
     if (userObj) {
+      // Legacy sessions carried the Discord token inside the JWT
+      const accessToken = userObj.discordAccessToken || decoded.accessToken
       event.context.user = {
         id: userObj._id.toString(),
         discordId: userObj.discordId,
@@ -52,7 +54,7 @@ export default defineEventHandler(async (event) => {
         avatar: userObj.avatar,
         isVerifiedDeveloper: userObj.isVerifiedDeveloper,
         isAdmin: userObj.isAdmin,
-        accessToken: decoded.accessToken,
+        accessToken,
         isPremium: userObj.isPremium || false,
         premiumSavingUsedBytes: userObj.premiumSavingUsedBytes || 0
       }
@@ -60,7 +62,7 @@ export default defineEventHandler(async (event) => {
       // Automatically sync profile (avatar, username) from Discord in background
       // Throttle to run at most once every 24 hours per user
       const oneDayAgo = new Date(Date.now() - 24 * 3600 * 1000)
-      if (decoded.accessToken && (!userObj.lastSyncedAt || userObj.lastSyncedAt < oneDayAgo)) {
+      if (accessToken && (!userObj.lastSyncedAt || userObj.lastSyncedAt < oneDayAgo)) {
         const syncPromise = (async () => {
           try {
             interface DiscordUserResponse {
@@ -72,7 +74,7 @@ export default defineEventHandler(async (event) => {
             }
             const discordUser = await $fetch<DiscordUserResponse>('https://discord.com/api/users/@me', {
               headers: {
-                Authorization: `Bearer ${decoded.accessToken}`
+                Authorization: `Bearer ${accessToken}`
               }
             })
 
@@ -110,10 +112,10 @@ export default defineEventHandler(async (event) => {
       // Automatically sync premium status from Discord in background (once every 6 hours)
       const checkPremiumInterval = 6 * 3600 * 1000
       const lastPremiumChecked = userObj.premiumLastCheckedAt
-      if (decoded.accessToken && (!lastPremiumChecked || (Date.now() - new Date(lastPremiumChecked).getTime()) > checkPremiumInterval)) {
+      if (accessToken && (!lastPremiumChecked || (Date.now() - new Date(lastPremiumChecked).getTime()) > checkPremiumInterval)) {
         const premiumPromise = (async () => {
           try {
-            const isPremium = await checkUserPremium(event, userObj._id.toString(), userObj.discordId, decoded.accessToken || '')
+            const isPremium = await checkUserPremium(event, userObj._id.toString(), userObj.discordId, accessToken)
             await User.updateOne(
               { _id: userObj._id },
               {

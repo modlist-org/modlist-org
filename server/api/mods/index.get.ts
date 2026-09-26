@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import { Mod } from '../../models/Mod'
 import type { IMod } from '../../models/Mod'
 import { getAvailablePlatforms } from '../../utils/mod-platform'
+import { literalRegex } from '../../utils/regex'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -40,8 +41,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Filter by search query
-  if (search && search.trim().length > 0) {
-    const searchRegex = { $regex: search, $options: 'i' }
+  if (typeof search === 'string' && search.trim().length > 0) {
+    const searchRegex = literalRegex(search)
     filter.$or = [
       { name: searchRegex },
       { summary: searchRegex },

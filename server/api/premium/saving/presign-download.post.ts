@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { fileKey } = body
 
-  if (!fileKey) {
+  if (!fileKey || typeof fileKey !== 'string') {
     throw createError({
       statusCode: 400,
       statusMessage: 'Missing fileKey in request body.'

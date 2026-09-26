@@ -41,7 +41,7 @@ export default defineNuxtConfig({
     discordClientId: process.env.DISCORD_CLIENT_ID,
     discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
     discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
-    jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret-replace-in-production',
+    jwtSecret: process.env.JWT_SECRET || '',
     adminDiscordIds: process.env.ADMIN_DISCORD_IDS || '',
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
     discordModPingRoleIdAdofai: process.env.DISCORD_MOD_PING_ROLE_ID_ADOFAI || '',

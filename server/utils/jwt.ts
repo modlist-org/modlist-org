@@ -11,6 +11,11 @@ function base64UrlDecode(str: string): string {
   return Buffer.from(base64, 'base64').toString('utf8')
 }
 
+// Refuse to run on a missing or well-known secret (tokens would be forgeable)
+function isUsableSecret(secret: string): boolean {
+  return !!secret && secret !== 'dev-jwt-secret-replace-in-production'
+}
+
 export interface IJwtPayload {
   id: string
   discordId: string
@@ -20,6 +25,7 @@ export interface IJwtPayload {
 }
 
 export function signJwt(payload: Omit<IJwtPayload, 'exp'>, secret: string, expiresInSeconds: number = 7 * 24 * 3600): string {
+  if (!isUsableSecret(secret)) throw new Error('JWT_SECRET is not configured.')
   const header = { alg: 'HS256', typ: 'JWT' }
   const exp = Math.floor(Date.now() / 1000) + expiresInSeconds
   const fullPayload = { ...payload, exp }
@@ -37,6 +43,7 @@ export function signJwt(payload: Omit<IJwtPayload, 'exp'>, secret: string, expir
 }
 
 export function verifyJwt(token: string, secret: string): IJwtPayload | null {
+  if (!isUsableSecret(secret)) return null
   const parts = token.split('.')
   if (parts.length !== 3) return null
 
@@ -49,7 +56,9 @@ export function verifyJwt(token: string, secret: string): IJwtPayload | null {
       .digest()
     const expectedSignature = base64UrlEncode(signature)
 
-    if (encodedSignature !== expectedSignature) return null
+    const a = Buffer.from(encodedSignature)
+    const b = Buffer.from(expectedSignature)
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null
 
     const payload = JSON.parse(base64UrlDecode(encodedPayload))
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {

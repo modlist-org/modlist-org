@@ -608,6 +608,7 @@ import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
 import { UIButton, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { marked } from 'marked'
+import DOMPurify from 'isomorphic-dompurify'
 
 interface CreatorUser {
   _id: string
@@ -946,18 +947,18 @@ const renderedDescription = computed(() => {
 
   if (!desc) return '<em>No description provided.</em>'
   try {
-    return marked.parse(desc)
+    return DOMPurify.sanitize(marked.parse(desc, { async: false }))
   } catch {
-    return desc
+    return ''
   }
 })
 
 const renderMarkdown = (text: string) => {
   if (!text) return ''
   try {
-    return marked.parse(text)
+    return DOMPurify.sanitize(marked.parse(text, { async: false }))
   } catch {
-    return text
+    return ''
   }
 }
 

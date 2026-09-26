@@ -41,6 +41,11 @@ interface DiscordEmbed {
   }
 }
 
+// Keep untrusted URLs from breaking out of Discord's [text](url) markdown
+function mdUrl(url: string): string {
+  return url.replace(/[()<>\s]/g, (c) => encodeURIComponent(c))
+}
+
 export async function sendDiscordWebhook(
   mod: WebhookMod,
   specificVersion?: { version: string; downloadUrl: string; changelog?: string; gameVersion?: string; isBeta?: boolean },
@@ -144,7 +149,7 @@ export async function sendDiscordWebhook(
   if (mod.sourceUrl) {
     embed.fields.push({
       name: '🔗 Source Code',
-      value: `[Repository Link](${mod.sourceUrl})`,
+      value: `[Repository Link](${mdUrl(mod.sourceUrl)})`,
       inline: false
     })
   }
@@ -153,7 +158,7 @@ export async function sendDiscordWebhook(
   if (mod.communityUrl) {
     embed.fields.push({
       name: '💬 Community Link',
-      value: `[Join Community](${mod.communityUrl})`,
+      value: `[Join Community](${mdUrl(mod.communityUrl)})`,
       inline: false
     })
   }
@@ -162,7 +167,7 @@ export async function sendDiscordWebhook(
   if (downloadUrl) {
     embed.fields.push({
       name: '📥 Download Link',
-      value: `[Direct Download](${downloadUrl})`,
+      value: `[Direct Download](${mdUrl(downloadUrl)})`,
       inline: false
     })
   }

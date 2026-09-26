@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { game, fileName, fileSize } = body
 
-  if (!game || !fileName || typeof fileSize !== 'number' || fileSize <= 0 || !Number.isInteger(fileSize)) {
+  if (!game || typeof fileName !== 'string' || !fileName || fileName.includes('..') || typeof fileSize !== 'number' || fileSize <= 0 || !Number.isInteger(fileSize)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid or missing fileSize. It must be a positive integer.'

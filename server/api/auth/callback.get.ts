@@ -1,10 +1,20 @@
-import { setCookie, sendRedirect } from 'h3'
+import { setCookie, sendRedirect, getCookie, deleteCookie } from 'h3'
 import { User } from '../../models/User'
 import { signJwt } from '../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const code = query.code as string
+  const state = query.state
+  const expectedState = getCookie(event, 'oauth_state')
+  deleteCookie(event, 'oauth_state', { path: '/api/auth' })
+
+  if (typeof state !== 'string' || !expectedState || state !== expectedState) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid OAuth state. Please try logging in again.'
+    })
+  }
 
   if (!code) {
     throw createError({
@@ -68,12 +78,6 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Fallback: If this is the absolute first user in the DB, make them Admin.
-    const userCount = await User.countDocuments()
-    if (userCount === 0) {
-      isAdmin = true
-    }
-
     let user = await User.findOne({ discordId: discordUser.id })
     if (!user) {
       user = new User({
@@ -83,6 +87,7 @@ export default defineEventHandler(async (event) => {
         avatar: avatarUrl,
         isAdmin,
         isVerifiedDeveloper: isAdmin, // admins are auto-verified developers too
+        discordAccessToken: accessToken,
         lastSyncedAt: new Date()
       })
       await user.save()
@@ -92,6 +97,7 @@ export default defineEventHandler(async (event) => {
       user.globalName = discordUser.global_name || discordUser.username
       user.avatar = avatarUrl
       user.lastSyncedAt = new Date()
+      user.discordAccessToken = accessToken
       // Ensure admin status is updated if config changed
       if (isAdmin) {
         user.isAdmin = true
@@ -104,8 +110,7 @@ export default defineEventHandler(async (event) => {
     const tokenPayload = {
       id: user._id.toString(),
       discordId: user.discordId,
-      username: user.username,
-      accessToken: accessToken
+      username: user.username
     }
     const token = signJwt(tokenPayload, jwtSecret)
 
@@ -122,10 +127,9 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, '/')
   } catch (error) {
     console.error('Discord login callback error:', error)
-    const err = error as { message?: string }
     throw createError({
       statusCode: 500,
-      statusMessage: `Authentication failed: ${err.message || String(error)}`
+      statusMessage: 'Authentication failed.'
     })
   }
 })
