@@ -1,6 +1,6 @@
 # Modlist.org - Mod Sharing Platform
 
-Modlist.org is a premium, high-fidelity full-stack mod repository and sharing platform for rhythm games (such as *A Dance of Fire and Ice* and *Rhythm Doctor*). Built on **Nuxt 3** and **MongoDB**, it incorporates verified creator badges, automated OAuth authentication, and strict moderation workflows.
+Modlist.org is a high-fidelity full-stack mod repository and sharing platform for rhythm games (such as *A Dance of Fire and Ice* and *Rhythm Doctor*). Built on **Nuxt 3** and **MongoDB**, it incorporates verified creator badges, automated OAuth authentication, and strict moderation workflows.
 
 ---
 

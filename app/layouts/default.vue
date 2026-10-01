@@ -26,9 +26,6 @@
             <NuxtLink to="/" class="nav-link" active-class="active">
               {{ t('nav.home') }}
             </NuxtLink>
-            <NuxtLink to="/premium" class="nav-link" active-class="active">
-              {{ t('nav.premium') }}
-            </NuxtLink>
             <NuxtLink v-if="user" to="/submit" class="nav-link" active-class="active">
               {{ t('nav.submit') }}
             </NuxtLink>
@@ -67,7 +64,6 @@
               <div class="user-name-box">
                 <span class="user-display-name">{{ user.globalName || user.username }}</span>
                 <div style="display: flex; gap: 4px;">
-                  <span v-if="user.isPremium" class="badge badge-premium-mini" style="font-size: 8px; padding: 1px 4px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a1a1a; font-weight: 700; border-radius: 4px;">{{ t('nav.badge_premium') }}</span>
                   <span v-if="user.isAdmin" class="badge badge-admin" style="font-size: 8px; padding: 1px 4px;">{{ t('nav.badge_admin') }}</span>
                   <span v-else-if="user.isVerifiedDeveloper" class="badge badge-verified" style="font-size: 8px; padding: 1px 4px;">{{ t('nav.badge_dev') }}</span>
                 </div>

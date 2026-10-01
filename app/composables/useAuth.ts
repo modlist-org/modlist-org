@@ -8,8 +8,6 @@ export interface AuthUser {
   avatar?: string
   isVerifiedDeveloper: boolean
   isAdmin: boolean
-  isPremium?: boolean
-  premiumSavingUsedBytes?: number
 }
 
 export const useAuth = () => {

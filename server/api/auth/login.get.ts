@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
     redirectUri
-  )}&response_type=code&scope=identify+guilds.members.read&state=${state}`
+  )}&response_type=code&scope=identify&state=${state}`
 
   return sendRedirect(event, oauthUrl)
 })

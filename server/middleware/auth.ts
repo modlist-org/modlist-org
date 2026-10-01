@@ -1,7 +1,6 @@
 import { getCookie, getHeader } from 'h3'
 import { verifyJwt } from '../utils/jwt'
 import { User } from '../models/User'
-import { checkUserPremium } from '../utils/premium'
 
 declare module 'h3' {
   interface H3EventContext {
@@ -14,8 +13,6 @@ declare module 'h3' {
       isVerifiedDeveloper: boolean
       isAdmin: boolean
       accessToken?: string
-      isPremium?: boolean
-      premiumSavingUsedBytes?: number
     } | null
   }
 }
@@ -54,9 +51,7 @@ export default defineEventHandler(async (event) => {
         avatar: userObj.avatar,
         isVerifiedDeveloper: userObj.isVerifiedDeveloper,
         isAdmin: userObj.isAdmin,
-        accessToken,
-        isPremium: userObj.isPremium || false,
-        premiumSavingUsedBytes: userObj.premiumSavingUsedBytes || 0
+        accessToken
       }
 
       // Automatically sync profile (avatar, username) from Discord in background
@@ -109,35 +104,6 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // Automatically sync premium status from Discord in background (once every 6 hours)
-      const checkPremiumInterval = 6 * 3600 * 1000
-      const lastPremiumChecked = userObj.premiumLastCheckedAt
-      if (accessToken && (!lastPremiumChecked || (Date.now() - new Date(lastPremiumChecked).getTime()) > checkPremiumInterval)) {
-        const premiumPromise = (async () => {
-          try {
-            const isPremium = await checkUserPremium(event, userObj._id.toString(), userObj.discordId, accessToken)
-            await User.updateOne(
-              { _id: userObj._id },
-              {
-                $set: {
-                  isPremium,
-                  premiumLastCheckedAt: new Date()
-                }
-              }
-            )
-          } catch (e) {
-            console.error('Background Discord premium check failed:', e)
-            await User.updateOne(
-              { _id: userObj._id },
-              { $set: { premiumLastCheckedAt: new Date() } }
-            ).catch(() => {})
-          }
-        })()
-
-        if (typeof event.waitUntil === 'function') {
-          event.waitUntil(premiumPromise)
-        }
-      }
     }
   } catch {
     // Ignore error, fallback to null
