@@ -23,7 +23,7 @@
       <svg class="game-select-triangle" :class="{ 'is-expanded': open }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
     </div>
 
-    <transition name="expand">
+    <transition :css="false" v-bind="expandHooks">
       <div v-if="open" class="game-select-list">
         <div v-if="options.length > SEARCH_THRESHOLD" class="game-select-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
@@ -51,6 +51,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '#imports'
+import { expandHooks } from 'overlayer-ui'
 import { GAME_IDS, gameLabelKey } from '../utils/games'
 
 const props = withDefaults(defineProps<{
@@ -200,7 +201,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   height: 22px;
   flex-shrink: 0;
   color: #f3f4ff;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s ease-out;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s cubic-bezier(0.61, 1, 0.88, 1);
 }
 
 .game-select-triangle.is-expanded {

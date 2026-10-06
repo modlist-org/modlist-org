@@ -47,7 +47,7 @@
               <span class="user-menu-name">{{ user.globalName || user.username }}</span>
               <svg class="user-menu-triangle" :class="{ 'is-expanded': userMenuOpen }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
             </button>
-            <transition name="expand">
+            <transition :css="false" v-bind="expandHooks">
               <div v-if="userMenuOpen" class="user-menu-panel" @click="userMenuOpen = false">
                 <div class="user-menu-header">
                   <strong>{{ user.globalName || user.username }}</strong>
@@ -127,6 +127,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from '#imports'
 import {
   UIDropdown,
+  expandHooks,
   useOverlayerState,
   setI18nLocaleRef
 } from 'overlayer-ui'
