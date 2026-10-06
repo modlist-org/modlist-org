@@ -91,7 +91,7 @@
                   ref="logoInput"
                   class="hidden-input"
                   type="file"
-                  accept="image/png, image/jpeg, image/jpg"
+                  accept="image/png, image/jpeg, image/webp, image/gif"
                   @change="handleLogoUpload"
                 >
                 <div class="logo-buttons">
@@ -273,6 +273,7 @@
 </template>
 
 <script setup lang="ts">
+import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../../utils/logo-image'
 import type { ModTranslations } from '../../utils/locales'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useSeoMeta } from '#imports'
@@ -403,23 +404,27 @@ const triggerLogoSelect = () => {
   }
 }
 
-const handleLogoUpload = (event: Event) => {
+const handleLogoUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
 
-  if (file.size > 1024 * 1024) {
+  const reject = () => {
     errorMsg.value = t('submit.logo_too_large') || 'Logo size must be smaller than 1MB.'
     if (logoInput.value) logoInput.value.value = ''
-    return
   }
 
+  if (file.size > MAX_SOURCE_BYTES) return reject()
+
   errorMsg.value = ''
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    form.value.logo = e.target?.result as string
+  try {
+    const logo = await prepareLogo(file)
+    if (dataUrlBytes(logo) > MAX_LOGO_BYTES) return reject()
+    form.value.logo = logo
+  } catch (e) {
+    console.error('Failed to read logo:', e)
+    reject()
   }
-  reader.readAsDataURL(file)
 }
 
 const clearLogo = () => {
