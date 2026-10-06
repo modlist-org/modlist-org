@@ -1,8 +1,10 @@
 <template>
-  <div class="card legal-page-card">
-    <h1 class="legal-title">{{ t('nav.terms') }}</h1>
-    
-    <div v-if="locale === 'ko-KR'" class="legal-content">
+  <div class="doc">
+    <header class="page-header">
+      <h1 class="page-title">{{ t('nav.terms') }}</h1>
+    </header>
+
+    <article v-if="locale === 'ko-KR'" class="doc-body card">
       <p>본 이용약관은 <strong>modlist.org</strong>(이하 '서비스')에서 제공하는 모드 공유 및 커뮤니티 서비스를 이용하는 회원 간의 권리와 의무를 규정합니다.</p>
       
       <h2>1. 서비스의 목적</h2>
@@ -24,9 +26,9 @@
 
       <h2>4. 면책 사항</h2>
       <p>서비스는 공유되는 모드 파일들의 신뢰성, 안전성을 보증하지 않으며, 사용자가 모드를 설치하고 사용하는 과정에서 발생하는 모든 하드웨어/소프트웨어적 피해에 대하여 어떠한 책무도 지지 않습니다.</p>
-    </div>
+    </article>
 
-    <div v-else class="legal-content">
+    <article v-else class="doc-body card">
       <p>These Terms of Service govern your use of the mod sharing and community platform <strong>modlist.org</strong> (referred to as "the Service").</p>
       
       <h2>1. Purpose of the Service</h2>
@@ -48,7 +50,7 @@
 
       <h2>4. Disclaimers and Limitation of Liability</h2>
       <p>The Service does not guarantee the safety, stability, or compatibility of shared mod files. The Service shall not be held liable for any damages to hardware, operating systems, or game client data resulting from downloading or using third-party files retrieved through this platform.</p>
-    </div>
+    </article>
   </div>
 </template>
 
@@ -65,47 +67,67 @@ useSeoMeta({
 </script>
 
 <style scoped>
-.legal-page-card {
-  padding: 40px;
-  max-width: 800px;
+.doc {
+  width: 100%;
+  max-width: 760px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.legal-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 16px;
-}
-
-.legal-content {
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.8;
+.doc-body {
+  padding: 32px;
+  color: var(--text-secondary);
   font-size: 15px;
+  line-height: 1.75;
 }
 
-.legal-content h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #919AFF;
-  margin-top: 28px;
-  margin-bottom: 12px;
+.doc-body > :first-child {
+  margin-top: 0;
 }
 
-.legal-content p {
-  margin-bottom: 16px;
+.doc-body > :last-child {
+  margin-bottom: 0;
 }
 
-.legal-content ul {
-  padding-left: 20px;
-  margin-bottom: 20px;
-  list-style-type: disc !important;
+.doc-body strong {
+  color: var(--text);
+  font-weight: 700;
 }
 
-.legal-content li {
+.card.doc-body h2 {
+  margin: 32px 0 10px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.doc-body p {
+  margin: 0 0 14px;
+}
+
+.doc-body ul {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  list-style: disc;
+}
+
+.doc-body li {
   margin-bottom: 6px;
-  display: list-item !important;
+  padding-left: 2px;
+}
+
+.doc-body li::marker {
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .doc-body {
+    padding: 20px;
+  }
 }
 </style>

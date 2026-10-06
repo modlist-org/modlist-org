@@ -1,13 +1,20 @@
 <template>
-  <div class="card legal-page-card">
-    <h1 class="legal-title">{{ t('nav.privacy') }}</h1>
-    
+  <div class="doc">
+    <header class="page-header">
+      <h1 class="page-title">{{ t('nav.privacy') }}</h1>
+      <a href="/privacy.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">
+        {{ t('legal.open_new_tab') }}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+      </a>
+    </header>
+
     <div v-if="locale === 'ko-KR'" class="locale-notice">
-      💡 본 개인정보처리방침은 영문으로 제공됩니다.
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
+      본 개인정보처리방침은 영문으로 제공됩니다.
     </div>
 
-    <div class="privacy-iframe-container">
-      <iframe src="/privacy.html" class="privacy-iframe" title="Privacy Policy" />
+    <div class="doc-frame">
+      <iframe src="/privacy.html" title="Privacy Policy" />
     </div>
   </div>
 </template>
@@ -25,46 +32,50 @@ useSeoMeta({
 </script>
 
 <style scoped>
-.legal-page-card {
-  padding: 40px;
-  max-width: 900px;
+.doc {
+  width: 100%;
+  max-width: 760px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.legal-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 16px;
+.page-header {
+  align-items: center;
 }
 
 .locale-notice {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  color: var(--text);
   font-size: 14px;
-  color: var(--accent-purple);
 }
 
-.privacy-iframe-container {
-  width: 100%;
-  background: #ffffff;
-  border-radius: 12px;
+.locale-notice svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.doc-frame {
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  margin-top: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
 }
 
-.privacy-iframe {
-  width: 100%;
-  height: 800px;
-  border: none;
-  background: #ffffff;
+.doc-frame iframe {
   display: block;
+  width: 100%;
+  height: max(600px, calc(100vh - var(--header-height) - 200px));
+  border: none;
+  background: #fff;
 }
 </style>

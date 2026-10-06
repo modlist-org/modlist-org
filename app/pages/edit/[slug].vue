@@ -1,266 +1,303 @@
 <template>
-  <div class="edit-page-container">
-    <div v-if="loading" class="edit-loading-state">
+  <div class="editor">
+    <div v-if="loading" class="editor-loading">
       <div class="spinner" />
       <p>{{ t('loading') }}</p>
     </div>
 
-    <div v-else-if="mod" class="card form-card">
-      <h2>{{ t('submit.edit_title') }}</h2>
-      <div class="card-divider" />
-
-      <form class="main-form" @submit.prevent="handleUpdate">
-        <!-- Mod Name -->
-        <div class="form-group">
-          <label for="mod-name">{{ t('submit.name') }}</label>
-          <input
-            id="mod-name"
-            v-model="form.name"
-            type="text"
-            required
-          >
+    <template v-else-if="mod">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">{{ t('submit.edit_title') }}</h1>
+          <p class="page-subtitle">
+            <NuxtLink :to="`/mods/${slug}`" class="mod-link">{{ mod.name }}</NuxtLink>
+          </p>
         </div>
+      </header>
 
-        <!-- Mod Logo -->
-        <div class="form-group">
-          <label>{{ t('submit.logo') }}</label>
-          <div class="logo-upload-container">
-            <div class="logo-preview-box">
-              <img v-if="form.logo" :src="form.logo" alt="Logo Preview" class="logo-preview-img">
-              <div v-else class="logo-preview-placeholder">
-                <span class="logo-placeholder-text">{{ form.name ? form.name.charAt(0).toUpperCase() : 'M' }}</span>
-              </div>
-            </div>
-            <div class="logo-upload-controls">
-              <input
-                ref="logoInput"
-                type="file"
-                accept="image/png, image/jpeg, image/jpg"
-                style="display: none;"
-                @change="handleLogoUpload"
+      <div v-if="mod.pendingEdit" class="callout warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+        <p>{{ t('mod.details.pending_edit_banner') }}</p>
+      </div>
+      <div v-else-if="requiresReview" class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" /></svg>
+        <p>{{ t('submit.edit_review_notice') }}</p>
+      </div>
+
+      <form class="editor-form" @submit.prevent="handleUpdate">
+        <!-- Basics -->
+        <section class="card form-section">
+          <h2 class="section-title">{{ t('submit.section_basics') }}</h2>
+
+          <div class="form-group">
+            <label for="mod-name">{{ t('submit.name') }}</label>
+            <input
+              id="mod-name"
+              v-model="form.name"
+              type="text"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <span id="mod-game-label" class="field-label">{{ t('submit.game') }}</span>
+            <div class="chip-list" role="radiogroup" aria-labelledby="mod-game-label">
+              <button
+                v-for="game in GAMES"
+                :key="game"
+                type="button"
+                role="radio"
+                class="chip"
+                :class="{ active: form.game === game }"
+                :aria-checked="form.game === game"
+                @click="form.game = game"
               >
-              <div class="logo-upload-buttons">
-                <UIButton
-                  type="button"
-                  :label="t('submit.logo_select')"
-                  @click="triggerLogoSelect"
-                />
-                <UIButton
-                  v-if="form.logo"
-                  type="button"
-                  :label="t('submit.logo_remove')"
-                  class="danger-btn"
-                  @click="clearLogo"
-                />
-              </div>
-              <span class="form-help-text logo-help-text">
-                {{ t('submit.logo_help') }}
-              </span>
+                {{ getGameLabel(game) }}
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Target Game -->
-        <div class="form-group">
-          <label>{{ t('submit.game') }}</label>
-          <div class="form-dropdown-wrapper">
-            <UIDropdown
-              v-model="form.game"
-              default-value="adofai"
-              :values="['adofai', 'rhythm-doctor', 'dancing-line']"
-              :display="getGameLabel"
-            />
-          </div>
-        </div>
-
-        <!-- Category -->
-        <div class="form-group">
-          <label>{{ t('submit.category') }}</label>
-          <div class="form-dropdown-wrapper category-dropdown-wrapper">
-            <UIDropdown
-              v-model="categoriesFormModel"
-              default-value="selected:"
-              :values="['ui', 'gameplay', 'utility', 'visuals', 'library']"
-              :display="getCategoryLabel"
-            />
-          </div>
-          <!-- Selected Categories tags -->
-          <div v-if="form.categories.length > 0" class="collabs-tags-container">
-            <div v-for="cat in form.categories" :key="cat" class="collab-tag-item">
-              <span>{{ getCategoryLabelOnly(cat) }}</span>
-              <button type="button" class="remove-collab-btn" @click="toggleFormCategory(cat)">&times;</button>
+          <div class="form-group">
+            <span id="mod-category-label" class="field-label">{{ t('submit.category') }}</span>
+            <div class="chip-list" role="group" aria-labelledby="mod-category-label">
+              <button
+                v-for="cat in CATEGORIES"
+                :key="cat"
+                type="button"
+                class="chip"
+                :class="{ active: form.categories.includes(cat) }"
+                :aria-pressed="form.categories.includes(cat)"
+                @click="toggleFormCategory(cat)"
+              >
+                <svg v-if="form.categories.includes(cat)" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                {{ getCategoryLabelOnly(cat) }}
+              </button>
             </div>
           </div>
-        </div>
-
-        <!-- Summary -->
-        <div class="form-group">
-          <label for="mod-summary">{{ t('submit.summary') }}</label>
-          <input
-            id="mod-summary"
-            v-model="form.summary"
-            type="text"
-            maxlength="150"
-            required
-          >
-        </div>
+        </section>
 
         <!-- Description -->
-        <div class="form-group">
-          <label for="mod-description">{{ t('submit.description') }}</label>
-          <textarea
-            id="mod-description"
-            v-model="form.description"
-            rows="10"
-          />
-        </div>
+        <section class="card form-section">
+          <h2 class="section-title">{{ t('submit.section_description') }}</h2>
 
-        <!-- Source Code Link -->
-        <div class="form-group">
-          <label for="mod-source-url">{{ t('submit.source_url') }}</label>
-          <input
-            id="mod-source-url"
-            v-model="form.sourceUrl"
-            type="text"
-            :placeholder="t('submit.source_url_placeholder')"
-          >
-          <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
-        </div>
-
-        <!-- Community Link -->
-        <div class="form-group">
-          <label for="mod-community-url">{{ t('submit.community_url') }}</label>
-          <input
-            id="mod-community-url"
-            v-model="form.communityUrl"
-            type="text"
-            :placeholder="t('submit.community_url_placeholder')"
-          >
-          <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
-        </div>
-
-        <div class="card-divider-sub" />
-
-        <!-- Collaborators Section (Only Author or Admin can manage) -->
-        <div v-if="isAuthorOrAdmin" class="form-group">
-          <label>{{ t('submit.collaborators') }}</label>
-          
-          <!-- Selected Collabs List -->
-          <div v-if="selectedCollabs.length > 0" class="collabs-tags-container">
-            <div v-for="userObj in selectedCollabs" :key="userObj._id" class="collab-tag-item">
-              <img :src="userObj.avatar || '/images/default_avatar.png'" alt="Avatar" class="collab-avatar">
-              <span>{{ userObj.globalName || userObj.username }}</span>
-              <span v-if="userObj.isPending" style="font-size: 11px; opacity: 0.6; margin-left: 4px;">({{ t('mod.details.pending_approval') }})</span>
-              <button type="button" class="remove-collab-btn" @click="removeCollab(userObj._id)">&times;</button>
+          <div class="form-group">
+            <div class="label-row">
+              <label for="mod-summary">{{ t('submit.summary') }}</label>
+              <span class="char-count">{{ form.summary.length }}/150</span>
             </div>
+            <input
+              id="mod-summary"
+              v-model="form.summary"
+              type="text"
+              maxlength="150"
+              required
+            >
+            <span class="form-help-text">{{ t('submit.summary_help') }}</span>
           </div>
 
-          <!-- Collab Search Input -->
-          <div class="collab-search-wrapper">
-            <input
-              v-model="collabSearchQuery"
-              type="text"
-              :placeholder="t('submit.search_user_placeholder')"
-              class="collab-search-input"
-              @input="searchUsers"
-            >
-            
-            <!-- Search Results Dropdown -->
-            <div v-if="searchResults.length > 0" class="search-results-dropdown">
-              <div
-                v-for="userObj in searchResults"
-                :key="userObj._id"
-                class="search-result-item"
-                @click="addCollab(userObj)"
-              >
-                <img :src="userObj.avatar || '/images/default_avatar.png'" alt="Avatar" class="collab-avatar">
-                <span>{{ userObj.globalName || userObj.username }} ({{ userObj.username }})</span>
+          <div class="form-group">
+            <label for="mod-description">{{ t('submit.description') }}</label>
+            <textarea
+              id="mod-description"
+              v-model="form.description"
+              rows="12"
+            />
+            <span class="form-help-text">{{ t('submit.description_help') }}</span>
+          </div>
+        </section>
+
+        <!-- Media & links -->
+        <section class="card form-section">
+          <h2 class="section-title">{{ t('submit.section_media') }}</h2>
+
+          <div class="form-group">
+            <span class="field-label">{{ t('submit.logo') }}</span>
+            <div class="logo-field">
+              <div class="logo-tile">
+                <img v-if="form.logo" :src="form.logo" alt="Logo Preview">
+                <span v-else :style="getFallbackGradientStyle(form.name || 'M')">{{ form.name ? form.name.charAt(0).toUpperCase() : 'M' }}</span>
+              </div>
+              <div class="logo-controls">
+                <input
+                  ref="logoInput"
+                  class="hidden-input"
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  @change="handleLogoUpload"
+                >
+                <div class="logo-buttons">
+                  <button type="button" class="btn btn-secondary btn-sm" @click="triggerLogoSelect">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                    {{ t('submit.logo_select') }}
+                  </button>
+                  <button v-if="form.logo" type="button" class="btn btn-ghost btn-sm" @click="clearLogo">
+                    {{ t('submit.logo_remove') }}
+                  </button>
+                </div>
+                <span class="form-help-text">{{ t('submit.logo_help') }}</span>
               </div>
             </div>
           </div>
-        </div>
-        <div v-else class="form-group">
-          <label>{{ t('submit.collaborators') }}</label>
-          <div class="collabs-tags-container">
-            <div v-for="userObj in selectedCollabs" :key="userObj._id" class="collab-tag-item" style="padding-right: 12px;">
-              <img :src="userObj.avatar || '/images/default_avatar.png'" alt="Avatar" class="collab-avatar">
-              <span>{{ userObj.globalName || userObj.username }}</span>
-              <span v-if="userObj.isPending" style="font-size: 11px; opacity: 0.6; margin-left: 4px;">({{ t('mod.details.pending_approval') }})</span>
-            </div>
-          </div>
-          <span class="form-help-text">{{ t('submit.only_author_manage_collabs') }}</span>
-        </div>
 
-        <div class="card-divider-sub" />
-
-        <!-- Dependencies Section -->
-        <div class="form-group">
-          <label>{{ t('submit.dependencies') }}</label>
-          
-          <!-- Selected Dependencies List -->
-          <div v-if="selectedDependencies.length > 0" class="collabs-tags-container">
-            <div v-for="dep in selectedDependencies" :key="dep._id" class="collab-tag-item">
-              <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-              <span>{{ dep.name }}</span>
-              <button type="button" class="remove-collab-btn" @click="removeDependency(dep._id)">&times;</button>
-            </div>
-          </div>
-
-          <!-- Dependency Search Input -->
-          <div class="collab-search-wrapper">
-            <input
-              v-model="dependencySearchQuery"
-              type="text"
-              :placeholder="t('submit.dependencies_placeholder')"
-              class="collab-search-input"
-              @input="searchDependencies"
-            >
-            
-            <!-- Search Results Dropdown -->
-            <div v-if="dependencySearchResults.length > 0" class="search-results-dropdown">
-              <div
-                v-for="dep in dependencySearchResults"
-                :key="dep._id"
-                class="search-result-item"
-                @click="addDependency(dep)"
+          <div class="form-row">
+            <div class="form-group">
+              <label for="mod-source-url">{{ t('submit.source_url') }}</label>
+              <input
+                id="mod-source-url"
+                v-model="form.sourceUrl"
+                type="text"
+                :placeholder="t('submit.source_url_placeholder')"
               >
-                <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-                <span>{{ dep.name }} ({{ dep.slug }})</span>
+              <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="mod-community-url">{{ t('submit.community_url') }}</label>
+              <input
+                id="mod-community-url"
+                v-model="form.communityUrl"
+                type="text"
+                :placeholder="t('submit.community_url_placeholder')"
+              >
+              <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Team -->
+        <section class="card form-section">
+          <h2 class="section-title">{{ t('submit.section_team') }}</h2>
+
+          <div v-if="isAuthorOrAdmin" class="form-group">
+            <label for="collab-search">{{ t('submit.collaborators') }}</label>
+            <div class="search-field">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <input
+                id="collab-search"
+                v-model="collabSearchQuery"
+                type="text"
+                autocomplete="off"
+                :placeholder="t('submit.search_user_placeholder')"
+                @input="searchUsers"
+              >
+              <div v-if="searchResults.length > 0" class="search-results">
+                <button
+                  v-for="userObj in searchResults"
+                  :key="userObj._id"
+                  type="button"
+                  class="search-result"
+                  @click="addCollab(userObj)"
+                >
+                  <img :src="userObj.avatar || '/images/default_avatar.png'" alt="" class="result-avatar" @error="onAvatarError">
+                  <span class="result-text">
+                    <span class="result-name">{{ userObj.globalName || userObj.username }}</span>
+                    <span class="result-sub">@{{ userObj.username }}</span>
+                  </span>
+                  <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
+              </div>
+            </div>
+            <span class="form-help-text">{{ t('submit.collaborators_help') }}</span>
+
+            <div v-if="selectedCollabs.length > 0" class="token-list">
+              <div v-for="userObj in selectedCollabs" :key="userObj._id" class="token" :class="{ pending: userObj.isPending }">
+                <img :src="userObj.avatar || '/images/default_avatar.png'" alt="" class="token-avatar" @error="onAvatarError">
+                <span class="token-name">{{ userObj.globalName || userObj.username }}</span>
+                <span v-if="userObj.isPending" class="token-status">{{ t('submit.invite_pending') }}</span>
+                <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeCollab(userObj._id)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
               </div>
             </div>
           </div>
-          <span class="form-help-text">{{ t('submit.dependencies_help') }}</span>
-        </div>
 
-        <div class="card-divider-sub" />
+          <div v-else class="form-group">
+            <span class="field-label">{{ t('submit.collaborators') }}</span>
+            <div v-if="selectedCollabs.length > 0" class="token-list">
+              <div v-for="userObj in selectedCollabs" :key="userObj._id" class="token readonly" :class="{ pending: userObj.isPending }">
+                <img :src="userObj.avatar || '/images/default_avatar.png'" alt="" class="token-avatar" @error="onAvatarError">
+                <span class="token-name">{{ userObj.globalName || userObj.username }}</span>
+                <span v-if="userObj.isPending" class="token-status">{{ t('submit.invite_pending') }}</span>
+              </div>
+            </div>
+            <span class="form-help-text">{{ t('submit.only_author_manage_collabs') }}</span>
+          </div>
+        </section>
 
-        <!-- Form Messages -->
-        <div v-if="errorMsg" class="form-error-msg">
-          {{ errorMsg }}
-        </div>
-        <div v-if="successMsg" class="form-success-msg">
-          {{ successMsg }}
-        </div>
+        <!-- Dependencies -->
+        <section class="card form-section">
+          <h2 class="section-title">{{ t('submit.dependencies') }}</h2>
 
-        <div class="form-actions">
-          <UIButton
-            :label="updating ? t('submit.saving') : t('submit.save_changes')"
-            :blocked="updating"
-            type="submit"
-            class="form-submit-btn"
-          />
-          <UIButton
-            :label="t('submit.cancel')"
-            class="danger-btn form-cancel-btn"
-            type="button"
-            @click="cancelEdit"
-          />
+          <div class="form-group">
+            <div class="search-field">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <input
+                v-model="dependencySearchQuery"
+                type="text"
+                autocomplete="off"
+                :placeholder="t('submit.dependencies_placeholder')"
+                :aria-label="t('submit.dependencies')"
+                @input="searchDependencies"
+              >
+              <div v-if="dependencySearchResults.length > 0" class="search-results">
+                <button
+                  v-for="dep in dependencySearchResults"
+                  :key="dep._id"
+                  type="button"
+                  class="search-result"
+                  @click="addDependency(dep)"
+                >
+                  <img :src="dep.logo || '/images/default_avatar.png'" alt="" class="result-logo" @error="onAvatarError">
+                  <span class="result-text">
+                    <span class="result-name">{{ dep.name }}</span>
+                    <span class="result-sub">{{ dep.slug }}</span>
+                  </span>
+                  <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                </button>
+              </div>
+            </div>
+            <span class="form-help-text">{{ t('submit.dependencies_help') }}</span>
+
+            <div v-if="selectedDependencies.length > 0" class="token-list">
+              <div v-for="dep in selectedDependencies" :key="dep._id" class="token">
+                <img :src="dep.logo || '/images/default_avatar.png'" alt="" class="token-logo" @error="onAvatarError">
+                <span class="token-name">{{ dep.name }}</span>
+                <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeDependency(dep._id)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Actions -->
+        <div class="form-footer">
+          <div class="form-footer-messages">
+            <p v-if="errorMsg" class="form-message error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+              {{ errorMsg }}
+            </p>
+            <p v-if="successMsg" class="form-message success" role="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+              {{ successMsg }}
+            </p>
+          </div>
+          <div class="form-footer-actions">
+            <button type="button" class="btn btn-ghost btn-lg" @click="cancelEdit">
+              {{ t('submit.cancel') }}
+            </button>
+            <button type="submit" class="btn btn-primary btn-lg submit-btn" :disabled="updating">
+              <span v-if="updating" class="btn-spinner" />
+              {{ updating ? t('submit.saving') : t('submit.save_changes') }}
+            </button>
+          </div>
         </div>
       </form>
-    </div>
+    </template>
 
-    <div v-else class="card error-card">
-      <h2>{{ t('submit.mod_not_found') }}</h2>
+    <div v-else class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+      <h2 class="empty-title">{{ t('submit.mod_not_found') }}</h2>
       <p>{{ t('submit.mod_not_found_detail') }}</p>
     </div>
   </div>
@@ -269,7 +306,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useSeoMeta } from '#imports'
-import { UIButton, UIDropdown } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 
 const { t } = useI18n()
@@ -349,6 +385,9 @@ interface ModItem {
   } | null
 }
 
+const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
+const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
+
 const route = useRoute()
 const slug = route.params.slug as string
 const { user, loading: authLoading } = useAuth()
@@ -417,26 +456,30 @@ const isAuthorOrAdmin = computed(() => {
   return user.value.isAdmin || mod.value.authorId._id === user.value.id
 })
 
+const requiresReview = computed(() => !!mod.value?.isApproved && !user.value?.isAdmin)
+
+const onAvatarError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/default_avatar.png'
+}
+
+const getFallbackGradientStyle = (name: string) => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const h1 = Math.abs(hash) % 360
+  const h2 = (h1 + 40) % 360
+  return {
+    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+  }
+}
+
 const getGameLabel = (val: string) => {
   if (val === 'adofai') return t('games.adofai')
   if (val === 'rhythm-doctor') return t('games.rhythm_doctor')
   if (val === 'dancing-line') return t('games.dancing_line')
   return val
 }
-
-const categoriesFormModel = computed({
-  get() {
-    return 'selected:' + form.value.categories.join(',')
-  },
-  set(val: string) {
-    if (val === 'selected:' || !val) {
-      form.value.categories = []
-      return
-    }
-    const actualVal = val.startsWith('selected:') ? val.slice(9) : val
-    toggleFormCategory(actualVal)
-  }
-})
 
 const toggleFormCategory = (cat: string) => {
   const index = form.value.categories.indexOf(cat)
@@ -454,20 +497,6 @@ const getCategoryLabelOnly = (val: string) => {
   if (val === 'visuals') return t('categories.visuals')
   if (val === 'library') return t('categories.library')
   return val
-}
-
-const getCategoryLabel = (val: string) => {
-  if (!val) return ''
-  if (val.startsWith('selected:')) {
-    const listStr = val.slice(9)
-    if (!listStr) return ''
-    return listStr.split(',').map(getCategoryLabelOnly).join(', ')
-  }
-  const label = getCategoryLabelOnly(val)
-  if (form.value.categories.includes(val)) {
-    return `✓ ${label}`
-  }
-  return label
 }
 
 const loadModDetails = async () => {
@@ -656,295 +685,496 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.edit-page-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.edit-loading-state {
+.editor {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 80px 0;
+  gap: 24px;
 }
 
-.spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(145, 154, 255, 0.2);
-  border-top-color: #919AFF;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.form-card {
-  width: 100%;
-  max-width: 800px;
-  padding: 40px;
-}
-
-.card-divider {
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.08);
-  margin: 20px 0 30px 0;
-}
-
-.card-divider-sub {
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.05);
-  margin: 30px 0 24px 0;
-}
-
-.main-form {
+.editor-form {
   display: flex;
   flex-direction: column;
-}
-
-/* Collaborators styles */
-.collabs-tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.collab-tag-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: rgba(145, 154, 255, 0.1);
-  border: 1px solid rgba(145, 154, 255, 0.2);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.collab-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-}
-
-.remove-collab-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.remove-collab-btn:hover {
-  color: #E2676D;
-}
-
-.collab-search-wrapper {
-  position: relative;
-}
-
-.collab-search-input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-results-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: #1e1d24;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 50;
-  margin-top: 4px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-.search-result-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.search-result-item:hover {
-  background-color: rgba(145, 154, 255, 0.1);
-}
-
-.form-error-msg {
-  background-color: rgba(226, 103, 109, 0.1);
-  border: 1px solid rgba(226, 103, 109, 0.2);
-  color: #E2676D;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-.form-success-msg {
-  background-color: rgba(95, 195, 145, 0.1);
-  border: 1px solid rgba(95, 195, 145, 0.2);
-  color: #5FC391;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-.error-card {
-  max-width: 500px;
-  text-align: center;
-  padding: 40px;
-}
-
-/* Logo Upload Custom Styles */
-.logo-upload-container {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 16px;
-}
-
-.logo-preview-box {
-  width: 80px;
-  height: 80px;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(145, 154, 255, 0.15) 0%, rgba(108, 120, 255, 0.05) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.logo-preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.logo-preview-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-}
-
-.logo-placeholder-text {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--accent-purple);
-  text-shadow: 0 0 10px rgba(145, 154, 255, 0.4);
-}
-
-.logo-upload-controls {
-  flex-grow: 1;
-}
-
-.logo-upload-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.logo-help-text {
-  display: block;
-  margin-top: 8px;
-}
-
-.form-dropdown-wrapper {
-  width: 100%;
-  max-width: 320px;
-}
-
-.category-dropdown-wrapper {
-  margin-bottom: 12px;
-}
-
-.form-actions {
-  display: flex;
   gap: 16px;
 }
 
-.form-submit-btn {
-  flex-grow: 1;
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.form-submit-btn :deep(.overlayer-btn),
-.form-cancel-btn :deep(.overlayer-btn) {
-  padding: 0 24px !important;
-  font-size: 16px !important;
-  height: 48px !important;
-  display: flex !important;
+.card .section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.form-section .form-group {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.form-section .form-row {
+  row-gap: 20px;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.char-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Chips */
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-check {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+/* Logo */
+.logo-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-tile {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.logo-tile img,
+.logo-tile span {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-tile img {
+  display: block;
+  object-fit: cover;
+}
+
+.logo-tile span {
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
 }
 
-@media (max-width: 768px) {
-  .form-card {
-    padding: 24px 16px !important;
+.logo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.logo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-group .hidden-input {
+  display: none;
+}
+
+/* Search + tokens */
+.search-field {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 20px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.form-group .search-field input {
+  padding-left: 36px;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-result:hover,
+.search-result:focus-visible {
+  background: var(--surface-3);
+}
+
+.result-avatar,
+.result-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.result-avatar {
+  border-radius: 50%;
+}
+
+.result-logo {
+  border-radius: 7px;
+}
+
+.result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.result-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-sub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-add {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.search-result:hover .result-add {
+  color: var(--accent);
+}
+
+.token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 4px 0 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.token.pending {
+  border-style: dashed;
+}
+
+.token-avatar,
+.token-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.token-avatar {
+  border-radius: 50%;
+}
+
+.token-logo {
+  border-radius: 6px;
+}
+
+.token-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--warning);
+}
+
+.token-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.token-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.token-remove:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Footer */
+.form-footer {
+  position: sticky;
+  bottom: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 12px 12px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.form-footer-messages {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-message svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.form-message.error {
+  color: var(--danger);
+}
+
+.form-message.success {
+  color: var(--success);
+}
+
+.submit-btn {
+  min-width: 160px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+.editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 96px 0;
+  color: var(--text-secondary);
+}
+
+.editor-loading p {
+  margin: 0;
+}
+
+.mod-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.mod-link:hover {
+  color: var(--accent);
+}
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.callout svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.callout p {
+  margin: 0;
+}
+
+.callout.warning {
+  border-color: rgba(242, 181, 82, 0.28);
+  background: var(--warning-soft);
+}
+
+.callout.warning svg {
+  color: var(--warning);
+}
+
+.token.readonly {
+  padding-right: 12px;
+}
+
+.form-footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.empty-state .empty-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.empty-state p {
+  margin: 0;
+  max-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .form-section {
+    padding: 20px 16px;
   }
-  
-  .logo-upload-container {
+
+  .logo-field {
+    align-items: flex-start;
+  }
+
+  .logo-tile {
+    width: 64px;
+    height: 64px;
+  }
+
+  .form-footer {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
+    padding: 12px;
+    bottom: 8px;
   }
-  
-  .logo-preview-box {
-    margin: 0 auto;
+
+  .form-footer-messages:empty {
+    display: none;
   }
-  
-  .logo-upload-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+
+  .form-footer-actions {
+    flex-direction: column-reverse;
+    margin-left: 0;
   }
-  
-  .logo-upload-buttons {
+
+  .submit-btn {
     width: 100%;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .logo-upload-buttons :deep(.overlayer-btn) {
-    width: 100% !important;
-    text-align: center;
-  }
-
-  .form-dropdown-wrapper {
-    max-width: 100%;
-  }
-
-  .form-actions {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .form-submit-btn,
-  .form-cancel-btn,
-  .form-submit-btn :deep(.overlayer-btn),
-  .form-cancel-btn :deep(.overlayer-btn) {
-    width: 100% !important;
+    margin-left: 0;
   }
 }
 </style>

@@ -1,112 +1,92 @@
 <template>
-  <div class="submit-page-container">
-    <div class="card form-card">
-      <h2>{{ t('submit.title') }}</h2>
-      <div class="card-divider" />
+  <div class="editor">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ t('submit.title') }}</h1>
+        <p class="page-subtitle">{{ t('submit.subtitle') }}</p>
+      </div>
+    </header>
 
-      <form class="main-form" @submit.prevent="handleSubmit">
-        <!-- Mod Name -->
-        <div class="form-group">
-          <label for="mod-name">{{ t('submit.name') }}</label>
-          <input
-            id="mod-name"
-            v-model="form.name"
-            type="text"
-            :placeholder="t('submit.name_placeholder')"
-            required
-            @input="generateSlug"
-          >
-        </div>
+    <form class="editor-form" @submit.prevent="handleSubmit">
+      <!-- Basics -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.section_basics') }}</h2>
 
-        <!-- Slug (Auto-generated) -->
-        <div class="form-group">
-          <label for="mod-slug">{{ t('submit.slug') }}</label>
-          <input
-            id="mod-slug"
-            v-model="form.slug"
-            type="text"
-            :placeholder="t('submit.slug_placeholder')"
-            required
-          >
-          <span class="form-help-text">{{ t('submit.slug_help') }}</span>
-        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="mod-name">{{ t('submit.name') }}</label>
+            <input
+              id="mod-name"
+              v-model="form.name"
+              type="text"
+              :placeholder="t('submit.name_placeholder')"
+              required
+              @input="generateSlug"
+            >
+          </div>
 
-        <!-- Mod Logo -->
-        <div class="form-group">
-          <label>{{ t('submit.logo') }}</label>
-          <div class="logo-upload-container">
-            <div class="logo-preview-box">
-              <img v-if="form.logo" :src="form.logo" alt="Logo Preview" class="logo-preview-img">
-              <div v-else class="logo-preview-placeholder">
-                <span class="logo-placeholder-text">{{ form.name ? form.name.charAt(0).toUpperCase() : 'M' }}</span>
-              </div>
-            </div>
-            <div class="logo-upload-controls">
+          <div class="form-group">
+            <label for="mod-slug">{{ t('submit.slug') }}</label>
+            <div class="slug-input">
+              <span class="slug-prefix">/mods/</span>
               <input
-                ref="logoInput"
-                type="file"
-                accept="image/png, image/jpeg, image/jpg"
-                style="display: none;"
-                @change="handleLogoUpload"
+                id="mod-slug"
+                v-model="form.slug"
+                type="text"
+                :placeholder="t('submit.slug_placeholder')"
+                required
               >
-              <div class="logo-upload-buttons">
-                <UIButton
-                  type="button"
-                  :label="t('submit.logo_select')"
-                  @click="triggerLogoSelect"
-                />
-                <UIButton
-                  v-if="form.logo"
-                  type="button"
-                  :label="t('submit.logo_remove')"
-                  class="danger-btn"
-                  @click="clearLogo"
-                />
-              </div>
-              <span class="form-help-text logo-help-text">
-                {{ t('submit.logo_help') }}
-              </span>
             </div>
+            <span class="form-help-text">{{ t('submit.slug_help') }}</span>
           </div>
         </div>
 
-        <!-- Target Game -->
         <div class="form-group">
-          <label>{{ t('submit.game') }}</label>
-          <div class="form-dropdown-wrapper">
-            <UIDropdown
-              v-model="form.game"
-              default-value="adofai"
-              :values="['adofai', 'rhythm-doctor', 'dancing-line']"
-              :display="getGameLabel"
-              disable-reset
-            />
+          <span id="mod-game-label" class="field-label">{{ t('submit.game') }}</span>
+          <div class="chip-list" role="radiogroup" aria-labelledby="mod-game-label">
+            <button
+              v-for="game in GAMES"
+              :key="game"
+              type="button"
+              role="radio"
+              class="chip"
+              :class="{ active: form.game === game }"
+              :aria-checked="form.game === game"
+              @click="form.game = game"
+            >
+              {{ getGameLabel(game) }}
+            </button>
           </div>
         </div>
 
-        <!-- Category -->
         <div class="form-group">
-          <label>{{ t('submit.category') }}</label>
-          <div class="form-dropdown-wrapper category-dropdown-wrapper">
-            <UIDropdown
-              v-model="categoriesFormModel"
-              default-value="selected:"
-              :values="['ui', 'gameplay', 'utility', 'visuals', 'library']"
-              :display="getCategoryLabel"
-            />
-          </div>
-          <!-- Selected Categories tags -->
-          <div v-if="form.categories.length > 0" class="collabs-tags-container">
-            <div v-for="cat in form.categories" :key="cat" class="collab-tag-item">
-              <span>{{ getCategoryLabelOnly(cat) }}</span>
-              <button type="button" class="remove-collab-btn" @click="toggleFormCategory(cat)">&times;</button>
-            </div>
+          <span id="mod-category-label" class="field-label">{{ t('submit.category') }}</span>
+          <div class="chip-list" role="group" aria-labelledby="mod-category-label">
+            <button
+              v-for="cat in CATEGORIES"
+              :key="cat"
+              type="button"
+              class="chip"
+              :class="{ active: form.categories.includes(cat) }"
+              :aria-pressed="form.categories.includes(cat)"
+              @click="toggleFormCategory(cat)"
+            >
+              <svg v-if="form.categories.includes(cat)" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+              {{ getCategoryLabelOnly(cat) }}
+            </button>
           </div>
         </div>
+      </section>
 
-        <!-- Summary -->
+      <!-- Description -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.section_description') }}</h2>
+
         <div class="form-group">
-          <label for="mod-summary">{{ t('submit.summary') }}</label>
+          <div class="label-row">
+            <label for="mod-summary">{{ t('submit.summary') }}</label>
+            <span class="char-count">{{ form.summary.length }}/150</span>
+          </div>
           <input
             id="mod-summary"
             v-model="form.summary"
@@ -118,47 +98,81 @@
           <span class="form-help-text">{{ t('submit.summary_help') }}</span>
         </div>
 
-        <!-- Description -->
         <div class="form-group">
           <label for="mod-description">{{ t('submit.description') }}</label>
           <textarea
             id="mod-description"
             v-model="form.description"
-            rows="8"
+            rows="10"
             :placeholder="t('submit.description_placeholder')"
           />
           <span class="form-help-text">{{ t('submit.description_help') }}</span>
         </div>
+      </section>
 
-        <!-- Source Code Link -->
+      <!-- Media & links -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.section_media') }}</h2>
+
         <div class="form-group">
-          <label for="mod-source-url">{{ t('submit.source_url') }}</label>
-          <input
-            id="mod-source-url"
-            v-model="form.sourceUrl"
-            type="text"
-            :placeholder="t('submit.source_url_placeholder')"
-          >
-          <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
+          <span class="field-label">{{ t('submit.logo') }}</span>
+          <div class="logo-field">
+            <div class="logo-tile">
+              <img v-if="form.logo" :src="form.logo" alt="Logo Preview">
+              <span v-else :style="getFallbackGradientStyle(form.name || 'M')">{{ form.name ? form.name.charAt(0).toUpperCase() : 'M' }}</span>
+            </div>
+            <div class="logo-controls">
+              <input
+                ref="logoInput"
+                class="hidden-input"
+                type="file"
+                accept="image/png, image/jpeg, image/jpg"
+                @change="handleLogoUpload"
+              >
+              <div class="logo-buttons">
+                <button type="button" class="btn btn-secondary btn-sm" @click="triggerLogoSelect">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                  {{ t('submit.logo_select') }}
+                </button>
+                <button v-if="form.logo" type="button" class="btn btn-ghost btn-sm" @click="clearLogo">
+                  {{ t('submit.logo_remove') }}
+                </button>
+              </div>
+              <span class="form-help-text">{{ t('submit.logo_help') }}</span>
+            </div>
+          </div>
         </div>
-
-        <!-- Community Link -->
-        <div class="form-group">
-          <label for="mod-community-url">{{ t('submit.community_url') }}</label>
-          <input
-            id="mod-community-url"
-            v-model="form.communityUrl"
-            type="text"
-            :placeholder="t('submit.community_url_placeholder')"
-          >
-          <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
-        </div>
-
-        <div class="card-divider-sub" />
-        <h3>{{ t('submit.initial_release') }}</h3>
 
         <div class="form-row">
-          <!-- Initial Version -->
+          <div class="form-group">
+            <label for="mod-source-url">{{ t('submit.source_url') }}</label>
+            <input
+              id="mod-source-url"
+              v-model="form.sourceUrl"
+              type="text"
+              :placeholder="t('submit.source_url_placeholder')"
+            >
+            <span class="form-help-text">{{ t('submit.source_url_help') }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="mod-community-url">{{ t('submit.community_url') }}</label>
+            <input
+              id="mod-community-url"
+              v-model="form.communityUrl"
+              type="text"
+              :placeholder="t('submit.community_url_placeholder')"
+            >
+            <span class="form-help-text">{{ t('submit.community_url_help') }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Release -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.initial_release') }}</h2>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="mod-version">{{ t('submit.version') }}</label>
             <input
@@ -170,7 +184,6 @@
             >
           </div>
 
-          <!-- Target Game Version -->
           <div class="form-group">
             <label for="mod-game-version">{{ t('submit.game_version') }}</label>
             <input
@@ -179,23 +192,27 @@
               type="text"
               :placeholder="t('submit.game_version_placeholder')"
             >
+            <span class="form-help-text">{{ t('submit.game_version_help') }}</span>
           </div>
-
         </div>
-        <span class="form-help-text" style="margin-top: -12px; margin-bottom: 20px; display: block;">
-          {{ t('submit.game_version_help') }}
-        </span>
 
-        <div class="form-group platform-downloads-group">
-          <DownloadLinksInput
-            v-model:mode="form.downloadMode"
-            v-model:unified-url="form.downloadUrl"
-            v-model:platform-downloads="form.platformDownloads"
+        <DownloadLinksInput
+          v-model:mode="form.downloadMode"
+          v-model:unified-url="form.downloadUrl"
+          v-model:platform-downloads="form.platformDownloads"
+        />
+
+        <div class="form-group">
+          <label for="mod-changelog">{{ t('submit.changelog') }}</label>
+          <textarea
+            id="mod-changelog"
+            v-model="form.changelog"
+            rows="4"
+            :placeholder="t('submit.changelog_placeholder')"
           />
         </div>
 
-        <!-- Beta Option -->
-        <div class="form-group" style="margin-bottom: 20px; width: 220px;">
+        <div class="beta-toggle">
           <UIToggle
             v-model="form.isBeta"
             :default-value="false"
@@ -203,124 +220,127 @@
             :font-size="14"
           />
         </div>
+      </section>
 
-        <!-- Changelog -->
+      <!-- Team -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.section_team') }}</h2>
+
         <div class="form-group">
-          <label for="mod-changelog">{{ t('submit.changelog') }}</label>
-          <textarea
-            id="mod-changelog"
-            v-model="form.changelog"
-            rows="3"
-            :placeholder="t('submit.changelog_placeholder')"
-          />
-        </div>
-
-        <div class="card-divider-sub" />
-
-        <!-- Collaborators Section -->
-        <div class="form-group">
-          <label>{{ t('submit.collaborators') }}</label>
-          
-          <!-- Selected Collabs List -->
-          <div v-if="selectedCollabs.length > 0" class="collabs-tags-container">
-            <div v-for="userObj in selectedCollabs" :key="userObj._id" class="collab-tag-item">
-              <img :src="userObj.avatar || '/images/default_avatar.png'" alt="Avatar" class="collab-avatar">
-              <span>{{ userObj.globalName || userObj.username }}</span>
-              <button type="button" class="remove-collab-btn" @click="removeCollab(userObj._id)">&times;</button>
-            </div>
-          </div>
-
-          <!-- Collab Search Input -->
-          <div class="collab-search-wrapper">
+          <label for="collab-search">{{ t('submit.collaborators') }}</label>
+          <div class="search-field">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input
+              id="collab-search"
               v-model="collabSearchQuery"
               type="text"
+              autocomplete="off"
               :placeholder="t('submit.search_user_placeholder')"
-              class="collab-search-input"
               @input="searchUsers"
             >
-            
-            <!-- Search Results Dropdown -->
-            <div v-if="searchResults.length > 0" class="search-results-dropdown">
-              <div
+            <div v-if="searchResults.length > 0" class="search-results">
+              <button
                 v-for="userObj in searchResults"
                 :key="userObj._id"
-                class="search-result-item"
+                type="button"
+                class="search-result"
                 @click="addCollab(userObj)"
               >
-                <img :src="userObj.avatar || '/images/default_avatar.png'" alt="Avatar" class="collab-avatar">
-                <span>{{ userObj.globalName || userObj.username }} ({{ userObj.username }})</span>
-              </div>
+                <img :src="userObj.avatar || '/images/default_avatar.png'" alt="" class="result-avatar" @error="onAvatarError">
+                <span class="result-text">
+                  <span class="result-name">{{ userObj.globalName || userObj.username }}</span>
+                  <span class="result-sub">@{{ userObj.username }}</span>
+                </span>
+                <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+            </div>
+          </div>
+          <span class="form-help-text">{{ t('submit.collaborators_help') }}</span>
+
+          <div v-if="selectedCollabs.length > 0" class="token-list">
+            <div v-for="userObj in selectedCollabs" :key="userObj._id" class="token pending">
+              <img :src="userObj.avatar || '/images/default_avatar.png'" alt="" class="token-avatar" @error="onAvatarError">
+              <span class="token-name">{{ userObj.globalName || userObj.username }}</span>
+              <span class="token-status">{{ t('submit.invite_pending') }}</span>
+              <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeCollab(userObj._id)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="card-divider-sub" />
+      <!-- Dependencies -->
+      <section class="card form-section">
+        <h2 class="section-title">{{ t('submit.dependencies') }}</h2>
 
-        <!-- Dependencies Section -->
         <div class="form-group">
-          <label>{{ t('submit.dependencies') }}</label>
-          
-          <!-- Selected Dependencies List -->
-          <div v-if="selectedDependencies.length > 0" class="collabs-tags-container">
-            <div v-for="dep in selectedDependencies" :key="dep._id" class="collab-tag-item">
-              <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-              <span>{{ dep.name }}</span>
-              <button type="button" class="remove-collab-btn" @click="removeDependency(dep._id)">&times;</button>
-            </div>
-          </div>
-
-          <!-- Dependency Search Input -->
-          <div class="collab-search-wrapper">
+          <div class="search-field">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input
               v-model="dependencySearchQuery"
               type="text"
+              autocomplete="off"
               :placeholder="t('submit.dependencies_placeholder')"
-              class="collab-search-input"
+              :aria-label="t('submit.dependencies')"
               @input="searchDependencies"
             >
-            
-            <!-- Search Results Dropdown -->
-            <div v-if="dependencySearchResults.length > 0" class="search-results-dropdown">
-              <div
+            <div v-if="dependencySearchResults.length > 0" class="search-results">
+              <button
                 v-for="dep in dependencySearchResults"
                 :key="dep._id"
-                class="search-result-item"
+                type="button"
+                class="search-result"
                 @click="addDependency(dep)"
               >
-                <img :src="dep.logo || '/images/default_avatar.png'" alt="Logo" class="collab-avatar" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-                <span>{{ dep.name }} ({{ dep.slug }})</span>
-              </div>
+                <img :src="dep.logo || '/images/default_avatar.png'" alt="" class="result-logo" @error="onAvatarError">
+                <span class="result-text">
+                  <span class="result-name">{{ dep.name }}</span>
+                  <span class="result-sub">{{ dep.slug }}</span>
+                </span>
+                <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
             </div>
           </div>
           <span class="form-help-text">{{ t('submit.dependencies_help') }}</span>
-        </div>
 
-        <div class="card-divider-sub" />
-
-        <!-- Form Messages -->
-        <div v-if="errorMsg" class="form-error-msg">
-          {{ errorMsg }}
+          <div v-if="selectedDependencies.length > 0" class="token-list">
+            <div v-for="dep in selectedDependencies" :key="dep._id" class="token">
+              <img :src="dep.logo || '/images/default_avatar.png'" alt="" class="token-logo" @error="onAvatarError">
+              <span class="token-name">{{ dep.name }}</span>
+              <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeDependency(dep._id)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+          </div>
         </div>
-        <div v-if="successMsg" class="form-success-msg">
-          {{ successMsg }}
-        </div>
+      </section>
 
-        <UIButton
-          :label="submitting ? t('submit.submitting') : t('submit.save')"
-          :blocked="submitting"
-          type="submit"
-          style="width: 100%; padding: 14px; font-size: 16px;"
-        />
-      </form>
-    </div>
+      <!-- Actions -->
+      <div class="form-footer">
+        <div class="form-footer-messages">
+          <p v-if="errorMsg" class="form-message error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+            {{ errorMsg }}
+          </p>
+          <p v-if="successMsg" class="form-message success" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+            {{ successMsg }}
+          </p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg submit-btn" :disabled="submitting">
+          <span v-if="submitting" class="btn-spinner" />
+          {{ submitting ? t('submit.submitting') : t('submit.save') }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
-import { UIButton, UIDropdown, UIToggle } from 'overlayer-ui'
+import { UIToggle } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
@@ -341,6 +361,9 @@ interface SearchUserItem {
   globalName?: string
   avatar?: string
 }
+
+const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
+const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
 
 const form = ref({
   name: '',
@@ -392,6 +415,22 @@ const hasDownload = computed(() => form.value.downloadMode === 'unified'
   ? form.value.downloadUrl.trim().length > 0
   : Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0))
 
+const onAvatarError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/default_avatar.png'
+}
+
+const getFallbackGradientStyle = (name: string) => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const h1 = Math.abs(hash) % 360
+  const h2 = (h1 + 40) % 360
+  return {
+    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+  }
+}
+
 const triggerLogoSelect = () => {
   if (logoInput.value) {
     logoInput.value.click()
@@ -429,20 +468,6 @@ const getGameLabel = (val: string) => {
   return val
 }
 
-const categoriesFormModel = computed({
-  get() {
-    return 'selected:' + form.value.categories.join(',')
-  },
-  set(val: string) {
-    if (val === 'selected:' || !val) {
-      form.value.categories = []
-      return
-    }
-    const actualVal = val.startsWith('selected:') ? val.slice(9) : val
-    toggleFormCategory(actualVal)
-  }
-})
-
 const toggleFormCategory = (cat: string) => {
   const index = form.value.categories.indexOf(cat)
   if (index > -1) {
@@ -459,20 +484,6 @@ const getCategoryLabelOnly = (val: string) => {
   if (val === 'visuals') return t('categories.visuals')
   if (val === 'library') return t('categories.library')
   return val
-}
-
-const getCategoryLabel = (val: string) => {
-  if (!val) return ''
-  if (val.startsWith('selected:')) {
-    const listStr = val.slice(9)
-    if (!listStr) return ''
-    return listStr.split(',').map(getCategoryLabelOnly).join(', ')
-  }
-  const label = getCategoryLabelOnly(val)
-  if (form.value.categories.includes(val)) {
-    return `✓ ${label}`
-  }
-  return label
 }
 
 const generateSlug = () => {
@@ -613,247 +624,451 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.submit-page-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.form-card {
+.editor {
   width: 100%;
-  max-width: 800px;
-  padding: 40px;
-}
-
-.card-divider {
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.08);
-  margin: 20px 0 30px 0;
-}
-
-.card-divider-sub {
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.05);
-  margin: 30px 0 24px 0;
-}
-
-.main-form {
+  max-width: 860px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  gap: 24px;
 }
 
-.form-help-text {
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card .section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.form-section .form-group {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.form-section .form-row {
+  row-gap: 20px;
+}
+
+.field-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.35);
-  margin-top: 4px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
-.platform-downloads-group {
-  margin-top: 8px;
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-/* Collaborators styles */
-.collabs-tags-container {
+.char-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Slug */
+.slug-input {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slug-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.slug-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 14px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.form-group .slug-input input {
+  padding-left: 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Chips */
+.chip-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
-.collab-tag-item {
+.chip-check {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+/* Logo */
+.logo-field {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: rgba(145, 154, 255, 0.1);
-  border: 1px solid rgba(145, 154, 255, 0.2);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 16px;
 }
 
-.collab-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-}
-
-.remove-collab-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.remove-collab-btn:hover {
-  color: #E2676D;
-}
-
-.collab-search-wrapper {
-  position: relative;
-}
-
-.collab-search-input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-results-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: #1e1d24;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 50;
-  margin-top: 4px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-.search-result-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.search-result-item:hover {
-  background-color: rgba(145, 154, 255, 0.1);
-}
-
-.form-error-msg {
-  background-color: rgba(226, 103, 109, 0.1);
-  border: 1px solid rgba(226, 103, 109, 0.2);
-  color: #E2676D;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-.form-success-msg {
-  background-color: rgba(95, 195, 145, 0.1);
-  border: 1px solid rgba(95, 195, 145, 0.2);
-  color: #5FC391;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-/* Logo Upload Custom Styles */
-.logo-upload-container {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 16px;
-}
-
-.logo-preview-box {
+.logo-tile {
   width: 80px;
   height: 80px;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(145, 154, 255, 0.15) 0%, rgba(108, 120, 255, 0.05) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 
-.logo-preview-img {
+.logo-tile img,
+.logo-tile span {
   width: 100%;
   height: 100%;
+}
+
+.logo-tile img {
+  display: block;
   object-fit: cover;
 }
 
-.logo-preview-placeholder {
+.logo-tile span {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
 }
 
-.logo-placeholder-text {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--accent-purple);
-  text-shadow: 0 0 10px rgba(145, 154, 255, 0.4);
-}
-
-.logo-upload-controls {
-  flex-grow: 1;
-}
-
-.logo-upload-buttons {
+.logo-controls {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.logo-buttons {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.logo-help-text {
-  display: block;
-  margin-top: 8px;
+.form-group .hidden-input {
+  display: none;
 }
 
-.form-dropdown-wrapper {
+.beta-toggle {
+  width: 240px;
+  max-width: 100%;
+}
+
+/* Search + tokens */
+.search-field {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 20px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.form-group .search-field input {
+  padding-left: 36px;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  max-width: 320px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.category-dropdown-wrapper {
-  margin-bottom: 12px;
+.search-result:hover,
+.search-result:focus-visible {
+  background: var(--surface-3);
 }
 
-@media (max-width: 768px) {
-  .form-card {
-    padding: 24px 16px !important;
+.result-avatar,
+.result-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.result-avatar {
+  border-radius: 50%;
+}
+
+.result-logo {
+  border-radius: 7px;
+}
+
+.result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.result-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-sub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-add {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.search-result:hover .result-add {
+  color: var(--accent);
+}
+
+.token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 4px 0 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.token.pending {
+  border-style: dashed;
+}
+
+.token-avatar,
+.token-logo {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.token-avatar {
+  border-radius: 50%;
+}
+
+.token-logo {
+  border-radius: 6px;
+}
+
+.token-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--warning);
+}
+
+.token-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.token-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.token-remove:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Footer */
+.form-footer {
+  position: sticky;
+  bottom: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 12px 12px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.form-footer-messages {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-message svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.form-message.error {
+  color: var(--danger);
+}
+
+.form-message.success {
+  color: var(--success);
+}
+
+.submit-btn {
+  margin-left: auto;
+  min-width: 160px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .form-section {
+    padding: 20px 16px;
   }
-  
-  .logo-upload-container {
+
+  .logo-field {
+    align-items: flex-start;
+  }
+
+  .logo-tile {
+    width: 64px;
+    height: 64px;
+  }
+
+  .form-footer {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
-  }
-  
-  .logo-preview-box {
-    margin: 0 auto;
-  }
-  
-  .logo-upload-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  
-  .logo-upload-buttons {
-    width: 100%;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .logo-upload-buttons :deep(.overlayer-btn) {
-    width: 100% !important;
-    text-align: center;
+    padding: 12px;
+    bottom: 8px;
   }
 
-  .form-dropdown-wrapper {
-    max-width: 100%;
+  .form-footer-messages:empty {
+    display: none;
+  }
+
+  .submit-btn {
+    width: 100%;
+    margin-left: 0;
   }
 }
 </style>

@@ -1,24 +1,28 @@
 <template>
-  <div class="download-links-card">
+  <div class="download-links">
     <div class="download-links-header">
-      <div>
-        <div class="download-links-title">{{ t('submit.platform_downloads', 'Download links') }}</div>
-        <p>{{ t('submit.platform_downloads_help', 'Choose one link for every OS or provide separate OS links.') }}</p>
+      <div class="download-links-heading">
+        <span class="download-links-title">{{ t('submit.platform_downloads', 'Download links') }}</span>
+        <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Choose one link for every OS or provide separate OS links.') }}</span>
       </div>
 
-      <div class="download-mode-switch" role="tablist">
+      <div class="segmented" role="tablist">
         <button
           type="button"
-          class="download-mode-button"
+          role="tab"
+          class="segmented-option"
           :class="{ active: mode === 'unified' }"
+          :aria-selected="mode === 'unified'"
           @click="setMode('unified')"
         >
           {{ t('submit.download_mode_unified', 'Unified link') }}
         </button>
         <button
           type="button"
-          class="download-mode-button"
+          role="tab"
+          class="segmented-option"
           :class="{ active: mode === 'platform' }"
+          :aria-selected="mode === 'platform'"
           @click="setMode('platform')"
         >
           {{ t('submit.download_mode_platform', 'OS-specific') }}
@@ -26,24 +30,31 @@
       </div>
     </div>
 
-    <div v-if="mode === 'unified'" class="download-editor-row">
-      <span class="download-kind-badge">ALL</span>
-      <input
-        :value="unifiedUrl"
-        type="url"
-        :placeholder="t('submit.download_placeholder')"
-        required
-        @input="updateUnifiedUrl"
-      >
+    <div v-if="mode === 'unified'" class="download-rows">
+      <div class="download-row">
+        <span class="download-kind">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>
+          {{ t('submit.download_all_platforms', 'All platforms') }}
+        </span>
+        <input
+          :value="unifiedUrl"
+          type="url"
+          :placeholder="t('submit.download_placeholder')"
+          :aria-label="t('submit.download_all_platforms', 'All platforms')"
+          required
+          @input="updateUnifiedUrl"
+        >
+      </div>
     </div>
 
-    <div v-else class="platform-download-list">
-      <div v-for="platform in platforms" :key="platform.key" class="download-editor-row">
-        <span class="platform-kind-badge">{{ platform.label }}</span>
+    <div v-else class="download-rows">
+      <div v-for="platform in platforms" :key="platform.key" class="download-row">
+        <span class="download-kind">{{ platform.label }}</span>
         <input
           :value="platformDownloads[platform.key]"
           type="url"
           :placeholder="t('submit.download_placeholder')"
+          :aria-label="platform.label"
           :required="!hasPlatformDownload"
           @input="updatePlatformUrl(platform.key, $event)"
         >
@@ -99,11 +110,14 @@ const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
 </script>
 
 <style scoped>
-.download-links-card {
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
+.download-links {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
 }
 
 .download-links-header {
@@ -113,102 +127,125 @@ const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
   gap: 16px;
 }
 
+.download-links-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .download-links-title {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--text-secondary);
 }
 
-.download-links-header p {
-  max-width: 420px;
-  margin: 4px 0 0;
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.download-mode-switch {
-  display: grid;
+.segmented {
+  display: inline-grid;
   grid-template-columns: repeat(2, max-content);
   gap: 2px;
   flex-shrink: 0;
   padding: 3px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
 }
 
-.download-mode-button {
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 7px;
+.segmented-option {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.segmented-option:hover {
+  color: var(--text);
+}
+
+.segmented-option.active {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.download-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.download-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+}
+
+.download-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  width: 116px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.download-mode-button.active {
-  background: rgba(145, 154, 255, 0.22);
-  color: #fff;
-}
-
-.download-editor-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 12px;
-}
-
-.download-editor-row input {
-  min-width: 0;
-  flex: 1;
-}
-
-.download-kind-badge,
-.platform-kind-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.download-kind svg {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  min-width: 54px;
-  height: 34px;
-  padding: 0 9px;
-  border: 1px solid rgba(145, 154, 255, 0.18);
-  border-radius: 8px;
-  background: rgba(145, 154, 255, 0.1);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.platform-kind-badge {
-  min-width: 72px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.platform-download-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 10px;
+  color: var(--text-tertiary);
 }
 
 @media (max-width: 640px) {
   .download-links-header {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
-  .download-mode-switch {
+  .segmented {
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .platform-download-list {
-    grid-template-columns: 1fr;
+  .download-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .download-kind {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 12px;
+  }
+
+  .download-row input {
+    width: 100%;
   }
 }
 </style>

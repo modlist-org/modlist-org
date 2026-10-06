@@ -1,136 +1,148 @@
 <template>
-  <div class="pending-page-container">
-    <!-- Header info -->
-    <div class="pending-header card">
-      <h1 class="pending-title">{{ t('pending.title') }}</h1>
-      <p class="pending-subtitle">{{ t('pending.subtitle') }}</p>
-    </div>
+  <div class="pending">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ t('pending.title') }}</h1>
+        <p class="page-subtitle">{{ t('pending.subtitle') }}</p>
+      </div>
+    </header>
 
     <!-- Collaborator Invitations Section -->
-    <div v-if="invitations.length > 0" class="invitations-section card" style="padding: 24px;">
-      <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin: 0 0 6px 0;">
-        {{ t('pending.invitations_title') }}
-      </h2>
-      <p style="font-size: 14px; color: rgba(255, 255, 255, 0.5); margin: 0 0 20px 0;">
-        {{ t('pending.invitations_subtitle') }}
-      </p>
+    <section v-if="invitations.length > 0" class="section">
+      <div class="section-head">
+        <h2 class="section-title">
+          {{ t('pending.invitations_title') }}
+          <span class="section-count">{{ invitations.length }}</span>
+        </h2>
+        <p class="section-desc">{{ t('pending.invitations_subtitle') }}</p>
+      </div>
 
-      <div class="invitations-list" style="display: flex; flex-direction: column; gap: 14px;">
-        <div v-for="inv in invitations" :key="inv._id" class="invitation-item card" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px;">
-          <div>
-            <div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">
-              {{ inv.name }}
-            </div>
-            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.4); display: flex; align-items: center; gap: 6px;">
-              <span>{{ t('mod.details.creator_label') }}:</span>
-              <img :src="inv.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" style="width: 16px; height: 16px; border-radius: 50%;">
-              <span>{{ inv.authorId?.globalName || inv.authorId?.username }}</span>
-              <span v-if="inv.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 1px 3px; font-size: 8px; border-radius: 3px; line-height: 1;">✓</span>
+      <div class="invite-list">
+        <div v-for="inv in invitations" :key="inv._id" class="invite">
+          <div class="invite-logo">
+            <img v-if="inv.logo" :src="inv.logo" :alt="inv.name">
+            <span v-else :style="getFallbackGradientStyle(inv.name)">{{ inv.name ? inv.name.charAt(0).toUpperCase() : 'M' }}</span>
+          </div>
+          <div class="invite-body">
+            <div class="invite-name">{{ inv.name }}</div>
+            <div class="invite-meta">
+              <span>{{ t('mod.details.creator_label') }}</span>
+              <img :src="inv.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
+              <span class="invite-author">{{ inv.authorId?.globalName || inv.authorId?.username }}</span>
+              <span v-if="inv.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn-action accept-btn" style="background-color: #5FC391; color: #0f1015; border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" @click="respondInvitation(inv.slug, 'accept')">
-              {{ t('pending.accept') }}
-            </button>
-            <button type="button" class="btn-action reject-btn" style="background-color: rgba(226, 103, 109, 0.1); color: #E2676D; border: 1px solid rgba(226, 103, 109, 0.2); padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;" @click="respondInvitation(inv.slug, 'reject')">
+          <div class="invite-actions">
+            <button type="button" class="btn btn-sm btn-ghost" @click="respondInvitation(inv.slug, 'reject')">
               {{ t('pending.reject') }}
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" @click="respondInvitation(inv.slug, 'accept')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+              {{ t('pending.accept') }}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Loading Indicator -->
-    <div v-if="loading" class="pending-loading-state">
-      <div class="spinner" />
-      <p>{{ t('loading') }}</p>
-    </div>
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">
+          {{ t('pending.your_submissions') }}
+          <span v-if="!loading" class="section-count">{{ mods.length }}</span>
+        </h2>
+      </div>
 
-    <!-- Mods list -->
-    <div v-else-if="mods.length > 0" class="mods-grid">
-      <NuxtLink
-        v-for="mod in mods"
-        :key="mod._id"
-        :to="`/mods/${mod.slug}`"
-        class="card card-hover mod-card"
-      >
-        <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; flex-grow: 1;">
-          <div class="card-logo-container" style="width: 54px; height: 54px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);">
-            <img v-if="mod.logo" :src="mod.logo" alt="Mod Logo" class="card-logo-img" style="width: 100%; height: 100%; object-fit: cover;">
-            <div v-else class="card-logo-fallback" :style="getFallbackGradientStyle(mod.name)" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 22px; font-weight: 700; color: #ffffff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
-            </div>
+      <!-- Loading Indicator -->
+      <div v-if="loading" class="mods-grid" :aria-label="t('loading')">
+        <div v-for="n in 2" :key="n" class="mod-card mod-card-skeleton">
+          <div class="skeleton skeleton-logo" />
+          <div class="skeleton-lines">
+            <div class="skeleton skeleton-line w-50" />
+            <div class="skeleton skeleton-line w-90" />
+            <div class="skeleton skeleton-line w-70" />
           </div>
-          <div class="mod-card-body" style="flex-grow: 1; margin-bottom: 0; display: flex; flex-direction: column; gap: 8px;">
-            <h3 class="mod-card-title">{{ mod.name }}</h3>
-            <p class="mod-card-summary">{{ mod.summary }}</p>
-            
+        </div>
+      </div>
+
+      <!-- Mods list -->
+      <div v-else-if="mods.length > 0" class="mods-grid">
+        <NuxtLink
+          v-for="mod in mods"
+          :key="mod._id"
+          :to="`/mods/${mod.slug}`"
+          class="mod-card"
+          :class="{ rejected: !!mod.rejectionReason }"
+        >
+          <div class="mod-logo">
+            <img v-if="mod.logo" :src="mod.logo" :alt="mod.name" loading="lazy">
+            <span v-else :style="getFallbackGradientStyle(mod.name)">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
+          </div>
+
+          <div class="mod-info">
+            <div class="mod-heading">
+              <h3 class="mod-name">{{ mod.name }}</h3>
+              <span v-if="mod.rejectionReason" class="badge badge-pending">{{ t('pending.status_rejected') }}</span>
+              <span v-else class="badge badge-review">{{ t('mod.details.pending_approval') }}</span>
+            </div>
+
+            <div class="mod-authors">
+              <div class="avatar-stack">
+                <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
+                <template v-if="mod.collaboratorIds && mod.collaboratorIds.length > 0">
+                  <img
+                    v-for="collab in mod.collaboratorIds.slice(0, 2)"
+                    :key="collab._id"
+                    v-tooltip="collab.globalName || collab.username"
+                    :src="collab.avatar || '/images/default_avatar.png'"
+                    alt=""
+                    @error="onAvatarError"
+                  >
+                  <span
+                    v-if="mod.collaboratorIds.length > 2"
+                    v-tooltip="mod.collaboratorIds.slice(2).map(c => c.globalName || c.username).join(', ')"
+                    class="avatar-more"
+                  >
+                    +{{ mod.collaboratorIds.length - 2 }}
+                  </span>
+                </template>
+              </div>
+              <span class="mod-author-names" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
+              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+            </div>
+
+            <p class="mod-summary">{{ mod.summary }}</p>
+
             <!-- Rejection feedback on pending/rejected list -->
-            <div v-if="mod.rejectionReason" class="card-rejection-reason" style="margin-top: 8px; padding: 10px 14px; background: rgba(226, 103, 109, 0.08); border: 1px solid rgba(226, 103, 109, 0.2); border-radius: 8px; font-size: 13px; color: #E2676D;">
-              <strong>{{ t('admin.rejection_reason') || 'Rejection Reason:' }}</strong> {{ mod.rejectionReason }}
+            <div v-if="mod.rejectionReason" class="rejection">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+              <div>
+                <strong>{{ t('admin.rejection_reason') || 'Rejection Reason:' }}</strong>
+                <p>{{ mod.rejectionReason }}</p>
+              </div>
+            </div>
+
+            <div class="mod-meta">
+              <span class="badge badge-game">{{ getGameLabel(mod.game) }}</span>
+              <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
+              <span class="mod-stats">
+                <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
+                <span class="mod-downloads">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                  {{ mod.downloads }}
+                </span>
+              </span>
             </div>
           </div>
-        </div>
+        </NuxtLink>
+      </div>
 
-        <div class="mod-card-tags" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;">
-          <span class="badge badge-game">{{ getGameLabel(mod.game) }}</span>
-          <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
-          <span class="badge badge-pending" style="flex-shrink: 0; margin-left: auto;">
-            {{ t('mod.details.pending_approval') }}
-          </span>
-        </div>
-
-        <div class="mod-card-footer">
-          <div class="author-info">
-            <div class="author-avatars-group">
-              <!-- Author Avatar -->
-              <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-              <!-- Collaborators Avatars (max 2 for visual balance) -->
-              <template v-if="mod.collaboratorIds && mod.collaboratorIds.length > 0">
-                <img
-                  v-for="collab in mod.collaboratorIds.slice(0, 2)"
-                  :key="collab._id"
-                  v-tooltip="collab.globalName || collab.username"
-                  :src="collab.avatar || '/images/default_avatar.png'"
-                  alt="Collab Avatar"
-                  class="collab-avatar-img"
-                  @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }"
-                >
-                <!-- If there are more than 2, render a "+N" circle -->
-                <div
-                  v-if="mod.collaboratorIds.length > 2"
-                  v-tooltip="mod.collaboratorIds.slice(2).map(c => c.globalName || c.username).join(', ')"
-                  class="collab-avatar-more"
-                >
-                  +{{ mod.collaboratorIds.length - 2 }}
-                </div>
-              </template>
-            </div>
-            <span class="author-name" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
-            <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
-          </div>
-
-          <div class="mod-stats">
-            <span v-if="mod.latestVersion" class="version-tag">v{{ mod.latestVersion.version }}</span>
-            <span class="downloads-count">
-              <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              {{ mod.downloads }}
-            </span>
-          </div>
-        </div>
-      </NuxtLink>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else class="pending-empty-state card">
-      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M16 21V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v16" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-      </svg>
-      <p>{{ t('pending.empty') }}</p>
-    </div>
+      <!-- Empty State -->
+      <div v-else class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+        <p>{{ t('pending.empty') }}</p>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -236,6 +248,10 @@ const getFallbackGradientStyle = (name: string) => {
   }
 }
 
+const onAvatarError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/default_avatar.png'
+}
+
 const { user, loading: authLoading, invitationsCount } = useAuth()
 
 const mods = ref<ModItem[]>([])
@@ -298,80 +314,354 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.pending-page-container {
+.pending {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 10px;
+  gap: 32px;
 }
 
-.pending-header {
-  padding: 24px 32px;
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.pending-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 6px 0;
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.pending-subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-/* Mods Grid */
+.section-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.section-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Invitations */
+.invite-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invite {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+}
+
+.invite-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.invite-logo img,
+.invite-logo span {
+  width: 100%;
+  height: 100%;
+}
+
+.invite-logo img {
+  display: block;
+  object-fit: cover;
+}
+
+.invite-logo span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.invite-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.invite-name {
+  font-size: 15px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.invite-meta img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.invite-author {
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Mod cards (mirrors index.vue) */
 .mods-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 24px;
-}
-
-@media (max-width: 480px) {
-  .mods-grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .mod-card {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 200px;
+  gap: 16px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   text-decoration: none;
-  cursor: pointer;
-  padding: 24px;
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
-
-
-.badge-category {
-  background-color: rgba(145, 154, 255, 0.1);
-  color: #919AFF;
-  border: 1px solid rgba(145, 154, 255, 0.25);
+.mod-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  transform: translateY(-1px);
 }
 
-.mod-card-body {
-  flex-grow: 1;
-  margin-bottom: 20px;
+.mod-card.rejected {
+  border-color: rgba(239, 107, 115, 0.22);
 }
 
-.mod-card-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 8px 0 !important;
-  color: #ffffff;
-  border-left: none !important;
-  padding-left: 0 !important;
+.mod-card.rejected:hover {
+  border-color: rgba(239, 107, 115, 0.4);
 }
 
-.mod-card-summary {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
+.mod-card-skeleton {
+  pointer-events: none;
+}
+
+.skeleton-logo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-line {
+  height: 12px;
+}
+
+.skeleton-line.w-50 {
+  width: 50%;
+  height: 16px;
+}
+
+.skeleton-line.w-90 {
+  width: 90%;
+}
+
+.skeleton-line.w-70 {
+  width: 70%;
+}
+
+.mod-logo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.mod-logo img,
+.mod-logo span {
+  width: 100%;
+  height: 100%;
+}
+
+.mod-logo img {
+  object-fit: cover;
+  display: block;
+}
+
+.mod-logo span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.mod-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mod-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mod-name {
   margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-heading .badge {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.badge-review {
+  background-color: var(--warning-soft);
+  color: var(--warning);
+  border-color: rgba(242, 181, 82, 0.28);
+}
+
+.mod-authors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.avatar-stack {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.avatar-stack img,
+.avatar-more {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  margin-left: -6px;
+}
+
+.avatar-stack img {
+  object-fit: cover;
+}
+
+.avatar-stack img:first-child {
+  margin-left: 0;
+}
+
+.avatar-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  width: auto;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.mod-author-names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verified-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.mod-summary {
+  margin: 2px 0 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -379,142 +669,106 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.mod-card-footer {
+.rejection {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 14px;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-  max-width: 70%;
-}
-
-.author-avatars-group {
-  display: flex;
-  align-items: center;
-}
-
-.author-avatar-img, .collab-avatar-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid #1b1a22; /* overlaps overlay boundary */
-  object-fit: cover;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.collab-avatar-img, .collab-avatar-more {
-  margin-left: -8px;
-}
-
-.collab-avatar-more {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid #1b1a22;
-  background-color: #2b2a33;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 10px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.author-avatars-group:hover .author-avatar-img,
-.author-avatars-group:hover .collab-avatar-img,
-.author-avatars-group:hover .collab-avatar-more {
-  transform: translateY(-2px);
-}
-
-.author-name {
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 10px 12px;
+  background: var(--danger-soft);
+  border: 1px solid rgba(239, 107, 115, 0.25);
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
+  color: var(--danger);
+}
+
+.rejection svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rejection strong {
+  font-weight: 700;
+}
+
+.rejection p {
+  margin: 2px 0 0;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mod-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .mod-stats {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.version-tag {
-  background-color: rgba(145, 154, 255, 0.1);
-  color: #919AFF;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 13px;
   font-weight: 600;
 }
 
-.downloads-count {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+.mod-version {
+  font-variant-numeric: tabular-nums;
 }
 
-.icon-svg {
+.mod-downloads {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.mod-downloads svg {
   width: 14px;
   height: 14px;
 }
 
-/* Loading state */
-.pending-loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 0;
-  color: rgba(255, 255, 255, 0.5);
+@media (max-width: 1100px) {
+  .mods-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(145, 154, 255, 0.2);
-  border-top-color: #919AFF;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+@media (max-width: 560px) {
+  .invite {
+    flex-wrap: wrap;
+  }
+  .invite-body {
+    flex-basis: calc(100% - 58px);
+  }
+  .invite-actions {
+    width: 100%;
+  }
+  .invite-actions .btn {
+    flex: 1;
+  }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Empty state */
-.pending-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 60px 24px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.empty-icon {
-  width: 48px;
-  height: 48px;
-  color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-action:hover {
-  opacity: 0.85;
+@media (max-width: 520px) {
+  .mod-card {
+    padding: 14px;
+    gap: 12px;
+  }
+  .mod-logo {
+    width: 48px;
+    height: 48px;
+  }
+  .mod-heading {
+    flex-wrap: wrap;
+  }
+  .mod-heading .badge {
+    margin-left: 0;
+  }
 }
 </style>
