@@ -514,14 +514,11 @@ onMounted(() => {
 
 .hero-title {
   margin: 0;
-  font-size: clamp(30px, 4.6vw, 48px);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-  background: linear-gradient(180deg, #ffffff 30%, #b9bdf8 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: clamp(30px, 4.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text);
 }
 
 .hero-subtitle {
@@ -540,12 +537,9 @@ onMounted(() => {
 
 .hero-search input {
   width: 100%;
-  height: 52px;
+  height: 50px;
   padding: 0 18px 0 48px;
   font-size: 16px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
 .hero-search-icon {
@@ -555,7 +549,7 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   transform: translateY(-50%);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -595,10 +589,8 @@ onMounted(() => {
 .filter-title {
   margin: 0 0 8px;
   padding: 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-tertiary);
 }
 
@@ -617,12 +609,12 @@ onMounted(() => {
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: box-shadow 0.1s ease-out, color 0.12s ease-out;
 }
 
 .filter-option:hover {
-  background: var(--surface-2);
   color: var(--text);
+  box-shadow: var(--outline);
 }
 
 .filter-option.active {
@@ -634,13 +626,13 @@ onMounted(() => {
   height: 16px;
   flex-shrink: 0;
   border-radius: 5px;
-  border: 1.5px solid var(--border-strong);
-  transition: all 0.15s ease;
+  border: 2px solid var(--ol-muted);
+  transition: all 0.15s ease-out;
 }
 
 .filter-option.active .filter-check {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 11px no-repeat;
+  border-color: var(--ol-accent);
+  background: var(--ol-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 11px no-repeat;
 }
 
 /* Results */
@@ -687,24 +679,19 @@ onMounted(() => {
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition: box-shadow 0.1s ease-out, background-color 0.12s ease-out;
 }
 
 .mod-card:hover {
-  border-color: var(--border-strong);
   background: var(--surface-hover);
-  transform: translateY(-1px);
+  box-shadow: var(--outline);
 }
 
 .mod-card.featured {
-  border-color: rgba(242, 181, 82, 0.22);
   background:
-    linear-gradient(180deg, rgba(242, 181, 82, 0.05), transparent 60%),
+    linear-gradient(180deg, rgba(240, 180, 90, 0.06), transparent 65%),
     var(--surface);
-}
-
-.mod-card.featured:hover {
-  border-color: rgba(242, 181, 82, 0.4);
+  border-color: rgba(240, 180, 90, 0.18);
 }
 
 .mod-card-skeleton {
@@ -715,10 +702,9 @@ onMounted(() => {
   width: 56px;
   height: 56px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: var(--surface-3);
 }
 
 .mod-logo img,
@@ -737,7 +723,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
 }
 
@@ -759,8 +745,7 @@ onMounted(() => {
 .mod-name {
   margin: 0;
   font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

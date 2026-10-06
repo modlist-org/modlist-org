@@ -30,9 +30,15 @@
         </nav>
 
         <div class="header-actions">
-          <select v-model="state.language" class="lang-select" :aria-label="t('nav.language')">
-            <option v-for="lang in languages" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
-          </select>
+          <div class="lang-dropdown">
+            <UIDropdown
+              v-model="state.language"
+              default-value="en-US"
+              :values="languages.map((l) => l.value)"
+              :display="getLanguageName"
+              disable-reset
+            />
+          </div>
 
           <div v-if="loading" class="skeleton" style="width: 120px; height: 36px; border-radius: 999px;" />
           <div v-else-if="user" ref="userMenuRef" class="user-menu">
@@ -120,6 +126,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from '#imports'
 import {
+  UIDropdown,
   useOverlayerState,
   setI18nLocaleRef
 } from 'overlayer-ui'
@@ -158,6 +165,8 @@ const languages = [
   { value: 'ko-KR', label: '한국어' },
   { value: 'zh-CN', label: '简体中文' }
 ]
+
+const getLanguageName = (value: string) => languages.find((l) => l.value === value)?.label ?? value
 
 const discordPath = 'M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.53-2a75.58,75.58,0,0,0,73,0c.81.71,1.65,1.4,2.53,2a68.32,68.32,0,0,1-10.5,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,48.24,123.6,25.41,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z'
 
