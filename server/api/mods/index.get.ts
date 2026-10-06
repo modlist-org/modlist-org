@@ -83,13 +83,14 @@ export default defineEventHandler(async (event) => {
 
   try {
     const where = and(...conditions)
-    const [totalRow] = await db.select({ total: count() }).from(mods).where(where)
+    const [[totalRow], rows] = await db.batch([
+      db.select({ total: count() }).from(mods).where(where),
+      db.select().from(mods).where(where)
+        .orderBy(...orderBy)
+        .limit(limit)
+        .offset((page - 1) * limit)
+    ])
     const total = totalRow?.total ?? 0
-
-    const rows = await db.select().from(mods).where(where)
-      .orderBy(...orderBy)
-      .limit(limit)
-      .offset((page - 1) * limit)
 
     const hydrated = await hydrateMods(db, rows)
 

@@ -8,11 +8,14 @@
     "directory": ".output/public",
     "binding": "ASSETS"
   },
+  "placement": {
+    "mode": "smart"
+  },
   "observability": {
     "enabled": true
   },
   "routes": [
-    { "pattern": "modlist.org", "custom_domain": true }
+    { "pattern": "modlist.org/*", "zone_name": "modlist.org" }
   ],
   "vars": {
     "NUXT_SITE_URL": "https://modlist.org",
@@ -22,7 +25,7 @@
     {
       "binding": "DB",
       "database_name": "modlist",
-      "database_id": "REPLACE_WITH_D1_ID",
+      "database_id": "33d20a5a-60b9-4d8a-b8a3-280eb66736c7",
       "migrations_dir": "server/db/migrations"
     }
   ],

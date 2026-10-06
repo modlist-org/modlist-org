@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
 import { mods, modCollaborators, modDependencies, modVersions, users } from '../db/schema'
 import type { ModRow, ModVersionRow, PendingModEdit, UserRow, Category, Game } from '../db/schema'
 import type { Db } from './db'
@@ -64,48 +64,39 @@ export function toPublicUser(user: UserRow): PublicUser {
   }
 }
 
-export async function loadUsers(db: Db, ids: Iterable<string>): Promise<Map<string, PublicUser>> {
-  const unique = [...new Set(ids)]
-  const rows = await inChunks(unique, (chunk) => db.select().from(users).where(inArray(users.id, chunk)))
-  return new Map(rows.map((u) => [u.id, toPublicUser(u)]))
-}
-
-async function loadSlugs(db: Db, ids: Iterable<string>): Promise<Map<string, string>> {
-  const unique = [...new Set(ids)]
-  const rows = await inChunks(unique, (chunk) =>
-    db.select({ id: mods.id, slug: mods.slug }).from(mods).where(inArray(mods.id, chunk))
-  )
-  return new Map(rows.map((m) => [m.id, m.slug]))
-}
-
 export function byNewest<T extends { createdAt: string | Date }>(a: T, b: T) {
   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+}
+
+// Bind a list of ids as one JSON parameter (D1 caps bound parameters per statement at 100)
+function idList(ids: string[]) {
+  return sql`(select value from json_each(${JSON.stringify(ids)}))`
 }
 
 // Rebuild the document shape the API exposed under MongoDB (populated users, nested versions, dependency slugs)
 export async function hydrateMods(db: Db, rows: ModRow[]): Promise<ModDto[]> {
   if (rows.length === 0) return []
-  const modIds = rows.map((m) => m.id)
+  const modIds = idList(rows.map((m) => m.id))
+  const pendingDepIds = rows.flatMap((m) => m.pendingEdit?.dependencies ?? [])
 
-  const [versionRows, collabRows, depRows] = await Promise.all([
-    inChunks(modIds, (chunk) => db.select().from(modVersions).where(inArray(modVersions.modId, chunk))),
-    inChunks(modIds, (chunk) =>
-      db.select().from(modCollaborators).where(inArray(modCollaborators.modId, chunk)).orderBy(asc(modCollaborators.position))
-    ),
-    inChunks(modIds, (chunk) =>
-      db.select().from(modDependencies).where(inArray(modDependencies.modId, chunk)).orderBy(asc(modDependencies.position))
-    )
+  const [versionRows, collabRows, depRows, userRows, pendingDepRows] = await db.batch([
+    db.select().from(modVersions).where(inArray(modVersions.modId, modIds)),
+    db.select().from(modCollaborators).where(inArray(modCollaborators.modId, modIds)).orderBy(asc(modCollaborators.position)),
+    db.select({ modId: modDependencies.modId, slug: mods.slug })
+      .from(modDependencies)
+      .innerJoin(mods, eq(mods.id, modDependencies.dependencyId))
+      .where(inArray(modDependencies.modId, modIds))
+      .orderBy(asc(modDependencies.position)),
+    db.select().from(users).where(or(
+      inArray(users.id, idList(rows.map((m) => m.authorId))),
+      inArray(users.id, db.select({ id: modCollaborators.userId }).from(modCollaborators).where(inArray(modCollaborators.modId, modIds))),
+      inArray(users.id, db.select({ id: modVersions.submittedBy }).from(modVersions).where(inArray(modVersions.modId, modIds)))
+    )),
+    db.select({ id: mods.id, slug: mods.slug }).from(mods).where(inArray(mods.id, idList(pendingDepIds)))
   ])
 
-  const userIds = new Set<string>()
-  rows.forEach((m) => userIds.add(m.authorId))
-  collabRows.forEach((c) => userIds.add(c.userId))
-  versionRows.forEach((v) => userIds.add(v.submittedBy))
-
-  const depIds = new Set<string>(depRows.map((d) => d.dependencyId))
-  rows.forEach((m) => m.pendingEdit?.dependencies?.forEach((id) => depIds.add(id)))
-
-  const [userMap, slugMap] = await Promise.all([loadUsers(db, userIds), loadSlugs(db, depIds)])
+  const userMap = new Map(userRows.map((u) => [u.id, toPublicUser(u)]))
+  const slugMap = new Map(pendingDepRows.map((m) => [m.id, m.slug]))
 
   return rows.map((mod) => {
     const collabs = collabRows.filter((c) => c.modId === mod.id)
@@ -147,10 +138,7 @@ export async function hydrateMods(db: Db, rows: ModRow[]): Promise<ModDto[]> {
       downloads: mod.downloads,
       isFeatured: mod.isFeatured,
       versions,
-      dependencies: depRows
-        .filter((d) => d.modId === mod.id)
-        .map((d) => slugMap.get(d.dependencyId))
-        .filter((s): s is string => !!s),
+      dependencies: depRows.filter((d) => d.modId === mod.id).map((d) => d.slug),
       createdAt: mod.createdAt.toISOString(),
       updatedAt: mod.updatedAt.toISOString()
     }
