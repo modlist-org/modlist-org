@@ -22,36 +22,38 @@
       <aside class="filters" :class="{ open: filtersOpen }">
         <div class="filter-section">
           <h2 class="filter-title">{{ t('filter.game') }}</h2>
-          <button type="button" class="filter-option" :class="{ active: isAllGamesActive }" @click="selectAllGames">
-            <span class="filter-check" />
-            {{ t('games.all') }}
-          </button>
-          <button
+          <UIToggle
+            :model-value="isAllGamesActive"
+            :default-value="true"
+            :label="t('games.all')"
+            :font-size="14"
+            disable-reset
+            @update:model-value="selectAllGames"
+          />
+          <UIToggle
             v-for="game in GAMES"
             :key="game"
-            type="button"
-            class="filter-option"
-            :class="{ active: isGameActive(game) }"
-            @click="toggleGame(game)"
-          >
-            <span class="filter-check" />
-            {{ getGameLabelOnly(game) }}
-          </button>
+            :model-value="isGameActive(game)"
+            :default-value="false"
+            :label="getGameLabelOnly(game)"
+            :font-size="14"
+            disable-reset
+            @update:model-value="toggleGame(game)"
+          />
         </div>
 
         <div class="filter-section">
           <h2 class="filter-title">{{ t('filter.category') }}</h2>
-          <button
+          <UIToggle
             v-for="cat in CATEGORY_FILTERS"
             :key="cat"
-            type="button"
-            class="filter-option"
-            :class="{ active: isCategoryActive(cat) }"
-            @click="selectCategory(cat)"
-          >
-            <span class="filter-check" />
-            {{ getCategoryLabelOnly(cat) }}
-          </button>
+            :model-value="isCategoryActive(cat)"
+            :default-value="cat === 'all'"
+            :label="getCategoryLabelOnly(cat)"
+            :font-size="14"
+            disable-reset
+            @update:model-value="selectCategory(cat)"
+          />
         </div>
 
         <button v-if="hasActiveFilters" type="button" class="btn btn-ghost btn-sm" style="align-self: flex-start;" @click="clearFilters">
@@ -175,7 +177,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n, useSeoMeta } from '#imports'
-import { UIDropdown } from 'overlayer-ui'
+import { UIDropdown, UIToggle } from 'overlayer-ui'
 
 interface ModVersion {
   version: string
@@ -586,6 +588,10 @@ onMounted(() => {
   gap: 2px;
 }
 
+.filters :deep(.overlayer-toggle) {
+  background-color: transparent !important;
+}
+
 .filter-title {
   margin: 0 0 8px;
   padding: 0 10px;
@@ -594,46 +600,10 @@ onMounted(() => {
   color: var(--text-tertiary);
 }
 
-.filter-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow 0.1s ease-out, color 0.12s ease-out;
-}
 
-.filter-option:hover {
-  color: var(--text);
-  box-shadow: var(--outline);
-}
 
-.filter-option.active {
-  color: var(--text);
-}
 
-.filter-check {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border-radius: 5px;
-  border: 2px solid var(--ol-muted);
-  transition: all 0.15s ease-out;
-}
 
-.filter-option.active .filter-check {
-  border-color: var(--ol-accent);
-  background: var(--ol-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 11px no-repeat;
-}
 
 /* Results */
 .results {
