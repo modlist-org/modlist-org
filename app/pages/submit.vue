@@ -70,32 +70,11 @@
       <section class="card form-section">
         <h2 class="section-title">{{ t('submit.section_description') }}</h2>
 
-        <div class="form-group">
-          <div class="label-row">
-            <label for="mod-summary">{{ t('submit.summary') }}</label>
-            <span class="char-count">{{ form.summary.length }}/150</span>
-          </div>
-          <input
-            id="mod-summary"
-            v-model="form.summary"
-            type="text"
-            maxlength="150"
-            :placeholder="t('submit.summary_placeholder')"
-            required
-          >
-          <span class="form-help-text">{{ t('submit.summary_help') }}</span>
-        </div>
-
-        <div class="form-group">
-          <label for="mod-description">{{ t('submit.description') }}</label>
-          <textarea
-            id="mod-description"
-            v-model="form.description"
-            rows="10"
-            :placeholder="t('submit.description_placeholder')"
-          />
-          <span class="form-help-text">{{ t('submit.description_help') }}</span>
-        </div>
+        <LocalizedDescriptionFields
+          v-model:summary="form.summary"
+          v-model:description="form.description"
+          v-model:translations="form.translations"
+        />
       </section>
 
       <!-- Media & links -->
@@ -326,6 +305,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ModTranslations } from '../utils/locales'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIToggle } from 'overlayer-ui'
@@ -362,6 +342,7 @@ const form = ref({
   categories: [] as string[],
   summary: '',
   description: '',
+  translations: {} as ModTranslations,
   version: '',
   downloadMode: 'unified' as 'unified' | 'platform',
   downloadUrl: '',

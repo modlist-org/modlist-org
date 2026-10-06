@@ -131,7 +131,7 @@
                   <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
                 </div>
 
-                <p class="mod-summary">{{ mod.summary }}</p>
+                <p class="mod-summary">{{ localizedText(mod, locale).summary }}</p>
 
                 <div class="mod-meta">
                   <span v-for="g in modGames(mod)" :key="g" class="badge badge-game">{{ getGameLabelOnly(g) }}</span>
@@ -180,6 +180,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizedText } from '../utils/locales'
 import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n, useSeoMeta } from '#imports'
 import { UIDropdown, UIToggle } from 'overlayer-ui'
@@ -227,7 +228,7 @@ interface ModItem {
   logo?: string
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // SEO Metadata
 useSeoMeta({

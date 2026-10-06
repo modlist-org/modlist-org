@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
 import { mods, modCollaborators, modDependencies, modVersions, users } from '../db/schema'
-import type { ModRow, ModVersionRow, PendingModEdit, UserRow, Category, Game } from '../db/schema'
+import type { ModRow, ModVersionRow, PendingModEdit, UserRow, Category, Game, ModTranslations } from '../db/schema'
 import type { Db } from './db'
 import { inChunks } from './db'
 import { getAvailablePlatforms } from './mod-platform'
@@ -34,6 +34,7 @@ export interface ModDto {
   slug: string
   summary: string
   description: string
+  translations: ModTranslations
   game: Game
   games: Game[]
   categories: Category[]
@@ -124,6 +125,7 @@ export async function hydrateMods(db: Db, rows: ModRow[]): Promise<ModDto[]> {
       slug: mod.slug,
       summary: mod.summary,
       description: mod.description,
+      translations: mod.translations ?? {},
       game: mod.game,
       games: modGames(mod),
       categories: mod.categories,

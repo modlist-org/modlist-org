@@ -1,4 +1,4 @@
-import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames } from '../../db/schema'
+import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames, normalizeTranslations } from '../../db/schema'
 import { useDb, newId } from '../../utils/db'
 import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
 import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     categories,
     summary,
     description,
+    translations,
     version,
     downloadUrl,
     platformDownloads,
@@ -133,6 +134,7 @@ export default defineEventHandler(async (event) => {
         categories,
         summary,
         description: description || '',
+        translations: normalizeTranslations(translations),
         authorId: currentUser.id,
         isApproved: isAutoApproved,
         logo: storedLogo,

@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
     if (edit.name) updates.name = edit.name
     if (edit.summary) updates.summary = edit.summary
     if (edit.description !== undefined) updates.description = edit.description
+    if (edit.translations !== undefined) updates.translations = edit.translations
     if (edit.games?.length || edit.game) {
       updates.game = games[0]
       updates.games = games

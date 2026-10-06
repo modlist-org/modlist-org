@@ -5,7 +5,33 @@ import type { PlatformDownloads } from '../utils/mod-platform'
 export const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
 export const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
 
+export const LOCALES = ['en-US', 'ko-KR', 'zh-CN'] as const
+
 export type Game = typeof GAMES[number]
+export type Locale = typeof LOCALES[number]
+
+export interface ModTranslation {
+  summary?: string
+  description?: string
+}
+
+export type ModTranslations = Partial<Record<Locale, ModTranslation>>
+
+// Keep only supported locales and non-empty strings
+export function normalizeTranslations(value: unknown): ModTranslations {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const result: ModTranslations = {}
+  for (const locale of LOCALES) {
+    const entry = (value as Record<string, unknown>)[locale]
+    if (!entry || typeof entry !== 'object') continue
+    const { summary, description } = entry as Record<string, unknown>
+    const clean: ModTranslation = {}
+    if (typeof summary === 'string' && summary.trim()) clean.summary = summary.trim().slice(0, 300)
+    if (typeof description === 'string' && description.trim()) clean.description = description
+    if (clean.summary || clean.description) result[locale] = clean
+  }
+  return result
+}
 export type Category = typeof CATEGORIES[number]
 
 export function isGame(value: unknown): value is Game {
@@ -29,6 +55,7 @@ export interface PendingModEdit {
   sourceUrl?: string
   communityUrl?: string
   dependencies?: string[]
+  translations?: ModTranslations
   createdAt?: string
 }
 
@@ -53,6 +80,7 @@ export const mods = sqliteTable('mods', {
   slug: text('slug').notNull().unique(),
   summary: text('summary').notNull(),
   description: text('description').notNull().default(''),
+  translations: text('translations', { mode: 'json' }).$type<ModTranslations>().notNull().default(sql`'{}'`),
   // Primary game (games[0]); kept for older app versions that only read `game`
   game: text('game', { enum: GAMES }).notNull(),
   games: text('games', { mode: 'json' }).$type<Game[]>().notNull().default(sql`'[]'`),

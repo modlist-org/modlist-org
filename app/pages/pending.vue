@@ -111,7 +111,7 @@
               <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
             </div>
 
-            <p class="mod-summary">{{ mod.summary }}</p>
+            <p class="mod-summary">{{ localizedText(mod, locale).summary }}</p>
 
             <!-- Rejection feedback on pending/rejected list -->
             <div v-if="mod.rejectionReason" class="rejection">
@@ -147,6 +147,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizedText } from '../utils/locales'
 import { ref, onMounted } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
@@ -194,7 +195,7 @@ interface ModItem {
   logo?: string
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // SEO Metadata
 useSeoMeta({

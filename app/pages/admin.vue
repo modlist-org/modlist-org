@@ -279,6 +279,22 @@
                   <div class="diff-desc-box diff-desc-new" :data-label="t('admin.proposed')">{{ mod.pendingEdit.description }}</div>
                 </div>
               </details>
+
+              <!-- Translation Changes (one block per changed language) -->
+              <template v-if="mod.pendingEdit?.translations !== undefined">
+                <details
+                  v-for="lang in changedTranslationLocales(mod)"
+                  :key="lang.id"
+                  class="diff-desc"
+                  open
+                >
+                  <summary>{{ t('admin.translation_change', { language: lang.label }) }}</summary>
+                  <div class="diff-desc-grid">
+                    <div class="diff-desc-box diff-desc-old" :data-label="t('admin.current')">{{ translationText(mod.translations?.[lang.id]) || t('admin.none') }}</div>
+                    <div class="diff-desc-box diff-desc-new" :data-label="t('admin.proposed')">{{ translationText(mod.pendingEdit.translations?.[lang.id]) || t('admin.removed') }}</div>
+                  </div>
+                </details>
+              </template>
             </div>
 
             <footer class="review-foot review-foot-actions">
@@ -392,6 +408,8 @@
 </template>
 
 <script setup lang="ts">
+import { SITE_LOCALES } from '../utils/locales'
+import type { ModTranslation, ModTranslations } from '../utils/locales'
 import { ref, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
@@ -457,6 +475,7 @@ interface PendingEdit {
   name?: string
   summary?: string
   description?: string
+  translations?: ModTranslations
   game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   games?: string[]
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -473,6 +492,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
+  translations?: ModTranslations
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -722,6 +742,11 @@ const getCategoryLabelOnly = (val: string) => {
   if (val === 'library') return t('categories.library')
   return val
 }
+
+const translationText = (entry?: ModTranslation) => [entry?.summary, entry?.description].filter(Boolean).join('\n\n')
+
+const changedTranslationLocales = (mod: { translations?: ModTranslations; pendingEdit?: { translations?: ModTranslations } | null }) =>
+  SITE_LOCALES.filter((l) => translationText(mod.translations?.[l.id]) !== translationText(mod.pendingEdit?.translations?.[l.id]))
 
 const gamesOf = (mod: { game: string; games?: string[] }) => mod.games?.length ? mod.games : [mod.game]
 

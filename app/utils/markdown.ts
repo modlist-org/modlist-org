@@ -1,7 +1,8 @@
 import { marked } from 'marked'
 import xss from 'xss'
 
-const { FilterXSS, getDefaultWhiteList } = xss
+// CJS package: named exports live on the default export at runtime
+const { FilterXSS, getDefaultWhiteList } = xss as unknown as typeof import('xss')
 
 // Pure-JS sanitizer: runs during SSR on Cloudflare Workers (no jsdom) and in the browser
 const whiteList = getDefaultWhiteList()
@@ -17,7 +18,7 @@ whiteList.td = [...(whiteList.td ?? []), 'align']
 const filter = new FilterXSS({
   whiteList,
   stripIgnoreTagBody: ['script', 'style'],
-  onTagAttr(tag, name, value) {
+  onTagAttr(tag: string, name: string, value: string) {
     // Only allow task-list checkboxes from GFM
     if (tag === 'input' && name === 'type' && value !== 'checkbox') return ''
     return undefined

@@ -241,5 +241,12 @@
   "update.edit_saved_review": "Version updated and sent for administrator review.",
   "submit.game_select_placeholder": "Select games…",
   "submit.game_search_placeholder": "Search games…",
-  "submit.game_search_empty": "No matching games"
+  "submit.game_search_empty": "No matching games",
+  "submit.translations_label": "Description language",
+  "submit.translations_default": "Default",
+  "submit.translations_default_help": "The default text is shown for every language without its own translation.",
+  "submit.translations_locale_help": "Optional. Shown to visitors browsing in {language}; leave empty to use the default text.",
+  "submit.translations_description_placeholder": "Translated description (leave empty to use the default)",
+  "mod.details.original_language": "Original",
+  "admin.translation_change": "Translation · {language}"
 }

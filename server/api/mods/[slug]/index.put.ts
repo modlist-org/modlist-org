@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { mods, modCollaborators, modDependencies, CATEGORIES, normalizeGames } from '../../../db/schema'
+import { mods, modCollaborators, modDependencies, CATEGORIES, normalizeGames, normalizeTranslations } from '../../../db/schema'
 import type { Category, PendingModEdit } from '../../../db/schema'
 import { useDb } from '../../../utils/db'
 import { isHttpUrl } from '../../../utils/mod-platform'
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, summary, description, game, games, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
+  const { name, summary, description, translations, game, games, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
 
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
@@ -92,6 +92,7 @@ export default defineEventHandler(async (event) => {
       ? await validateDependencyIds(db, dependencies ?? await getDependencyIds(db, mod.id), targetGames, mod.id)
       : undefined
 
+    const newTranslations = translations !== undefined ? normalizeTranslations(translations) : undefined
     const updates: Partial<typeof mods.$inferInsert> = {}
     const statements: Parameters<typeof db.batch>[0][number][] = []
 
@@ -100,6 +101,7 @@ export default defineEventHandler(async (event) => {
       if (name) updates.name = name
       if (summary) updates.summary = summary
       if (description !== undefined) updates.description = description
+      if (newTranslations !== undefined) updates.translations = newTranslations
       if (requestedGames) {
         updates.game = requestedGames[0]
         updates.games = requestedGames
@@ -121,6 +123,9 @@ export default defineEventHandler(async (event) => {
       if (name && name !== mod.name) proposedEdit.name = name
       if (summary && summary !== mod.summary) proposedEdit.summary = summary
       if (description !== undefined && description !== mod.description) proposedEdit.description = description
+      if (newTranslations !== undefined && JSON.stringify(newTranslations) !== JSON.stringify(mod.translations ?? {})) {
+        proposedEdit.translations = newTranslations
+      }
       if (gamesChanged && requestedGames) {
         proposedEdit.games = requestedGames
         proposedEdit.game = requestedGames[0]

@@ -46,7 +46,7 @@
           <span v-if="mod.isFeatured" class="badge badge-featured">★ {{ t('sort.featured', 'Featured') }}</span>
           <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
         </div>
-        <p class="mod-summary">{{ (showPreviewMode && mod.pendingEdit?.summary) ? mod.pendingEdit.summary : mod.summary }}</p>
+        <p class="mod-summary">{{ shownSummary }}</p>
 
         <div class="mod-creators">
           <span class="creator-chip">
@@ -128,7 +128,31 @@
       <div class="mod-main">
         <!-- Description -->
         <section class="card mod-section">
-          <h2 class="section-title">{{ t('mod.details.about') }}</h2>
+          <div class="about-head">
+            <h2 class="section-title">{{ t('mod.details.about') }}</h2>
+            <div v-if="availableTranslations.length > 0" class="lang-switch" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                :class="{ active: shownLang === 'default' }"
+                :aria-selected="shownLang === 'default'"
+                @click="descriptionLang = 'default'"
+              >
+                {{ t('mod.details.original_language') }}
+              </button>
+              <button
+                v-for="lang in availableTranslations"
+                :key="lang.id"
+                type="button"
+                role="tab"
+                :class="{ active: shownLang === lang.id }"
+                :aria-selected="shownLang === lang.id"
+                @click="descriptionLang = lang.id"
+              >
+                {{ lang.label }}
+              </button>
+            </div>
+          </div>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="markdown-body" v-html="renderedDescription" />
         </section>
@@ -528,6 +552,8 @@ import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
 import { UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { renderSafeMarkdown } from '../../utils/markdown'
+import { SITE_LOCALES } from '../../utils/locales'
+import type { ModTranslations } from '../../utils/locales'
 
 interface CreatorUser {
   _id: string
@@ -568,6 +594,7 @@ interface PendingEdit {
   name?: string
   summary?: string
   description?: string
+  translations?: ModTranslations
   game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   games?: string[]
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -584,6 +611,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
+  translations?: ModTranslations
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -604,7 +632,7 @@ interface ModItem {
 
 const route = useRoute()
 const slug = route.params.slug as string
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { user } = useAuth()
 
 const mod = ref<ModItem | null>(null)
@@ -935,10 +963,31 @@ const fetchModDetails = async () => {
   }
 }
 
+// Translations: show the visitor's language when the mod provides it, with a manual switch
+const activeTranslations = computed<ModTranslations>(() => {
+  if (showPreviewMode.value && mod.value?.pendingEdit?.translations !== undefined) return mod.value.pendingEdit.translations
+  return mod.value?.translations ?? {}
+})
+const availableTranslations = computed(() => SITE_LOCALES.filter((l) => {
+  const entry = activeTranslations.value[l.id]
+  return !!(entry?.summary?.trim() || entry?.description?.trim())
+}))
+const descriptionLang = ref<string | null>(null)
+const shownLang = computed(() => {
+  if (descriptionLang.value) return descriptionLang.value
+  return availableTranslations.value.some((l) => l.id === locale.value) ? locale.value : 'default'
+})
+const shownTranslation = computed(() => shownLang.value === 'default' ? undefined : activeTranslations.value[shownLang.value])
+const shownSummary = computed(() => {
+  const base = (showPreviewMode.value && mod.value?.pendingEdit?.summary) ? mod.value.pendingEdit.summary : mod.value?.summary
+  return shownTranslation.value?.summary?.trim() || base || ''
+})
+
 const renderedDescription = computed(() => {
-  const desc = (showPreviewMode.value && mod.value?.pendingEdit?.description !== undefined)
+  const baseDesc = (showPreviewMode.value && mod.value?.pendingEdit?.description !== undefined)
     ? mod.value.pendingEdit.description
     : mod.value?.description
+  const desc = shownTranslation.value?.description?.trim() || baseDesc
 
   if (!desc) return '<em>No description provided.</em>'
   try {
@@ -1633,6 +1682,45 @@ onMounted(() => {
 }
 
 /* Update form */
+.about-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-elev);
+  border-radius: var(--radius-sm);
+}
+
+.lang-switch button {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.12s ease-out, color 0.12s ease-out, box-shadow 0.1s ease-out;
+}
+
+.lang-switch button:hover {
+  color: var(--text);
+  box-shadow: var(--outline);
+}
+
+.lang-switch button.active {
+  background: var(--ol-control);
+  color: var(--text);
+}
+
 .update-head {
   display: flex;
   align-items: center;

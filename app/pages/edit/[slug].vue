@@ -68,30 +68,11 @@
         <section class="card form-section">
           <h2 class="section-title">{{ t('submit.section_description') }}</h2>
 
-          <div class="form-group">
-            <div class="label-row">
-              <label for="mod-summary">{{ t('submit.summary') }}</label>
-              <span class="char-count">{{ form.summary.length }}/150</span>
-            </div>
-            <input
-              id="mod-summary"
-              v-model="form.summary"
-              type="text"
-              maxlength="150"
-              required
-            >
-            <span class="form-help-text">{{ t('submit.summary_help') }}</span>
-          </div>
-
-          <div class="form-group">
-            <label for="mod-description">{{ t('submit.description') }}</label>
-            <textarea
-              id="mod-description"
-              v-model="form.description"
-              rows="12"
-            />
-            <span class="form-help-text">{{ t('submit.description_help') }}</span>
-          </div>
+          <LocalizedDescriptionFields
+            v-model:summary="form.summary"
+            v-model:description="form.description"
+            v-model:translations="form.translations"
+          />
         </section>
 
         <!-- Media & links -->
@@ -292,6 +273,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ModTranslations } from '../../utils/locales'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useSeoMeta } from '#imports'
 import { useAuth } from '../../composables/useAuth'
@@ -344,6 +326,7 @@ interface ModItem {
   slug: string
   summary: string
   description?: string
+  translations?: ModTranslations
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
   games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -367,6 +350,7 @@ interface ModItem {
     name?: string
     summary?: string
     description?: string
+    translations?: ModTranslations
     game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
     games?: string[]
     categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
@@ -395,7 +379,8 @@ const form = ref({
   games: ['adofai'] as string[],
   categories: ['ui'] as string[],
   summary: '',
-  description: ''
+  description: '',
+  translations: {} as ModTranslations
 })
 
 const selectedCollabs = ref<SearchUserItem[]>([])
@@ -503,6 +488,7 @@ const loadModDetails = async () => {
         : (data.mod.categories && data.mod.categories.length > 0) ? [...data.mod.categories] : ['ui'],
       summary: edit.summary || data.mod.summary,
       description: edit.description !== undefined ? edit.description : (data.mod.description || ''),
+      translations: JSON.parse(JSON.stringify(edit.translations ?? data.mod.translations ?? {})),
       logo: edit.logo !== undefined ? edit.logo : (data.mod.logo || ''),
       sourceUrl: edit.sourceUrl !== undefined ? edit.sourceUrl : (data.mod.sourceUrl || ''),
       communityUrl: edit.communityUrl !== undefined ? edit.communityUrl : (data.mod.communityUrl || '')

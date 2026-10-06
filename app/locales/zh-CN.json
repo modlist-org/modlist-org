@@ -236,5 +236,12 @@
   "update.edit_saved_review": "版本已更新，等待管理员审核。",
   "submit.game_select_placeholder": "选择游戏…",
   "submit.game_search_placeholder": "搜索游戏…",
-  "submit.game_search_empty": "没有匹配的游戏"
+  "submit.game_search_empty": "没有匹配的游戏",
+  "submit.translations_label": "描述语言",
+  "submit.translations_default": "默认",
+  "submit.translations_default_help": "没有单独翻译的语言将显示默认文本。",
+  "submit.translations_locale_help": "可选。以 {language} 浏览的访客将看到此内容；留空则使用默认文本。",
+  "submit.translations_description_placeholder": "翻译后的描述（留空则使用默认文本）",
+  "mod.details.original_language": "原文",
+  "admin.translation_change": "翻译 · {language}"
 }

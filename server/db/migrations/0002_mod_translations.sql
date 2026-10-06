@@ -1,0 +1,1 @@
+ALTER TABLE `mods` ADD `translations` text DEFAULT '{}' NOT NULL;
