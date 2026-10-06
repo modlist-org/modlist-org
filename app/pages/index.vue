@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <section class="hero">
-      <h1 class="hero-title">{{ t('home.hero_title') }}</h1>
+      <h1 class="hero-title">{{ t('subtitle') }}</h1>
       <p class="hero-subtitle">{{ t('home.hero_subtitle') }}</p>
       <div class="hero-search">
         <svg class="hero-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
