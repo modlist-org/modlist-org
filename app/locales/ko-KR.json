@@ -233,5 +233,8 @@
   "update.save_edit": "변경사항 저장",
   "update.edit_review_notice": "공개된 버전입니다. 수정하면 관리자 재검토 대상이 되며, 승인 전까지 목록에서 숨겨집니다.",
   "update.edit_saved": "버전이 수정되었습니다.",
-  "update.edit_saved_review": "버전이 수정되어 관리자 검토 대기 중입니다."
+  "update.edit_saved_review": "버전이 수정되어 관리자 검토 대기 중입니다.",
+  "submit.game_select_placeholder": "게임 선택…",
+  "submit.game_search_placeholder": "게임 검색…",
+  "submit.game_search_empty": "일치하는 게임이 없습니다"
 }

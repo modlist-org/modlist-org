@@ -43,20 +43,7 @@
 
         <div class="form-group">
           <span id="mod-game-label" class="field-label">{{ t('submit.game') }}</span>
-          <div class="chip-list" role="group" aria-labelledby="mod-game-label">
-            <button
-              v-for="game in GAMES"
-              :key="game"
-              type="button"
-              class="chip"
-              :class="{ active: form.games.includes(game) }"
-              :aria-pressed="form.games.includes(game)"
-              @click="toggleFormGame(game)"
-            >
-              <svg v-if="form.games.includes(game)" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
-              {{ getGameLabel(game) }}
-            </button>
-          </div>
+          <GameMultiSelect v-model="form.games" labelledby="mod-game-label" />
           <span class="form-help-text">{{ t('submit.game_multi_help') }}</span>
         </div>
 
@@ -363,7 +350,6 @@ interface SearchUserItem {
   avatar?: string
 }
 
-const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
 const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
 
 const form = ref({
@@ -464,13 +450,6 @@ const clearLogo = () => {
   if (logoInput.value) logoInput.value.value = ''
 }
 
-const getGameLabel = (val: string) => {
-  if (val === 'adofai') return t('games.adofai')
-  if (val === 'rhythm-doctor') return t('games.rhythm_doctor')
-  if (val === 'dancing-line') return t('games.dancing_line')
-  return val
-}
-
 const toggleFormCategory = (cat: string) => {
   const index = form.value.categories.indexOf(cat)
   if (index > -1) {
@@ -565,15 +544,6 @@ const addDependency = (dep: DependencyMod) => {
 
 const removeDependency = (depId: string) => {
   selectedDependencies.value = selectedDependencies.value.filter((sd) => sd._id !== depId)
-}
-
-const toggleFormGame = (game: string) => {
-  const index = form.value.games.indexOf(game)
-  if (index > -1) {
-    form.value.games.splice(index, 1)
-  } else {
-    form.value.games.push(game)
-  }
 }
 
 // Dependencies must share at least one target game
@@ -750,9 +720,9 @@ textarea {
 }
 
 .chip-check {
-  width: 13px;
-  height: 13px;
-  color: var(--accent);
+  width: 14px;
+  height: 14px;
+  color: #fff;
 }
 
 /* Logo */

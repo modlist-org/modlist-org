@@ -233,5 +233,8 @@
   "update.save_edit": "保存更改",
   "update.edit_review_notice": "此版本已公开。保存更改后将重新提交管理员审核，审核通过前将被隐藏。",
   "update.edit_saved": "版本已更新。",
-  "update.edit_saved_review": "版本已更新，等待管理员审核。"
+  "update.edit_saved_review": "版本已更新，等待管理员审核。",
+  "submit.game_select_placeholder": "选择游戏…",
+  "submit.game_search_placeholder": "搜索游戏…",
+  "submit.game_search_empty": "没有匹配的游戏"
 }

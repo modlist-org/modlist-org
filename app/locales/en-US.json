@@ -238,5 +238,8 @@
   "update.save_edit": "Save changes",
   "update.edit_review_notice": "This version is live. Saving changes sends it back for administrator review, and it will be hidden until approved.",
   "update.edit_saved": "Version updated.",
-  "update.edit_saved_review": "Version updated and sent for administrator review."
+  "update.edit_saved_review": "Version updated and sent for administrator review.",
+  "submit.game_select_placeholder": "Select games…",
+  "submit.game_search_placeholder": "Search games…",
+  "submit.game_search_empty": "No matching games"
 }

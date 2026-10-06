@@ -30,16 +30,21 @@
             disable-reset
             @update:model-value="selectAllGames"
           />
-          <UIToggle
-            v-for="game in GAMES"
-            :key="game"
-            :model-value="isGameActive(game)"
-            :default-value="false"
-            :label="getGameLabelOnly(game)"
-            :font-size="14"
-            disable-reset
-            @update:model-value="toggleGame(game)"
-          />
+          <div v-if="GAMES.length > GAME_SEARCH_THRESHOLD" class="filter-search">
+            <input v-model="gameFilterQuery" type="search" :placeholder="t('submit.game_search_placeholder')">
+          </div>
+          <div class="filter-scroll">
+            <UIToggle
+              v-for="game in visibleGameOptions"
+              :key="game"
+              :model-value="isGameActive(game)"
+              :default-value="false"
+              :label="getGameLabelOnly(game)"
+              :font-size="14"
+              disable-reset
+              @update:model-value="toggleGame(game)"
+            />
+          </div>
         </div>
 
         <div class="filter-section">
@@ -178,6 +183,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n, useSeoMeta } from '#imports'
 import { UIDropdown, UIToggle } from 'overlayer-ui'
+import { GAME_IDS, gameLabelKey } from '../utils/games'
 
 interface ModVersion {
   version: string
@@ -276,7 +282,15 @@ const getFallbackGradientStyle = (name: string) => {
   }
 }
 
-const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
+const GAMES = GAME_IDS
+const GAME_SEARCH_THRESHOLD = 6
+const gameFilterQuery = ref('')
+// Selected games stay visible while searching
+const visibleGameOptions = computed(() => {
+  const q = gameFilterQuery.value.trim().toLowerCase()
+  if (!q) return GAMES
+  return GAMES.filter((g) => activeGames.value.includes(g) || getGameLabelOnly(g).toLowerCase().includes(q))
+})
 const CATEGORY_FILTERS = ['all', 'ui', 'gameplay', 'utility', 'visuals', 'library'] as const
 
 const filtersOpen = ref(false)
@@ -453,12 +467,7 @@ const getSortLabel = (val: string) => {
 
 const modGames = (mod: { game: string; games?: string[] }) => mod.games?.length ? mod.games : [mod.game]
 
-const getGameLabelOnly = (game: string) => {
-  if (game === 'adofai') return t('games.adofai')
-  if (game === 'rhythm-doctor') return t('games.rhythm_doctor')
-  if (game === 'dancing-line') return t('games.dancing_line')
-  return game
-}
+const getGameLabelOnly = (game: string) => t(gameLabelKey(game))
 
 
 
@@ -482,7 +491,7 @@ onMounted(() => {
       try {
         const parsed = JSON.parse(savedGames)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const filtered = parsed.filter((g: string) => ['adofai', 'rhythm-doctor', 'dancing-line'].includes(g))
+          const filtered = parsed.filter((g: string) => GAMES.includes(g))
           if (JSON.stringify(filtered) !== JSON.stringify(activeGames.value)) {
             activeGames.value = filtered
             hasChanges = true
@@ -589,6 +598,20 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.filter-search input {
+  width: 100%;
+  height: 34px;
+  margin-bottom: 4px;
+}
+
+.filter-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .filters :deep(.overlayer-toggle) {
