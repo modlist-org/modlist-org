@@ -179,5 +179,14 @@
   "profile.not_logged_in_title": "로그인되지 않음",
   "profile.not_logged_in_desc": "프로필을 보려면 먼저 디스코드로 로그인해 주세요.",
   "profile.role_admin": "관리자",
-  "profile.role_verified_dev": "인증된 개발자"
+  "profile.role_verified_dev": "인증된 개발자",
+  "nav.language": "언어",
+  "nav.menu": "메뉴",
+  "home.hero_title": "리듬게임 모드를 한 곳에서",
+  "home.hero_subtitle": "얼불춤, 리듬 닥터, 댄싱 라인 모드를 찾고, 설치하고, 공유하세요.",
+  "home.get_app": "데스크톱 앱 받기",
+  "home.results": "모드 {count}개",
+  "home.filters": "필터",
+  "home.clear_filters": "필터 초기화",
+  "home.by": "{name}"
 }

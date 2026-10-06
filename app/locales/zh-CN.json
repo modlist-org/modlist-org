@@ -179,5 +179,14 @@
   "profile.not_logged_in_title": "未登录",
   "profile.not_logged_in_desc": "请先使用 Discord 登录以查看您的个人资料。",
   "profile.role_admin": "管理员",
-  "profile.role_verified_dev": "已验证开发者"
+  "profile.role_verified_dev": "已验证开发者",
+  "nav.language": "语言",
+  "nav.menu": "菜单",
+  "home.hero_title": "节奏游戏模组，一站汇集",
+  "home.hero_subtitle": "发现、安装并分享 冰与火之舞、Rhythm Doctor 和 跳舞的线 的模组。",
+  "home.get_app": "获取桌面应用",
+  "home.results": "{count} 个模组",
+  "home.filters": "筛选",
+  "home.clear_filters": "清除筛选",
+  "home.by": "作者 {name}"
 }

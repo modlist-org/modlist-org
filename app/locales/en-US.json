@@ -184,5 +184,14 @@
   "profile.not_logged_in_title": "Not Logged In",
   "profile.not_logged_in_desc": "Please log in with Discord first to view your profile.",
   "profile.role_admin": "Admin",
-  "profile.role_verified_dev": "Verified Developer"
+  "profile.role_verified_dev": "Verified Developer",
+  "nav.language": "Language",
+  "nav.menu": "Menu",
+  "home.hero_title": "Mods for rhythm games, in one place",
+  "home.hero_subtitle": "Discover, install and share mods for A Dance of Fire and Ice, Rhythm Doctor and Dancing Line.",
+  "home.get_app": "Get the desktop app",
+  "home.results": "{count} mods",
+  "home.filters": "Filters",
+  "home.clear_filters": "Clear filters",
+  "home.by": "by {name}"
 }

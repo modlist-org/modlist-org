@@ -1,196 +1,174 @@
 <template>
-  <div class="homepage-container">
-    <!-- Filters and Search Bar -->
-    <div class="filter-controls card">
-      <div class="filter-controls-top">
-        <div class="filter-dropdowns-group">
-          <!-- Game Chips Group -->
-          <div class="filter-dropdown-wrap">
-            <span class="control-label">{{ t('filter.game') }}</span>
-            <div class="game-chips-group">
-              <button
-                type="button"
-                class="game-chip"
-                :class="{ active: isAllGamesActive }"
-                @click="selectAllGames"
-              >
-                <span v-if="isAllGamesActive" class="check-icon">✓</span>
-                <span>{{ t('games.all') }}</span>
-              </button>
-              <button
-                v-for="game in ['adofai', 'rhythm-doctor', 'dancing-line']"
-                :key="game"
-                type="button"
-                class="game-chip"
-                :class="{ active: isGameActive(game) }"
-                @click="toggleGame(game)"
-              >
-                <span v-if="isGameActive(game)" class="check-icon">✓</span>
-                <span>{{ getGameLabelOnly(game) }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Sort Dropdown -->
-          <div class="filter-dropdown-wrap">
-            <span class="control-label">{{ t('filter.sort') }}</span>
-            <div class="filter-dropdown-box sort-dropdown-box">
-              <UIDropdown
-                v-model="sortBy"
-                default-value="downloads_desc"
-                :values="['updated', 'created', 'downloads_desc', 'downloads_asc', 'name_asc', 'name_desc']"
-                :display="getSortLabel"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="search-input-wrap">
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="t('search.placeholder')"
-            class="search-input"
-            @input="debouncedFetch"
-          >
-        </div>
-      </div>
-
-      <!-- Category Chips -->
-      <div class="category-chips-row">
-        <button
-          v-for="cat in ['all', 'ui', 'gameplay', 'utility', 'visuals', 'library']"
-          :key="cat"
-          type="button"
-          class="category-chip"
-          :class="{ active: isCategoryActive(cat) }"
-          @click="selectCategory(cat)"
+  <div class="home">
+    <section class="hero">
+      <h1 class="hero-title">{{ t('home.hero_title') }}</h1>
+      <p class="hero-subtitle">{{ t('home.hero_subtitle') }}</p>
+      <div class="hero-search">
+        <svg class="hero-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input
+          v-model="searchQuery"
+          type="search"
+          :placeholder="t('search.placeholder')"
+          :aria-label="t('search.placeholder')"
+          @input="debouncedFetch"
         >
-          <span v-if="isCategoryActive(cat)" class="check-icon">✓</span>
-          <span>{{ getCategoryLabelOnly(cat) }}</span>
-        </button>
       </div>
+      <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" rel="noopener" class="hero-app-link">
+        {{ t('home.get_app') }} →
+      </a>
+    </section>
 
-
-    </div>
-
-    <!-- Loading Indicator -->
-    <div v-if="loadingMods" class="mods-loading-state">
-      <div class="spinner" />
-      <p>{{ t('loading') }}</p>
-    </div>
-
-    <!-- Mod Grid List -->
-    <template v-else-if="mods.length > 0">
-      <div class="mods-grid">
-        <NuxtLink
-          v-for="mod in mods"
-          :key="mod._id"
-          :to="`/mods/${mod.slug}`"
-          class="card card-hover mod-card"
-        >
-          <div class="mod-card-body-wrapper" style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; flex-grow: 1;">
-            <div class="card-logo-container" style="width: 54px; height: 54px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);">
-              <img v-if="mod.logo" :src="mod.logo" alt="Mod Logo" class="card-logo-img" style="width: 100%; height: 100%; object-fit: cover;">
-              <div v-else class="card-logo-fallback" :style="getFallbackGradientStyle(mod.name)" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 22px; font-weight: 700; color: #ffffff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
-              </div>
-            </div>
-            <div class="mod-card-body" style="flex-grow: 1; margin-bottom: 0;">
-              <h3 class="mod-card-title">{{ mod.name }}</h3>
-              <p class="mod-card-summary">{{ mod.summary }}</p>
-            </div>
-          </div>
-
-          <div class="mod-card-tags" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;">
-            <span v-if="mod.isFeatured" class="badge badge-featured">⭐ {{ t('sort.featured', 'Featured') }}</span>
-            <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
-            <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
-            <span v-if="!mod.isApproved" class="badge badge-pending" style="flex-shrink: 0; margin-left: auto;">{{ t('mod.details.pending_approval') }}</span>
-          </div>
-
-          <div class="mod-card-footer">
-            <div class="author-info">
-              <div class="author-avatars-group">
-                <!-- Author Avatar -->
-                <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="Avatar" class="author-avatar-img" @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }">
-                <!-- Collaborators Avatars (max 2 for visual balance) -->
-                <template v-if="mod.collaboratorIds && mod.collaboratorIds.length > 0">
-                  <img
-                    v-for="collab in mod.collaboratorIds.slice(0, 2)"
-                    :key="collab._id"
-                    v-tooltip="collab.globalName || collab.username"
-                    :src="collab.avatar || '/images/default_avatar.png'"
-                    alt="Collab Avatar"
-                    class="collab-avatar-img"
-                    @error="e => { (e.target as HTMLImageElement).src = '/images/default_avatar.png' }"
-                  >
-                  <!-- If there are more than 2, render a "+N" circle -->
-                  <div
-                    v-if="mod.collaboratorIds.length > 2"
-                    v-tooltip="mod.collaboratorIds.slice(2).map(c => c.globalName || c.username).join(', ')"
-                    class="collab-avatar-more"
-                  >
-                    +{{ mod.collaboratorIds.length - 2 }}
-                  </div>
-                </template>
-              </div>
-              <span class="author-name" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
-              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="badge badge-verified" style="padding: 2px 4px; font-size: 9px; border-radius: 4px; line-height: 1;">✓</span>
-            </div>
-
-            <div class="mod-stats">
-              <span v-if="mod.latestVersion" class="version-tag">v{{ mod.latestVersion.version }}</span>
-              <span class="downloads-count">
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                {{ mod.downloads }}
-              </span>
-            </div>
-          </div>
-        </NuxtLink>
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="pagination-container">
-        <button
-          class="pagination-btn"
-          :disabled="currentPage === 1"
-          @click="changePage(currentPage - 1)"
-        >
-          {{ t('pagination.prev') }}
-        </button>
-        <div class="pagination-pages">
+    <div class="browse">
+      <aside class="filters" :class="{ open: filtersOpen }">
+        <div class="filter-section">
+          <h2 class="filter-title">{{ t('filter.game') }}</h2>
+          <button type="button" class="filter-option" :class="{ active: isAllGamesActive }" @click="selectAllGames">
+            <span class="filter-check" />
+            {{ t('games.all') }}
+          </button>
           <button
-            v-for="p in visiblePages"
-            :key="p"
-            class="pagination-page-btn"
-            :class="{ active: p === currentPage }"
-            @click="changePage(p)"
+            v-for="game in GAMES"
+            :key="game"
+            type="button"
+            class="filter-option"
+            :class="{ active: isGameActive(game) }"
+            @click="toggleGame(game)"
           >
-            {{ p }}
+            <span class="filter-check" />
+            {{ getGameLabelOnly(game) }}
           </button>
         </div>
-        <button
-          class="pagination-btn"
-          :disabled="currentPage === totalPages"
-          @click="changePage(currentPage + 1)"
-        >
-          {{ t('pagination.next') }}
+
+        <div class="filter-section">
+          <h2 class="filter-title">{{ t('filter.category') }}</h2>
+          <button
+            v-for="cat in CATEGORY_FILTERS"
+            :key="cat"
+            type="button"
+            class="filter-option"
+            :class="{ active: isCategoryActive(cat) }"
+            @click="selectCategory(cat)"
+          >
+            <span class="filter-check" />
+            {{ getCategoryLabelOnly(cat) }}
+          </button>
+        </div>
+
+        <button v-if="hasActiveFilters" type="button" class="btn btn-ghost btn-sm" style="align-self: flex-start;" @click="clearFilters">
+          {{ t('home.clear_filters') }}
         </button>
-      </div>
-    </template>
+      </aside>
 
-    <!-- Empty State -->
-    <div v-else class="mods-empty-state card">
-      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M16 21V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v16" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-      </svg>
-      <p>{{ t('home.no_mods') }}</p>
+      <section class="results">
+        <div class="results-toolbar">
+          <button type="button" class="btn btn-secondary btn-sm filters-toggle" @click="filtersOpen = !filtersOpen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+            {{ t('home.filters') }}
+          </button>
+          <span class="results-count">{{ loadingMods ? '' : t('home.results', { count: totalMods }) }}</span>
+          <div class="sort-box">
+            <UIDropdown
+              v-model="sortBy"
+              default-value="downloads_desc"
+              :values="['updated', 'created', 'downloads_desc', 'downloads_asc', 'name_asc', 'name_desc']"
+              :display="getSortLabel"
+              disable-reset
+            />
+          </div>
+        </div>
+
+        <div v-if="loadingMods" class="mods-grid">
+          <div v-for="n in 6" :key="n" class="mod-card mod-card-skeleton">
+            <div class="skeleton" style="width: 56px; height: 56px; border-radius: 12px;" />
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+              <div class="skeleton" style="width: 50%; height: 16px;" />
+              <div class="skeleton" style="width: 90%; height: 12px;" />
+              <div class="skeleton" style="width: 70%; height: 12px;" />
+            </div>
+          </div>
+        </div>
+
+        <template v-else-if="mods.length > 0">
+          <div class="mods-grid">
+            <NuxtLink
+              v-for="mod in mods"
+              :key="mod._id"
+              :to="`/mods/${mod.slug}`"
+              class="mod-card"
+              :class="{ featured: mod.isFeatured }"
+            >
+              <div class="mod-logo">
+                <img v-if="mod.logo" :src="mod.logo" :alt="mod.name" loading="lazy">
+                <span v-else :style="getFallbackGradientStyle(mod.name)">{{ mod.name ? mod.name.charAt(0).toUpperCase() : 'M' }}</span>
+              </div>
+
+              <div class="mod-info">
+                <div class="mod-heading">
+                  <h3 class="mod-name">{{ mod.name }}</h3>
+                  <span v-if="mod.isFeatured" class="badge badge-featured">★ {{ t('sort.featured', 'Featured') }}</span>
+                  <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
+                </div>
+
+                <div class="mod-authors">
+                  <div class="avatar-stack">
+                    <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
+                    <img
+                      v-for="collab in (mod.collaboratorIds || []).slice(0, 2)"
+                      :key="collab._id"
+                      :src="collab.avatar || '/images/default_avatar.png'"
+                      alt=""
+                      @error="onAvatarError"
+                    >
+                  </div>
+                  <span class="mod-author-names" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
+                  <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                </div>
+
+                <p class="mod-summary">{{ mod.summary }}</p>
+
+                <div class="mod-meta">
+                  <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
+                  <span v-for="cat in mod.categories.slice(0, 3)" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
+                  <span v-if="mod.categories.length > 3" class="badge badge-category">+{{ mod.categories.length - 3 }}</span>
+                  <span class="mod-stats">
+                    <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
+                    <span class="mod-downloads">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                      {{ formatNumber(mod.downloads) }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+
+          <div v-if="totalPages > 1" class="pagination-container">
+            <button class="pagination-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+              {{ t('pagination.prev') }}
+            </button>
+            <div class="pagination-pages">
+              <button
+                v-for="p in visiblePages"
+                :key="p"
+                class="pagination-page-btn"
+                :class="{ active: p === currentPage }"
+                @click="changePage(p)"
+              >
+                {{ p }}
+              </button>
+            </div>
+            <button class="pagination-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+              {{ t('pagination.next') }}
+            </button>
+          </div>
+        </template>
+
+        <div v-else class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+          <p>{{ t('home.no_mods') }}</p>
+        </div>
+      </section>
     </div>
-
   </div>
 </template>
 
@@ -263,7 +241,7 @@ const getAuthorsText = (mod: ModItem) => {
       names.push(collab.globalName || collab.username)
     })
     if (mod.collaboratorIds.length > 2) {
-      return names.join(', ') + ' and more'
+      return names.join(', ') + ` +${mod.collaboratorIds.length - 2}`
     }
   }
   return names.length > 0 ? names.join(', ') : 'Unknown'
@@ -294,6 +272,18 @@ const getFallbackGradientStyle = (name: string) => {
     background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
   }
 }
+
+const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
+const CATEGORY_FILTERS = ['all', 'ui', 'gameplay', 'utility', 'visuals', 'library'] as const
+
+const filtersOpen = ref(false)
+
+const onAvatarError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/default_avatar.png'
+}
+
+const numberFormatter = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
+const formatNumber = (n: number) => numberFormatter.format(n || 0)
 
 const activeGames = ref<string[]>([])
 
@@ -413,6 +403,13 @@ const isCategoryActive = (cat: string) => {
   return activeCategories.value.includes(cat)
 }
 
+const hasActiveFilters = computed(() => activeGames.value.length > 0 || activeCategories.value.length > 0)
+
+const clearFilters = () => {
+  activeGames.value = []
+  activeCategories.value = []
+}
+
 const selectCategory = (cat: string) => {
   if (cat === 'all') {
     activeCategories.value = []
@@ -499,460 +496,412 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.homepage-container {
+.home {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 10px;
+  gap: 32px;
 }
 
-/* Filter control card */
-.filter-controls {
-  position: relative;
-  z-index: 50;
+/* Hero */
+.hero {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 16px;
-  padding: 20px 24px;
-}
-
-.filter-controls-top {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  text-align: center;
+  padding: 40px 0 8px;
+  gap: 14px;
 }
 
-@media (max-width: 968px) {
-  .filter-controls-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.hero-title {
+  margin: 0;
+  font-size: clamp(30px, 4.6vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  background: linear-gradient(180deg, #ffffff 30%, #b9bdf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.active-tags-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.active-tag-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: rgba(145, 154, 255, 0.1);
-  color: #919AFF;
-  border: 1px solid rgba(145, 154, 255, 0.25);
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.remove-tag-btn {
-  background: none;
-  border: none;
-  color: rgba(145, 154, 255, 0.6);
+.hero-subtitle {
+  margin: 0;
+  max-width: 560px;
+  color: var(--text-secondary);
   font-size: 16px;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
 }
 
-.remove-tag-btn:hover {
-  color: #E2676D;
+.hero-search {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin-top: 12px;
 }
 
-.clear-all-tags-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px 8px;
-  transition: color 0.2s;
+.hero-search input {
+  width: 100%;
+  height: 52px;
+  padding: 0 18px 0 48px;
+  font-size: 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
-.clear-all-tags-btn:hover {
-  color: #ffffff;
+.hero-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.hero-app-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.hero-app-link:hover {
   text-decoration: underline;
 }
 
-.filter-dropdowns-group {
+/* Browse layout */
+.browse {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.filters {
+  position: sticky;
+  top: calc(var(--header-height) + 24px);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 24px;
-  flex-wrap: wrap;
 }
 
-.filter-dropdown-wrap {
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-title {
+  margin: 0 0 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.filter-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.game-chips-group {
+.filter-option:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.filter-option.active {
+  color: var(--text);
+}
+
+.filter-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  transition: all 0.15s ease;
+}
+
+.filter-option.active .filter-check {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 11px no-repeat;
+}
+
+/* Results */
+.results {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  max-width: 100%;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
-.game-chips-group::-webkit-scrollbar {
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.results-count {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sort-box {
+  margin-left: auto;
+  width: 200px;
+}
+
+.filters-toggle {
   display: none;
 }
 
-.game-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #1e1c28;
-  color: #7e808f;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  outline: none;
-  flex-shrink: 0;
-}
-
-.game-chip:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.game-chip.active {
-  background-color: rgba(145, 154, 255, 0.15);
-  color: #919aff;
-  border-color: #919aff;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .game-chips-group {
-    margin-left: auto;
-    max-width: 70%;
-  }
-}
-
-.category-dropdown-box {
-  width: 180px;
-}
-
-.sort-dropdown-box {
-  width: 180px;
-}
-
-.badge-featured {
-  background-color: rgba(255, 215, 0, 0.15) !important;
-  color: #FFD700 !important;
-  border: 1px solid rgba(255, 215, 0, 0.35) !important;
-  font-weight: 700;
-}
-
-@media (max-width: 768px) {
-  .filter-dropdowns-group {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .filter-dropdown-wrap {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .filter-dropdown-box {
-    flex-grow: 1;
-    max-width: 260px;
-  }
-}
-
-.control-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-  white-space: nowrap;
-}
-
-.filter-toggle-wrap {
-  display: flex;
-  align-items: center;
-  margin-left: 4px;
-}
-
-.badge-category {
-  background-color: rgba(145, 154, 255, 0.1);
-  color: #919AFF;
-  border: 1px solid rgba(145, 154, 255, 0.25);
-}
-
-.search-input-wrap {
-  flex-grow: 1;
-  max-width: 480px;
-}
-
-@media (max-width: 768px) {
-  .search-input-wrap {
-    width: 100%;
-    max-width: 100%;
-  }
-}
-
-.search-input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Mods Grid */
 .mods-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 24px;
-}
-
-@media (max-width: 480px) {
-  .mods-grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .mod-card {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 200px;
+  gap: 16px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   text-decoration: none;
-  cursor: pointer;
-  padding: 24px;
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
-
-
-.mod-card-body {
-  flex-grow: 1;
-  margin-bottom: 20px;
+.mod-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  transform: translateY(-1px);
 }
 
-.mod-card-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 8px 0 !important;
-  color: #ffffff;
-  border-left: none !important;
-  padding-left: 0 !important;
+.mod-card.featured {
+  border-color: rgba(242, 181, 82, 0.22);
+  background:
+    linear-gradient(180deg, rgba(242, 181, 82, 0.05), transparent 60%),
+    var(--surface);
 }
 
-.mod-card-summary {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.5;
+.mod-card.featured:hover {
+  border-color: rgba(242, 181, 82, 0.4);
+}
+
+.mod-card-skeleton {
+  pointer-events: none;
+}
+
+.mod-logo {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.mod-logo img,
+.mod-logo span {
+  width: 100%;
+  height: 100%;
+}
+
+.mod-logo img {
+  object-fit: cover;
+  display: block;
+}
+
+.mod-logo span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.mod-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mod-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mod-name {
   margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-authors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.avatar-stack {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.avatar-stack img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--surface);
+  margin-left: -6px;
+}
+
+.avatar-stack img:first-child {
+  margin-left: 0;
+}
+
+.mod-author-names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verified-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.mod-summary {
+  margin: 2px 0 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.mod-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 14px;
-}
-
-.author-info {
+.mod-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  overflow: hidden;
-  max-width: 70%;
-}
-
-.author-avatars-group {
-  display: flex;
-  align-items: center;
-}
-
-.author-avatar-img, .collab-avatar-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid #1b1a22; /* overlaps overlay boundary */
-  object-fit: cover;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.collab-avatar-img, .collab-avatar-more {
-  margin-left: -8px;
-}
-
-.collab-avatar-more {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid #1b1a22;
-  background-color: #2b2a33;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 10px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.author-avatars-group:hover .author-avatar-img,
-.author-avatars-group:hover .collab-avatar-img,
-.author-avatars-group:hover .collab-avatar-more {
-  transform: translateY(-2px);
-}
-
-.author-name {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .mod-stats {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.version-tag {
-  background-color: rgba(145, 154, 255, 0.1);
-  color: #919AFF;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 13px;
   font-weight: 600;
 }
 
-.downloads-count {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+.mod-version {
+  font-variant-numeric: tabular-nums;
 }
 
-.icon-svg {
+.mod-downloads {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.mod-downloads svg {
   width: 14px;
   height: 14px;
 }
 
-/* Loading state */
-.mods-loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 0;
-  color: rgba(255, 255, 255, 0.5);
+@media (max-width: 1100px) {
+  .mods-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(145, 154, 255, 0.2);
-  border-top-color: #919AFF;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+@media (max-width: 860px) {
+  .hero {
+    padding-top: 16px;
+  }
+  .browse {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .filters {
+    display: none;
+    position: static;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+  .filters.open {
+    display: flex;
+  }
+  .filters-toggle {
+    display: inline-flex;
+  }
+  .sort-box {
+    width: 170px;
+  }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Empty state */
-.mods-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 60px 24px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.empty-icon {
-  width: 48px;
-  height: 48px;
-  color: rgba(255, 255, 255, 0.2);
-}
-
-/* Category Chips styling */
-.category-chips-row {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.category-chips-row::-webkit-scrollbar {
-  display: none;
-}
-
-.category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #1e1c28;
-  color: #7e808f;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  outline: none;
-}
-
-.category-chip:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.category-chip.active {
-  background-color: rgba(145, 154, 255, 0.15);
-  color: #919aff;
-  border-color: #919aff;
-  font-weight: 600;
-}
-
-.check-icon {
-  font-size: 14px;
-  line-height: 1;
+@media (max-width: 520px) {
+  .mod-card {
+    padding: 14px;
+    gap: 12px;
+  }
+  .mod-logo {
+    width: 48px;
+    height: 48px;
+  }
+  .results-count {
+    display: none;
+  }
 }
 </style>
