@@ -302,24 +302,49 @@ a {
 }
 
 .user-menu-trigger {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 38px;
-  padding: 0 10px 0 5px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-3);
+  height: 40px;
+  padding: 0 6px 0 6px;
+  border-radius: 8px;
+  background: var(--ol-control);
   border: none;
-  color: var(--text);
+  color: #fff;
   font: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
-  transition: box-shadow 0.1s ease-out;
+  user-select: none;
 }
 
-.user-menu-trigger:hover {
-  box-shadow: var(--outline);
+.user-menu-trigger::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ol-accent);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+  pointer-events: none;
+}
+
+.user-menu-trigger:hover::after {
+  opacity: 1;
+}
+
+.user-menu-triangle {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #f3f4ff;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s ease-out;
+}
+
+.user-menu-triangle.is-expanded {
+  color: var(--ol-accent);
+  transform: rotate(180deg);
 }
 
 .user-menu-trigger img {
@@ -340,20 +365,21 @@ a {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 220px;
-  padding: 0;
+  z-index: 100;
+  min-width: 100%;
+  width: max-content;
   overflow: hidden;
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+  background-color: var(--ol-control);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
 .user-menu-header {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -361,6 +387,12 @@ a {
 
 .user-menu-header strong {
   font-size: 14px;
+  font-weight: 600;
+}
+
+.user-menu-badges {
+  display: flex;
+  gap: 4px;
 }
 
 .user-menu-item {
@@ -369,26 +401,23 @@ a {
   gap: 10px;
   height: 40px;
   padding: 0 14px;
-  color: var(--text);
+  color: #fff;
   text-decoration: none;
   font: inherit;
   font-size: 14px;
-  background: none;
+  font-weight: 400;
+  background-color: transparent;
   border: none;
   text-align: left;
   cursor: pointer;
+  user-select: none;
   transition: background-color 0.12s ease-out;
 }
 
 .user-menu-item:hover {
-  background: var(--ol-accent);
-  color: #fff;
+  background-color: var(--ol-accent);
 }
 
-.user-menu-item.danger:hover {
-  background: var(--danger);
-  color: #fff;
-}
 
 .header-actions .menu-toggle {
   display: none;
@@ -998,6 +1027,19 @@ label {
 }
 .tooltip-fade-enter-from,
 .tooltip-fade-leave-to {
+  opacity: 0;
+}
+
+/* overlayer-ui dropdown open/close */
+.expand-enter-active,
+.expand-leave-active {
+  transition: max-height 0.16s ease-out, opacity 0.16s ease-out;
+  max-height: 500px;
+  overflow: hidden;
+}
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0 !important;
   opacity: 0;
 }
 

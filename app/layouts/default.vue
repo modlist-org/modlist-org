@@ -45,13 +45,13 @@
             <button type="button" class="user-menu-trigger" :aria-expanded="userMenuOpen" @click="userMenuOpen = !userMenuOpen">
               <img :src="user.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <span class="user-menu-name">{{ user.globalName || user.username }}</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+              <svg class="user-menu-triangle" :class="{ 'is-expanded': userMenuOpen }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
             </button>
-            <transition name="fade">
+            <transition name="expand">
               <div v-if="userMenuOpen" class="user-menu-panel" @click="userMenuOpen = false">
                 <div class="user-menu-header">
                   <strong>{{ user.globalName || user.username }}</strong>
-                  <div style="display: flex; gap: 4px;">
+                  <div class="user-menu-badges">
                     <span v-if="user.isAdmin" class="badge badge-admin">{{ t('nav.badge_admin') }}</span>
                     <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">✓ {{ t('mod.details.verified_source') }}</span>
                   </div>
