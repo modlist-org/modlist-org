@@ -229,5 +229,14 @@
   "pending.your_submissions": "Your submissions",
   "pending.status_rejected": "Rejected",
   "contact.subtitle": "Questions, bug reports or business inquiries — here's how to reach us.",
-  "legal.open_new_tab": "Open in new tab"
+  "legal.open_new_tab": "Open in new tab",
+  "submit.error_game_required": "Please select at least one target game.",
+  "submit.game_multi_help": "Select every game this mod supports.",
+  "mod.details.edit_version": "Edit",
+  "update.edit_title": "Edit version v{version}",
+  "update.cancel_edit": "Cancel editing",
+  "update.save_edit": "Save changes",
+  "update.edit_review_notice": "This version is live. Saving changes sends it back for administrator review, and it will be hidden until approved.",
+  "update.edit_saved": "Version updated.",
+  "update.edit_saved_review": "Version updated and sent for administrator review."
 }

@@ -1,4 +1,4 @@
-import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, GAMES } from '../../db/schema'
+import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames } from '../../db/schema'
 import { useDb, newId } from '../../utils/db'
 import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
 import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     name,
     slug,
     game,
+    games,
     categories,
     summary,
     description,
@@ -40,7 +41,9 @@ export default defineEventHandler(async (event) => {
   const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
   const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
 
-  if (!name || !slug || !game || !categories || !summary || !version || (!downloadUrl && availablePlatforms.length === 0)) {
+  const targetGames = normalizeGames(games, game)
+
+  if (!name || !slug || targetGames.length === 0 || !categories || !summary || !version || (!downloadUrl && availablePlatforms.length === 0)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Required fields: name, slug, game, categories, summary, version, and at least one platform download link.'
@@ -61,12 +64,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (!(GAMES as readonly string[]).includes(game)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid game selected.'
-    })
-  }
 
   if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !(CATEGORIES as readonly string[]).includes(cat))) {
     throw createError({
@@ -114,7 +111,7 @@ export default defineEventHandler(async (event) => {
   const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
   const validatedCollabIds = await validateUserIds(db, collaboratorIds, currentUser.id)
-  const validatedDepIds = await validateDependencyIds(db, dependencies, game)
+  const validatedDepIds = await validateDependencyIds(db, dependencies, targetGames)
   const storedLogo = await storeLogo(event, logo)
 
   // 2. Determine approval status
@@ -131,7 +128,8 @@ export default defineEventHandler(async (event) => {
         id: modId,
         name,
         slug: formattedSlug,
-        game,
+        game: targetGames[0]!,
+        games: targetGames,
         categories,
         summary,
         description: description || '',

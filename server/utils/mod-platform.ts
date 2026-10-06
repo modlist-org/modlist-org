@@ -52,3 +52,49 @@ export function getVersionDownloadUrl(
 
   return version.downloadUrl
 }
+
+export function normalizeVersionString(version: string) {
+  return version.trim().replace(/^v/i, '')
+}
+
+// Validate the version + download link fields shared by version create/edit requests
+export function parseVersionInput(body: Record<string, unknown>) {
+  const { version, downloadUrl, platformDownloads, changelog, gameVersion, isBeta } = body
+
+  const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
+  const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
+  const trimmedDownloadUrl = typeof downloadUrl === 'string' ? downloadUrl.trim() : ''
+  const normalizedDownloadUrl = trimmedDownloadUrl || normalizedPlatformDownloads[availablePlatforms[0]!]
+
+  if (typeof version !== 'string' || !version.trim() || !normalizedDownloadUrl) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Version string and at least one platform download link are required.'
+    })
+  }
+
+  if (trimmedDownloadUrl && !isHttpUrl(trimmedDownloadUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Download link must be a valid direct HTTP/HTTPS URL.'
+    })
+  }
+
+  for (const platform of availablePlatforms) {
+    if (!isHttpUrl(normalizedPlatformDownloads[platform])) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `${platform} download link must be a valid direct HTTP/HTTPS URL.`
+      })
+    }
+  }
+
+  return {
+    version: version.trim(),
+    downloadUrl: normalizedDownloadUrl,
+    platformDownloads: normalizedPlatformDownloads,
+    changelog: typeof changelog === 'string' ? changelog : '',
+    gameVersion: typeof gameVersion === 'string' ? gameVersion.trim() : '',
+    isBeta: !!isBeta
+  }
+}

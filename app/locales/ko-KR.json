@@ -224,5 +224,14 @@
   "pending.your_submissions": "내 제출물",
   "pending.status_rejected": "거절됨",
   "contact.subtitle": "질문, 버그 제보, 비즈니스 문의는 아래 방법으로 연락해 주세요.",
-  "legal.open_new_tab": "새 탭에서 열기"
+  "legal.open_new_tab": "새 탭에서 열기",
+  "submit.error_game_required": "대상 게임을 하나 이상 선택해주세요.",
+  "submit.game_multi_help": "이 모드가 지원하는 게임을 모두 선택하세요.",
+  "mod.details.edit_version": "수정",
+  "update.edit_title": "v{version} 버전 수정",
+  "update.cancel_edit": "수정 취소",
+  "update.save_edit": "변경사항 저장",
+  "update.edit_review_notice": "공개된 버전입니다. 수정하면 관리자 재검토 대상이 되며, 승인 전까지 목록에서 숨겨집니다.",
+  "update.edit_saved": "버전이 수정되었습니다.",
+  "update.edit_saved_review": "버전이 수정되어 관리자 검토 대기 중입니다."
 }

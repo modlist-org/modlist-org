@@ -40,6 +40,7 @@ export default defineEventHandler(async (event) => {
         modName: mod.name,
         modSlug: mod.slug,
         game: mod.game,
+        games: mod.games,
         versionId: ver._id,
         version: ver.version,
         downloadUrl: ver.downloadUrl,

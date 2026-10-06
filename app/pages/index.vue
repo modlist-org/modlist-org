@@ -129,7 +129,7 @@
                 <p class="mod-summary">{{ mod.summary }}</p>
 
                 <div class="mod-meta">
-                  <span class="badge badge-game">{{ getGameLabelOnly(mod.game) }}</span>
+                  <span v-for="g in modGames(mod)" :key="g" class="badge badge-game">{{ getGameLabelOnly(g) }}</span>
                   <span v-for="cat in mod.categories.slice(0, 3)" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
                   <span v-if="mod.categories.length > 3" class="badge badge-category">+{{ mod.categories.length - 3 }}</span>
                   <span class="mod-stats">
@@ -198,6 +198,7 @@ interface ModItem {
   summary: string
   description?: string
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId?: {
     _id: string
@@ -449,6 +450,8 @@ const getSortLabel = (val: string) => {
   if (val === 'name_desc') return t('sort.name_desc')
   return val
 }
+
+const modGames = (mod: { game: string; games?: string[] }) => mod.games?.length ? mod.games : [mod.game]
 
 const getGameLabelOnly = (game: string) => {
   if (game === 'adofai') return t('games.adofai')

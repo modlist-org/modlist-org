@@ -75,7 +75,7 @@
                   <span class="review-slug">/{{ mod.slug }}</span>
                 </div>
                 <div class="review-meta">
-                  <span class="badge badge-game">{{ getGameLabel(mod.game) }}</span>
+                  <span v-for="g in gamesOf(mod)" :key="g" class="badge badge-game">{{ getGameLabel(g) }}</span>
                   <span>{{ formatDate(mod.createdAt) }}</span>
                 </div>
               </div>
@@ -191,7 +191,7 @@
                   </h3>
                 </div>
                 <div class="review-meta">
-                  <span class="badge badge-game">{{ getGameLabel(mod.game) }}</span>
+                  <span v-for="g in gamesOf(mod)" :key="g" class="badge badge-game">{{ getGameLabel(g) }}</span>
                   <span class="review-meta-user">
                     {{ t('admin.proposed_by') }}
                     <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" class="avatar-xs" @error="onAvatarError">
@@ -244,10 +244,10 @@
               </div>
 
               <!-- Game Change -->
-              <div v-if="mod.pendingEdit?.game && mod.pendingEdit.game !== mod.game" class="diff-row">
+              <div v-if="mod.pendingEdit && pendingGamesChanged(mod)" class="diff-row">
                 <span class="diff-label">{{ t('submit.game') }}</span>
-                <span class="diff-old" :data-label="t('admin.current')">{{ getGameLabel(mod.game) }}</span>
-                <span class="diff-new" :data-label="t('admin.proposed')">{{ getGameLabel(mod.pendingEdit.game) }}</span>
+                <span class="diff-old" :data-label="t('admin.current')">{{ gamesOf(mod).map(getGameLabel).join(', ') }}</span>
+                <span class="diff-new" :data-label="t('admin.proposed')">{{ proposedGames(mod).map(getGameLabel).join(', ') }}</span>
               </div>
 
               <!-- Categories Change -->
@@ -426,6 +426,7 @@ interface PendingVersion {
   modName: string
   modSlug: string
   game: string
+  games?: string[]
   versionId: string
   version: string
   downloadUrl: string
@@ -457,6 +458,7 @@ interface PendingEdit {
   summary?: string
   description?: string
   game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
@@ -472,6 +474,7 @@ interface ModItem {
   summary: string
   description?: string
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId: CreatorUser
   isApproved: boolean
@@ -719,6 +722,18 @@ const getCategoryLabelOnly = (val: string) => {
   if (val === 'library') return t('categories.library')
   return val
 }
+
+const gamesOf = (mod: { game: string; games?: string[] }) => mod.games?.length ? mod.games : [mod.game]
+
+const proposedGames = (mod: { game: string; games?: string[]; pendingEdit?: { game?: string; games?: string[] } | null }) => {
+  const edit = mod.pendingEdit
+  if (edit?.games?.length) return edit.games
+  if (edit?.game) return [edit.game]
+  return gamesOf(mod)
+}
+
+const pendingGamesChanged = (mod: { game: string; games?: string[]; pendingEdit?: { game?: string; games?: string[] } | null }) =>
+  proposedGames(mod).join(',') !== gamesOf(mod).join(',')
 
 const getGameLabel = (val: string) => {
   if (val === 'adofai') return t('games.adofai')

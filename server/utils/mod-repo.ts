@@ -35,6 +35,7 @@ export interface ModDto {
   summary: string
   description: string
   game: Game
+  games: Game[]
   categories: Category[]
   authorId: PublicUser | null
   collaboratorIds: PublicUser[]
@@ -124,6 +125,7 @@ export async function hydrateMods(db: Db, rows: ModRow[]): Promise<ModDto[]> {
       summary: mod.summary,
       description: mod.description,
       game: mod.game,
+      games: modGames(mod),
       categories: mod.categories,
       authorId: userMap.get(mod.authorId) ?? null,
       collaboratorIds: pick('accepted'),
@@ -206,16 +208,20 @@ export function dependencyRows(modId: string, dependencyIds: string[]) {
   return dependencyIds.map((dependencyId, position) => ({ modId, dependencyId, position }))
 }
 
-// Keep only existing mods for the same game (dependency ids come from the client)
-export async function validateDependencyIds(db: Db, ids: unknown, game: string, selfId?: string): Promise<string[]> {
+export function modGames(mod: Pick<ModRow, 'game' | 'games'>): Game[] {
+  return mod.games?.length ? mod.games : [mod.game]
+}
+
+// Keep only existing mods that share at least one game (dependency ids come from the client)
+export async function validateDependencyIds(db: Db, ids: unknown, games: Game[], selfId?: string): Promise<string[]> {
   if (!Array.isArray(ids)) return []
   const candidates = [...new Set(ids.filter((id): id is string => typeof id === 'string' && /^[0-9a-f]{24}$/.test(id)))]
     .filter((id) => id !== selfId)
   if (candidates.length === 0) return []
   const rows = await inChunks(candidates, (chunk) =>
-    db.select({ id: mods.id, game: mods.game }).from(mods).where(inArray(mods.id, chunk))
+    db.select({ id: mods.id, game: mods.game, games: mods.games }).from(mods).where(inArray(mods.id, chunk))
   )
-  const valid = new Set(rows.filter((r) => r.game === game).map((r) => r.id))
+  const valid = new Set(rows.filter((r) => modGames(r).some((g) => games.includes(g))).map((r) => r.id))
   return candidates.filter((id) => valid.has(id))
 }
 

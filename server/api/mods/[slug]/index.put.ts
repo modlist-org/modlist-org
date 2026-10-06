@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { mods, modCollaborators, modDependencies, CATEGORIES, GAMES } from '../../../db/schema'
-import type { Category, Game, PendingModEdit } from '../../../db/schema'
+import { mods, modCollaborators, modDependencies, CATEGORIES, normalizeGames } from '../../../db/schema'
+import type { Category, PendingModEdit } from '../../../db/schema'
 import { useDb } from '../../../utils/db'
 import { isHttpUrl } from '../../../utils/mod-platform'
 import {
@@ -10,6 +10,7 @@ import {
   findModBySlug,
   getCollaboratorIds,
   getDependencyIds,
+  modGames,
   validateDependencyIds,
   validateUserIds
 } from '../../../utils/mod-repo'
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
+  const { name, summary, description, game, games, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
 
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
@@ -77,10 +78,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const validGame: Game | undefined = game && (GAMES as readonly string[]).includes(game) ? game : undefined
-    const targetGame = validGame || mod.game
+    // Only touch games when the client sent them (legacy clients send a single `game`)
+    const requestedGames = games !== undefined || game !== undefined ? normalizeGames(games, game) : undefined
+    if (requestedGames && requestedGames.length === 0) {
+      throw createError({ statusCode: 400, statusMessage: 'Select at least one target game.' })
+    }
+    const currentGames = modGames(mod)
+    const targetGames = requestedGames ?? currentGames
+    const gamesChanged = !!requestedGames && (requestedGames.length !== currentGames.length || requestedGames.some((g, i) => g !== currentGames[i]))
     const storedLogo = logo !== undefined ? await storeLogo(event, logo) : undefined
-    const newDepIds = dependencies !== undefined ? await validateDependencyIds(db, dependencies, targetGame, mod.id) : undefined
+    // Re-check dependencies when games change so every dependency still shares a game
+    const newDepIds = dependencies !== undefined || gamesChanged
+      ? await validateDependencyIds(db, dependencies ?? await getDependencyIds(db, mod.id), targetGames, mod.id)
+      : undefined
 
     const updates: Partial<typeof mods.$inferInsert> = {}
     const statements: Parameters<typeof db.batch>[0][number][] = []
@@ -90,7 +100,10 @@ export default defineEventHandler(async (event) => {
       if (name) updates.name = name
       if (summary) updates.summary = summary
       if (description !== undefined) updates.description = description
-      if (validGame) updates.game = validGame
+      if (requestedGames) {
+        updates.game = requestedGames[0]
+        updates.games = requestedGames
+      }
       if (storedLogo !== undefined) updates.logo = storedLogo
       if (sourceUrl !== undefined) updates.sourceUrl = sourceUrl
       if (communityUrl !== undefined) updates.communityUrl = communityUrl
@@ -108,7 +121,10 @@ export default defineEventHandler(async (event) => {
       if (name && name !== mod.name) proposedEdit.name = name
       if (summary && summary !== mod.summary) proposedEdit.summary = summary
       if (description !== undefined && description !== mod.description) proposedEdit.description = description
-      if (validGame && validGame !== mod.game) proposedEdit.game = validGame
+      if (gamesChanged && requestedGames) {
+        proposedEdit.games = requestedGames
+        proposedEdit.game = requestedGames[0]
+      }
       if (storedLogo !== undefined && storedLogo !== mod.logo) proposedEdit.logo = storedLogo
       if (sourceUrl !== undefined && sourceUrl !== mod.sourceUrl) proposedEdit.sourceUrl = sourceUrl
       if (communityUrl !== undefined && communityUrl !== mod.communityUrl) proposedEdit.communityUrl = communityUrl
@@ -157,6 +173,7 @@ export default defineEventHandler(async (event) => {
         slug: updatedMod.slug,
         summary: updatedMod.summary,
         game: updatedMod.game,
+        games: modGames(updatedMod),
         categories: updatedMod.categories,
         collaboratorIds: await getCollaboratorIds(db, mod.id, 'accepted')
       }

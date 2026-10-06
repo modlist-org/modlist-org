@@ -62,7 +62,7 @@
         </div>
 
         <div class="mod-badges">
-          <span class="badge badge-game">{{ getGameLabel(activeGame) }}</span>
+          <span v-for="g in activeGames" :key="g" class="badge badge-game">{{ getGameLabel(g) }}</span>
           <span v-for="cat in activeCategories" :key="cat" class="badge badge-category">{{ getCategoryLabel(cat) }}</span>
         </div>
       </div>
@@ -140,7 +140,7 @@
             <span v-if="mod.versions?.length" class="section-count">{{ mod.versions.length }}</span>
           </h2>
           <div class="versions-list">
-            <div v-for="(ver, idx) in paginatedVersions" :key="ver._id" class="version-row" :class="{ pending: !ver.isApproved }">
+            <div v-for="(ver, idx) in paginatedVersions" :key="ver._id" class="version-row" :class="{ pending: !ver.isApproved, editing: editingVersionId === ver._id }">
               <div class="version-head">
                 <div class="version-main">
                   <div class="version-title">
@@ -164,6 +164,15 @@
                 </div>
 
                 <div class="version-actions">
+                  <button
+                    v-if="isEditable"
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="startEditVersion(ver)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    {{ t('mod.details.edit_version') }}
+                  </button>
                   <button
                     v-if="!ver.isApproved && isEditable"
                     type="button"
@@ -227,7 +236,17 @@
 
         <!-- Submit Update (Author / Collab only) -->
         <section v-if="isEditable" id="submit-update" class="card mod-section">
-          <h2 class="section-title">{{ t('update.title') }}</h2>
+          <div class="update-head">
+            <h2 class="section-title">
+              {{ editingVersion ? t('update.edit_title', { version: editingVersion.version }) : t('update.title') }}
+            </h2>
+            <button v-if="editingVersion" type="button" class="btn btn-ghost btn-sm" @click="cancelEditVersion">
+              {{ t('update.cancel_edit') }}
+            </button>
+          </div>
+          <div v-if="editingVersion && editingVersion.isApproved && !(user?.isVerifiedDeveloper || user?.isAdmin)" class="callout callout-warning callout-sm">
+            {{ t('update.edit_review_notice') }}
+          </div>
 
           <form class="update-form" @submit.prevent="submitUpdate">
             <div class="form-row">
@@ -289,7 +308,7 @@
 
             <button type="submit" class="btn btn-primary submit-update-btn" :disabled="submittingUpdate">
               <span v-if="submittingUpdate" class="spinner btn-spinner" />
-              {{ submittingUpdate ? t('update.submitting') : t('update.submit') }}
+              {{ submittingUpdate ? t('update.submitting') : editingVersion ? t('update.save_edit') : t('update.submit') }}
             </button>
           </form>
         </section>
@@ -333,7 +352,7 @@
           <dl class="info-list">
             <div class="info-row">
               <dt>{{ t('mod.details.game') }}</dt>
-              <dd>{{ getGameLabel(activeGame) }}</dd>
+              <dd>{{ activeGames.map(getGameLabel).join(', ') }}</dd>
             </div>
             <div class="info-row">
               <dt>{{ t('mod.details.categories') }}</dt>
@@ -504,7 +523,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
 import { UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
@@ -523,6 +542,7 @@ interface ModVersion {
   _id?: string
   version: string
   downloadUrl: string
+  platformDownloads?: Partial<Record<'windows' | 'macos' | 'linux', string>>
   changelog: string
   gameVersion?: string
   isApproved: boolean
@@ -550,6 +570,7 @@ interface PendingEdit {
   summary?: string
   description?: string
   game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   logo?: string
   sourceUrl?: string
@@ -565,6 +586,7 @@ interface ModItem {
   summary: string
   description?: string
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId: CreatorUser
   collaboratorIds: CreatorUser[]
@@ -714,6 +736,51 @@ const hasUpdateDownload = computed(() => updateForm.value.downloadMode === 'unif
   ? updateForm.value.downloadUrl.trim().length > 0
   : Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0))
 const submittingUpdate = ref(false)
+const editingVersionId = ref<string | null>(null)
+const editingVersion = computed(() => mod.value?.versions?.find((v) => v._id === editingVersionId.value) ?? null)
+
+const emptyUpdateForm = () => ({
+  version: '',
+  downloadMode: 'unified' as 'unified' | 'platform',
+  downloadUrl: '',
+  platformDownloads: {
+    windows: '',
+    macos: '',
+    linux: ''
+  },
+  changelog: '',
+  gameVersion: '',
+  isBeta: false
+})
+
+const startEditVersion = (ver: ModVersion) => {
+  if (!ver._id) return
+  const platformLinks = ver.platformDownloads || {}
+  const hasPlatformLinks = Object.values(platformLinks).some((url) => !!url)
+  editingVersionId.value = ver._id
+  updateForm.value = {
+    version: ver.version,
+    downloadMode: hasPlatformLinks ? 'platform' : 'unified',
+    downloadUrl: hasPlatformLinks ? '' : ver.downloadUrl || '',
+    platformDownloads: {
+      windows: platformLinks.windows || '',
+      macos: platformLinks.macos || '',
+      linux: platformLinks.linux || ''
+    },
+    changelog: ver.changelog || '',
+    gameVersion: ver.gameVersion || '',
+    isBeta: !!ver.isBeta
+  }
+  formError.value = ''
+  formSuccess.value = ''
+  nextTick(() => document.getElementById('submit-update')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
+const cancelEditVersion = () => {
+  editingVersionId.value = null
+  updateForm.value = emptyUpdateForm()
+  formError.value = ''
+}
 const formError = ref('')
 const formSuccess = ref('')
 
@@ -745,11 +812,13 @@ const activeCommunityUrl = computed(() => {
   return mod.value?.communityUrl
 })
 
-const activeGame = computed(() => {
-  if (showPreviewMode.value && mod.value?.pendingEdit?.game) {
-    return mod.value.pendingEdit.game
+const activeGames = computed<string[]>(() => {
+  const edit = mod.value?.pendingEdit
+  if (showPreviewMode.value && (edit?.games?.length || edit?.game)) {
+    return edit?.games?.length ? edit.games : [edit!.game!]
   }
-  return mod.value?.game || ''
+  if (!mod.value) return []
+  return mod.value.games?.length ? mod.value.games : [mod.value.game]
 })
 
 const activeCategories = computed(() => {
@@ -951,8 +1020,9 @@ const submitUpdate = async () => {
     const platformDownloads = updateForm.value.downloadMode === 'platform'
       ? Object.fromEntries(Object.entries(updateForm.value.platformDownloads).filter(([, url]) => url.trim()))
       : {}
-    await $fetch(`/api/mods/${slug}/versions`, {
-      method: 'POST',
+    const isEditing = !!editingVersionId.value
+    const response = await $fetch<{ requiresReview?: boolean }>(isEditing ? `/api/mods/${slug}/versions/${editingVersionId.value}` : `/api/mods/${slug}/versions`, {
+      method: isEditing ? 'PUT' : 'POST',
       body: {
         ...updateForm.value,
         downloadUrl: updateForm.value.downloadMode === 'unified'
@@ -962,24 +1032,17 @@ const submitUpdate = async () => {
       }
     })
 
-    formSuccess.value = user.value?.isVerifiedDeveloper || user.value?.isAdmin
-      ? 'Update published successfully!'
-      : 'Update submitted and is pending administrator approval.'
+    if (isEditing) {
+      formSuccess.value = response.requiresReview ? t('update.edit_saved_review') : t('update.edit_saved')
+    } else {
+      formSuccess.value = user.value?.isVerifiedDeveloper || user.value?.isAdmin
+        ? 'Update published successfully!'
+        : 'Update submitted and is pending administrator approval.'
+    }
 
     // Reset Form
-    updateForm.value = {
-      version: '',
-      downloadMode: 'unified',
-      downloadUrl: '',
-      platformDownloads: {
-        windows: '',
-        macos: '',
-        linux: ''
-      },
-      changelog: '',
-      gameVersion: '',
-      isBeta: false
-    }
+    editingVersionId.value = null
+    updateForm.value = emptyUpdateForm()
 
     // Refresh details after a short delay
     setTimeout(() => {
@@ -1571,6 +1634,17 @@ onMounted(() => {
 }
 
 /* Update form */
+.update-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.version-row.editing {
+  box-shadow: var(--outline);
+}
+
 .update-form {
   display: flex;
   flex-direction: column;

@@ -4,6 +4,7 @@ interface WebhookMod {
   name: string
   slug: string
   game: string
+  games?: string[]
   categories: string[]
   summary: string
   logo?: string
@@ -47,6 +48,27 @@ interface DiscordEmbed {
   }
 }
 
+const GAME_LABELS: Record<string, string> = {
+  'adofai': 'A Dance of Fire and Ice',
+  'rhythm-doctor': 'Rhythm Doctor',
+  'dancing-line': 'Dancing Line'
+}
+
+function gameLabel(game: string) {
+  return GAME_LABELS[game] || game
+}
+
+function gamesOf(mod: WebhookMod): string[] {
+  return mod.games?.length ? mod.games : [mod.game]
+}
+
+function gameRoles(config: ReturnType<typeof useRuntimeConfig>, game: string) {
+  if (game === 'adofai') return { ping: config.discordModPingRoleIdAdofai, all: config.discordModAllRoleIdAdofai }
+  if (game === 'rhythm-doctor') return { ping: config.discordModPingRoleIdRhythmDoctor, all: config.discordModAllRoleIdRhythmDoctor }
+  if (game === 'dancing-line') return { ping: config.discordModPingRoleIdDancingLine, all: config.discordModAllRoleIdDancingLine }
+  return { ping: '', all: '' }
+}
+
 function logoThumbnail(baseUrl: string, logo?: string) {
   if (!logo) return undefined
   if (logo.startsWith('/logos/')) return { url: `${baseUrl}${logo}` }
@@ -77,13 +99,7 @@ export async function sendDiscordWebhook(
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
   // Format Game Name
-  const gameName = mod.game === 'adofai'
-    ? 'A Dance of Fire and Ice'
-    : mod.game === 'rhythm-doctor'
-      ? 'Rhythm Doctor'
-      : mod.game === 'dancing-line'
-        ? 'Dancing Line'
-        : mod.game
+  const gameName = gamesOf(mod).map(gameLabel).join(', ')
 
   // Format Categories
   const categoryNames = Array.isArray(mod.categories)
@@ -135,7 +151,7 @@ export async function sendDiscordWebhook(
     timestamp: new Date().toISOString(),
     fields: [
       {
-        name: '🎮 Game',
+        name: gamesOf(mod).length > 1 ? '🎮 Games' : '🎮 Game',
         value: gameName,
         inline: true
       },
@@ -200,34 +216,14 @@ export async function sendDiscordWebhook(
     })
   }
 
-  const pings: string[] = []
-  if (isBeta) {
-    let allRoleId = ''
-    if (mod.game === 'adofai') {
-      allRoleId = (config.discordModAllRoleIdAdofai as string) || ''
-    } else if (mod.game === 'rhythm-doctor') {
-      allRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
-    } else if (mod.game === 'dancing-line') {
-      allRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
-    }
-    if (allRoleId) pings.push(`<@&${allRoleId}>`)
-  } else {
-    let pingRoleId = ''
-    let allRoleId = ''
-    if (mod.game === 'adofai') {
-      pingRoleId = (config.discordModPingRoleIdAdofai as string) || ''
-      allRoleId = (config.discordModAllRoleIdAdofai as string) || ''
-    } else if (mod.game === 'rhythm-doctor') {
-      pingRoleId = (config.discordModPingRoleIdRhythmDoctor as string) || ''
-      allRoleId = (config.discordModAllRoleIdRhythmDoctor as string) || ''
-    } else if (mod.game === 'dancing-line') {
-      pingRoleId = (config.discordModPingRoleIdDancingLine as string) || ''
-      allRoleId = (config.discordModAllRoleIdDancingLine as string) || ''
-    }
-    if (pingRoleId) pings.push(`<@&${pingRoleId}>`)
-    if (allRoleId) pings.push(`<@&${allRoleId}>`)
+  // Beta releases only ping the "all updates" roles; stable releases ping both, for every target game
+  const pings = new Set<string>()
+  for (const game of gamesOf(mod)) {
+    const roles = gameRoles(config, game)
+    if (!isBeta && roles.ping) pings.add(`<@&${roles.ping}>`)
+    if (roles.all) pings.add(`<@&${roles.all}>`)
   }
-  const content = pings.length > 0 ? pings.join(' ') : undefined
+  const content = pings.size > 0 ? [...pings].join(' ') : undefined
 
   try {
     const payload = {
@@ -260,13 +256,7 @@ export async function sendFeaturedWebhook(
   const baseUrl = config.siteUrl || 'http://localhost:3000'
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
-  const gameName = mod.game === 'adofai'
-    ? 'A Dance of Fire and Ice'
-    : mod.game === 'rhythm-doctor'
-      ? 'Rhythm Doctor'
-      : mod.game === 'dancing-line'
-        ? 'Dancing Line'
-        : mod.game
+  const gameName = gamesOf(mod).map(gameLabel).join(', ')
 
   let authorName = 'Unknown'
   if (mod.authorId) {
@@ -283,7 +273,7 @@ export async function sendFeaturedWebhook(
     timestamp: new Date().toISOString(),
     fields: [
       {
-        name: '🎮 Game',
+        name: gamesOf(mod).length > 1 ? '🎮 Games' : '🎮 Game',
         value: gameName,
         inline: true
       },

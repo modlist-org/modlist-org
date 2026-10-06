@@ -22,7 +22,9 @@ export default defineEventHandler(async (event) => {
 
   if (game && game !== 'all') {
     const validGames = game.split(',').filter((g): g is typeof GAMES[number] => (GAMES as readonly string[]).includes(g))
-    if (validGames.length > 0) conditions.push(inArray(mods.game, validGames))
+    if (validGames.length > 0) {
+      conditions.push(sql`exists (select 1 from json_each(${mods.games}) where json_each.value in (${sql.join(validGames.map((g) => sql`${g}`), sql`, `)}))`)
+    }
   }
 
   if (categories && categories !== 'all') {

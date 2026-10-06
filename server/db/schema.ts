@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core'
 import type { PlatformDownloads } from '../utils/mod-platform'
 
@@ -7,11 +8,22 @@ export const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as
 export type Game = typeof GAMES[number]
 export type Category = typeof CATEGORIES[number]
 
+export function isGame(value: unknown): value is Game {
+  return typeof value === 'string' && (GAMES as readonly string[]).includes(value)
+}
+
+// Accepts `games` (array) or legacy `game` (string); returns a de-duplicated, ordered list
+export function normalizeGames(games: unknown, game?: unknown): Game[] {
+  const list = Array.isArray(games) ? games : game !== undefined ? [game] : []
+  return [...new Set(list.filter(isGame))]
+}
+
 export interface PendingModEdit {
   name?: string
   summary?: string
   description?: string
   game?: Game
+  games?: Game[]
   categories?: Category[]
   logo?: string
   sourceUrl?: string
@@ -41,7 +53,9 @@ export const mods = sqliteTable('mods', {
   slug: text('slug').notNull().unique(),
   summary: text('summary').notNull(),
   description: text('description').notNull().default(''),
+  // Primary game (games[0]); kept for older app versions that only read `game`
   game: text('game', { enum: GAMES }).notNull(),
+  games: text('games', { mode: 'json' }).$type<Game[]>().notNull().default(sql`'[]'`),
   categories: text('categories', { mode: 'json' }).$type<Category[]>().notNull(),
   authorId: text('author_id').notNull(),
   pendingEdit: text('pending_edit', { mode: 'json' }).$type<PendingModEdit | null>(),

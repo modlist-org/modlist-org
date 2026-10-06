@@ -51,7 +51,10 @@ export default defineEventHandler(async (event) => {
       mod: {
         ...mod,
         pendingEdit: isOwnerOrAdmin ? mod.pendingEdit : undefined,
-        versions: versions.map(stripDownloadUrls)
+        // Editors get the raw links back so they can edit versions
+        versions: versions.map((v) => isOwnerOrAdmin
+          ? { ...stripDownloadUrls(v), downloadUrl: v.downloadUrl, platformDownloads: v.platformDownloads }
+          : stripDownloadUrls(v))
       },
       latestVersion: latestVersion ? stripDownloadUrls(latestVersion) : null,
       latestBetaVersion: latestBetaVersion ? stripDownloadUrls(latestBetaVersion) : null,

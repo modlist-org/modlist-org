@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { mods, modVersions } from '../../../db/schema'
 import { useDb, newId } from '../../../utils/db'
-import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../../utils/mod-platform'
+import { normalizeVersionString, parseVersionInput } from '../../../utils/mod-platform'
 import { canManageMod, findModBySlug, hydrateMods } from '../../../utils/mod-repo'
 import type { ModDto } from '../../../utils/mod-repo'
 import { runInBackground, sendDiscordWebhook } from '../../../utils/webhook'
@@ -24,36 +24,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody(event)
-  const { version, downloadUrl, platformDownloads, changelog, gameVersion, isBeta } = body
-
-  const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
-  const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
-  const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
-
-  // Validations
-  if (typeof version !== 'string' || !version.trim() || (!normalizedDownloadUrl && availablePlatforms.length === 0)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Version string and at least one platform download link are required.'
-    })
-  }
-
-  if (downloadUrl && !isHttpUrl(downloadUrl)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Download link must be a valid direct HTTP/HTTPS URL.'
-    })
-  }
-
-  for (const platform of availablePlatforms) {
-    if (!isHttpUrl(normalizedPlatformDownloads[platform])) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: `${platform} download link must be a valid direct HTTP/HTTPS URL.`
-      })
-    }
-  }
+  const input = parseVersionInput(await readBody(event))
+  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, changelog, gameVersion, isBeta } = input
 
   try {
     const db = useDb(event)
@@ -76,8 +48,8 @@ export default defineEventHandler(async (event) => {
     const isAutoApproved = currentUser.isVerifiedDeveloper || currentUser.isAdmin
 
     const existingVersions = await db.select().from(modVersions).where(eq(modVersions.modId, mod.id))
-    const normalizedNewVersion = version.trim().replace(/^v/i, '')
-    const existingVer = existingVersions.find((v) => v.version.trim().replace(/^v/i, '') === normalizedNewVersion)
+    const normalizedNewVersion = normalizeVersionString(version)
+    const existingVer = existingVersions.find((v) => normalizeVersionString(v.version) === normalizedNewVersion)
 
     if (existingVer?.isApproved) {
       throw createError({

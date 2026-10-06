@@ -43,20 +43,21 @@
 
         <div class="form-group">
           <span id="mod-game-label" class="field-label">{{ t('submit.game') }}</span>
-          <div class="chip-list" role="radiogroup" aria-labelledby="mod-game-label">
+          <div class="chip-list" role="group" aria-labelledby="mod-game-label">
             <button
               v-for="game in GAMES"
               :key="game"
               type="button"
-              role="radio"
               class="chip"
-              :class="{ active: form.game === game }"
-              :aria-checked="form.game === game"
-              @click="form.game = game"
+              :class="{ active: form.games.includes(game) }"
+              :aria-pressed="form.games.includes(game)"
+              @click="toggleFormGame(game)"
             >
+              <svg v-if="form.games.includes(game)" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
               {{ getGameLabel(game) }}
             </button>
           </div>
+          <span class="form-help-text">{{ t('submit.game_multi_help') }}</span>
         </div>
 
         <div class="form-group">
@@ -371,7 +372,7 @@ const form = ref({
   logo: '',
   sourceUrl: '',
   communityUrl: '',
-  game: 'adofai',
+  games: ['adofai'] as string[],
   categories: [] as string[],
   summary: '',
   description: '',
@@ -394,6 +395,8 @@ interface DependencyMod {
   slug: string
   logo?: string
   summary?: string
+  game?: string
+  games?: string[]
 }
 
 const selectedCollabs = ref<SearchUserItem[]>([])
@@ -540,7 +543,7 @@ const searchDependencies = () => {
     try {
       const data = await $fetch<{ mods: DependencyMod[] }>('/api/mods', {
         params: {
-          game: form.value.game,
+          game: form.value.games.join(','),
           search: dependencySearchQuery.value,
           limit: 10
         }
@@ -564,13 +567,31 @@ const removeDependency = (depId: string) => {
   selectedDependencies.value = selectedDependencies.value.filter((sd) => sd._id !== depId)
 }
 
-watch(() => form.value.game, () => {
-  selectedDependencies.value = []
+const toggleFormGame = (game: string) => {
+  const index = form.value.games.indexOf(game)
+  if (index > -1) {
+    form.value.games.splice(index, 1)
+  } else {
+    form.value.games.push(game)
+  }
+}
+
+// Dependencies must share at least one target game
+watch(() => [...form.value.games], (games) => {
+  selectedDependencies.value = selectedDependencies.value.filter((d) => {
+    const depGames = d.games?.length ? d.games : d.game ? [d.game] : []
+    return depGames.length === 0 || depGames.some((g) => games.includes(g))
+  })
   dependencySearchQuery.value = ''
   dependencySearchResults.value = []
 })
 
 const handleSubmit = async () => {
+  if (form.value.games.length === 0) {
+    errorMsg.value = t('submit.error_game_required')
+    return
+  }
+
   if (form.value.categories.length === 0) {
     errorMsg.value = t('submit.error_category_required') || 'Please select at least one category.'
     return
@@ -588,6 +609,7 @@ const handleSubmit = async () => {
   try {
     const payload = {
       ...form.value,
+      game: form.value.games[0],
       downloadUrl: form.value.downloadMode === 'unified'
         ? form.value.downloadUrl.trim()
         : Object.values(form.value.platformDownloads).find((url) => url.trim()) || '',

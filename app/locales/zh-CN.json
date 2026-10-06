@@ -224,5 +224,14 @@
   "pending.your_submissions": "我的提交",
   "pending.status_rejected": "已拒绝",
   "contact.subtitle": "如有问题、错误反馈或商务咨询，请通过以下方式联系我们。",
-  "legal.open_new_tab": "在新标签页中打开"
+  "legal.open_new_tab": "在新标签页中打开",
+  "submit.error_game_required": "请至少选择一个目标游戏。",
+  "submit.game_multi_help": "选择此模组支持的所有游戏。",
+  "mod.details.edit_version": "编辑",
+  "update.edit_title": "编辑版本 v{version}",
+  "update.cancel_edit": "取消编辑",
+  "update.save_edit": "保存更改",
+  "update.edit_review_notice": "此版本已公开。保存更改后将重新提交管理员审核，审核通过前将被隐藏。",
+  "update.edit_saved": "版本已更新。",
+  "update.edit_saved_review": "版本已更新，等待管理员审核。"
 }

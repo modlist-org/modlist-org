@@ -123,7 +123,7 @@
             </div>
 
             <div class="mod-meta">
-              <span class="badge badge-game">{{ getGameLabel(mod.game) }}</span>
+              <span v-for="g in (mod.games?.length ? mod.games : [mod.game])" :key="g" class="badge badge-game">{{ getGameLabel(g) }}</span>
               <span v-for="cat in mod.categories" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
               <span class="mod-stats">
                 <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
@@ -170,6 +170,7 @@ interface ModItem {
   summary: string
   description?: string
   game: 'adofai' | 'rhythm-doctor' | 'dancing-line'
+  games?: string[]
   categories: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
   authorId?: {
     _id: string
