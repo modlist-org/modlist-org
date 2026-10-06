@@ -527,8 +527,7 @@ import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
 import { UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
-import { marked } from 'marked'
-import DOMPurify from 'isomorphic-dompurify'
+import { renderSafeMarkdown } from '../../utils/markdown'
 
 interface CreatorUser {
   _id: string
@@ -943,7 +942,7 @@ const renderedDescription = computed(() => {
 
   if (!desc) return '<em>No description provided.</em>'
   try {
-    return DOMPurify.sanitize(marked.parse(desc, { async: false }) as string)
+    return renderSafeMarkdown(desc)
   } catch {
     return ''
   }
@@ -952,7 +951,7 @@ const renderedDescription = computed(() => {
 const renderMarkdown = (text: string) => {
   if (!text) return ''
   try {
-    return DOMPurify.sanitize(marked.parse(text, { async: false }) as string)
+    return renderSafeMarkdown(text)
   } catch {
     return ''
   }

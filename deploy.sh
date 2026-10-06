@@ -48,7 +48,9 @@ step 3/4 "Deploy Worker"
 "${RUN[@]}" wrangler deploy
 
 step 4/4 "Smoke test"
-for path in "/" "/api/mods?limit=1"; do
+# Include a server-rendered mod page: SSR-only failures don't show up in API checks
+first_slug="$(curl -s "${SITE_URL}/api/mods?limit=1" | sed -n 's/.*"slug": *"\([^"]*\)".*/\1/p' | head -n 1)"
+for path in "/" "/api/mods?limit=1" ${first_slug:+"/mods/${first_slug}"}; do
   status="$(curl -s -o /dev/null -w '%{http_code}' "${SITE_URL}${path}")"
   if [[ "${status}" != "200" ]]; then
     echo "Error: ${SITE_URL}${path} returned ${status}. Roll back with: ${RUN[*]} wrangler rollback" >&2
