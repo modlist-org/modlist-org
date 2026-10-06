@@ -1,4 +1,6 @@
-import { Mod } from '../../../models/Mod'
+import { and, desc, eq, sql } from 'drizzle-orm'
+import { mods, modVersions } from '../../../db/schema'
+import { useDb } from '../../../utils/db'
 import { detectPlatform, getVersionDownloadUrl, normalizePlatform } from '../../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
@@ -26,7 +28,11 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOne({ slug, isApproved: true })
+    const db = useDb(event)
+    const mod = await db.query.mods.findFirst({
+      where: and(eq(mods.slug, slug), eq(mods.isApproved, true)),
+      columns: { id: true }
+    })
 
     if (!mod) {
       throw createError({
@@ -35,20 +41,13 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    let targetVersion = null
-    if (versionStr) {
-      targetVersion = mod.versions.find(v => v.version === versionStr && v.isApproved)
-    } else {
-      const approvedVersions = mod.versions
-        .filter(v => v.isApproved)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      
-      if (isBeta) {
-        targetVersion = approvedVersions.find(v => v.isBeta) || null
-      } else {
-        targetVersion = approvedVersions.find(v => !v.isBeta) || null
-      }
-    }
+    const approvedVersions = await db.select().from(modVersions)
+      .where(and(eq(modVersions.modId, mod.id), eq(modVersions.isApproved, true)))
+      .orderBy(desc(modVersions.createdAt))
+
+    const targetVersion = versionStr
+      ? approvedVersions.find((v) => v.version === versionStr)
+      : approvedVersions.find((v) => v.isBeta === isBeta)
 
     const targetDownloadUrl = targetVersion
       ? getVersionDownloadUrl(targetVersion, platform)
@@ -63,9 +62,8 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    await Mod.updateOne({ _id: mod._id }, { $inc: { downloads: 1 } })
+    await db.update(mods).set({ downloads: sql`${mods.downloads} + 1` }).where(eq(mods.id, mod.id))
 
-    // Redirect to the actual download URL
     return sendRedirect(event, targetDownloadUrl, 302)
   } catch (error) {
     console.error('Redirect and increment download count error:', error)

@@ -1,62 +1,29 @@
-import { Mod } from '../../models/Mod'
+import { and, eq } from 'drizzle-orm'
+import { mods, modVersions } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId, versionId, reason } = body
-
+  const { modId, versionId, reason } = await readBody(event)
   if (!modId || !versionId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Required parameters: modId and versionId.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Required parameters: modId and versionId.' })
   }
-
-  const rejectionReason = reason || 'No reason provided.'
 
   try {
-    const mod = await Mod.findById(modId)
-
-    if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+    const db = useDb(event)
+    const [updated] = await db.update(modVersions)
+      .set({ isApproved: false, rejectionReason: reason || 'No reason provided.' })
+      .where(and(eq(modVersions.id, versionId), eq(modVersions.modId, modId)))
+      .returning({ id: modVersions.id })
+    if (!updated) {
+      throw createError({ statusCode: 404, statusMessage: 'Version not found.' })
     }
+    await db.update(mods).set({ updatedAt: new Date() }).where(eq(mods.id, modId))
 
-    // Find the version in the array
-    const ver = mod.versions.find((v) => v._id?.toString() === versionId)
-    if (!ver) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Version not found.'
-      })
-    }
-
-    ver.isApproved = false
-    ver.rejectionReason = rejectionReason
-    mod.updatedAt = new Date()
-    await mod.save()
-
-    return {
-      success: true,
-      message: 'Version rejected successfully.'
-    }
+    return { success: true, message: 'Version rejected successfully.' }
   } catch (error) {
-    console.error('Reject version error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to reject version.'
-    })
+    rethrowOr500(error, 'Reject version error', 'Failed to reject version.')
   }
 })

@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "modlist-org",
+  "main": ".output/server/index.mjs",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".output/public",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    { "pattern": "modlist.org", "custom_domain": true }
+  ],
+  "vars": {
+    "NUXT_SITE_URL": "https://modlist.org",
+    "NUXT_DISCORD_REDIRECT_URI": "https://modlist.org/api/auth/callback"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "modlist",
+      "database_id": "REPLACE_WITH_D1_ID",
+      "migrations_dir": "server/db/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "LOGOS",
+      "bucket_name": "modlist-logos"
+    }
+  ]
+}

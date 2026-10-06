@@ -1,50 +1,27 @@
-import { Mod } from '../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId } = body
-
+  const { modId } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing modId parameter.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing modId parameter.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-
-    if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+    const [updated] = await useDb(event).update(mods)
+      .set({ isApproved: false, updatedAt: new Date() })
+      .where(eq(mods.id, modId))
+      .returning({ id: mods.id })
+    if (!updated) {
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    mod.isApproved = false
-    mod.updatedAt = new Date()
-    await mod.save()
-
-    return {
-      success: true,
-      message: 'Mod unapproved successfully.'
-    }
+    return { success: true, message: 'Mod unapproved successfully.' }
   } catch (error) {
-    console.error('Unapprove mod error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to unapprove mod.'
-    })
+    rethrowOr500(error, 'Unapprove mod error', 'Failed to unapprove mod.')
   }
 })

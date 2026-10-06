@@ -1,5 +1,6 @@
-import { User } from '../../models/User'
-import { literalRegex } from '../../utils/regex'
+import { or, sql } from 'drizzle-orm'
+import { users } from '../../db/schema'
+import { useDb, likePattern } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   // Require login to search users
@@ -18,17 +19,17 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Search by username or globalName (case-insensitive)
-    const users = await User.find({
-      $or: [
-        { username: literalRegex(q) },
-        { globalName: literalRegex(q) }
-      ]
-    })
+    const pattern = likePattern(q.trim())
+    const rows = await useDb(event)
+      .select({ _id: users.id, username: users.username, globalName: users.globalName, avatar: users.avatar })
+      .from(users)
+      .where(or(
+        sql`${users.username} like ${pattern} escape '\\'`,
+        sql`${users.globalName} like ${pattern} escape '\\'`
+      ))
       .limit(10)
-      .select('_id username globalName avatar')
 
-    return { users }
+    return { users: rows }
   } catch (error) {
     console.error('User search error:', error)
     throw createError({

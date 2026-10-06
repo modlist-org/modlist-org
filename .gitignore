@@ -24,3 +24,6 @@ logs
 !.env.example
 
 public/ads.txt
+# Wrangler
+.wrangler
+.dev.vars

@@ -1,6 +1,7 @@
-import type mongoose from 'mongoose'
-import { Mod } from '../../../../models/Mod'
-import type { IModVersion } from '../../../../models/Mod'
+import { and, eq } from 'drizzle-orm'
+import { mods, modVersions } from '../../../../db/schema'
+import { useDb } from '../../../../utils/db'
+import { canManageMod, findModBySlug } from '../../../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { versionId } = body
 
-  if (!versionId) {
+  if (!versionId || typeof versionId !== 'string') {
     throw createError({
       statusCode: 400,
       statusMessage: 'Missing versionId parameter.'
@@ -31,7 +32,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOne({ slug })
+    const db = useDb(event)
+    const mod = await findModBySlug(db, slug)
     if (!mod) {
       throw createError({
         statusCode: 404,
@@ -39,21 +41,16 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Check permissions: author, collaborator, or admin
-    const isOwner = mod.authorId.toString() === currentUser.id
-    const isCollab = mod.collaboratorIds.some((id) => id.toString() === currentUser.id)
-    const isAdmin = currentUser.isAdmin
-
-    if (!isOwner && !isCollab && !isAdmin) {
+    if (!await canManageMod(db, mod, currentUser)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'You do not have permission to manage this mod.'
       })
     }
 
-    const versions = mod.versions as unknown as mongoose.Types.DocumentArray<IModVersion>
-    // Find the version to delete
-    const version = versions.id(versionId)
+    const version = await db.query.modVersions.findFirst({
+      where: and(eq(modVersions.id, versionId), eq(modVersions.modId, mod.id))
+    })
     if (!version) {
       throw createError({
         statusCode: 404,
@@ -61,18 +58,18 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Can only delete unapproved versions (unless admin)
-    if (version.isApproved && !isAdmin) {
+    // Only admins can delete approved versions
+    if (version.isApproved && !currentUser.isAdmin) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Approved versions can only be deleted by an administrator.'
       })
     }
 
-    // Pull/remove the version
-    versions.pull(versionId)
-    mod.updatedAt = new Date()
-    await mod.save()
+    await db.batch([
+      db.delete(modVersions).where(eq(modVersions.id, version.id)),
+      db.update(mods).set({ updatedAt: new Date() }).where(eq(mods.id, mod.id))
+    ])
 
     return {
       success: true,

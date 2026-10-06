@@ -1,48 +1,29 @@
-import { Mod } from '../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { findModById } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId } = body
-
+  const { modId } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing modId parameter.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing modId parameter.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    await Mod.findByIdAndDelete(modId)
+    // Versions, collaborators and dependency links cascade
+    await db.delete(mods).where(eq(mods.id, mod.id))
 
-    return {
-      success: true,
-      message: 'Mod deleted successfully.'
-    }
+    return { success: true, message: 'Mod deleted successfully.' }
   } catch (error) {
-    console.error('Delete mod error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to delete mod.'
-    })
+    rethrowOr500(error, 'Delete mod error', 'Failed to delete mod.')
   }
 })

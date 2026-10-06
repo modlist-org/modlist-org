@@ -1,18 +1,12 @@
-import { User } from '../../models/User'
+import { eq } from 'drizzle-orm'
+import { users } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  const currentUser = requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { targetUserId, role } = body // role can be 'developer' or 'admin'
-
+  const { targetUserId, role } = await readBody(event) // role: 'developer' | 'admin'
   if (!targetUserId || !role || !['developer', 'admin'].includes(role)) {
     throw createError({
       statusCode: 400,
@@ -22,53 +16,32 @@ export default defineEventHandler(async (event) => {
 
   // Prevent self lockout
   if (targetUserId === currentUser.id && role === 'admin') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'You cannot revoke your own administrator privileges.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'You cannot revoke your own administrator privileges.' })
   }
 
   try {
-    const user = await User.findById(targetUserId)
+    const db = useDb(event)
+    const user = await db.query.users.findFirst({ where: eq(users.id, targetUserId) })
     if (!user) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'User not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'User not found.' })
     }
 
+    let { isVerifiedDeveloper, isAdmin } = user
     if (role === 'developer') {
-      user.isVerifiedDeveloper = !user.isVerifiedDeveloper
-      // Admins should always remain verified developers
-      if (user.isAdmin) {
-        user.isVerifiedDeveloper = true
-      }
-    } else if (role === 'admin') {
-      user.isAdmin = !user.isAdmin
-      // If someone becomes admin, also make them a verified developer
-      if (user.isAdmin) {
-        user.isVerifiedDeveloper = true
-      }
+      isVerifiedDeveloper = !isVerifiedDeveloper
+    } else {
+      isAdmin = !isAdmin
     }
+    // Admins are always verified developers
+    if (isAdmin) isVerifiedDeveloper = true
 
-    await user.save()
+    await db.update(users).set({ isVerifiedDeveloper, isAdmin }).where(eq(users.id, user.id))
 
     return {
       success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        isVerifiedDeveloper: user.isVerifiedDeveloper,
-        isAdmin: user.isAdmin
-      }
+      user: { id: user.id, username: user.username, isVerifiedDeveloper, isAdmin }
     }
   } catch (error) {
-    console.error('Toggle role error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to update user roles.'
-    })
+    rethrowOr500(error, 'Toggle role error', 'Failed to update user roles.')
   }
 })

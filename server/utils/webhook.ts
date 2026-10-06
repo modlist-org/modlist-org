@@ -1,16 +1,19 @@
+import type { H3Event } from 'h3'
+
 interface WebhookMod {
   name: string
   slug: string
   game: string
   categories: string[]
   summary: string
+  logo?: string
   sourceUrl?: string
   communityUrl?: string
   authorId?: {
     username: string
     globalName?: string
     avatar?: string
-  }
+  } | null
   versions?: {
     version: string
     downloadUrl: string
@@ -39,6 +42,16 @@ interface DiscordEmbed {
   footer?: {
     text: string
   }
+  thumbnail?: {
+    url: string
+  }
+}
+
+function logoThumbnail(baseUrl: string, logo?: string) {
+  if (!logo) return undefined
+  if (logo.startsWith('/logos/')) return { url: `${baseUrl}${logo}` }
+  if (/^https:\/\//.test(logo)) return { url: logo }
+  return undefined
 }
 
 // Keep untrusted URLs from breaking out of Discord's [text](url) markdown
@@ -47,11 +60,12 @@ function mdUrl(url: string): string {
 }
 
 export async function sendDiscordWebhook(
+  event: H3Event,
   mod: WebhookMod,
   specificVersion?: { version: string; downloadUrl: string; changelog?: string; gameVersion?: string; isBeta?: boolean },
   isUpdate: boolean = false
 ) {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const webhookUrl = config.discordWebhookUrl
   if (!webhookUrl) {
     console.warn('DISCORD_WEBHOOK_URL is not set. Skipping Discord notification.')
@@ -59,7 +73,7 @@ export async function sendDiscordWebhook(
   }
 
   // Get App Base URL from environment or default to localhost
-  const baseUrl = config.appBaseUrl || 'http://localhost:3000'
+  const baseUrl = config.siteUrl || 'http://localhost:3000'
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
   // Format Game Name
@@ -90,7 +104,7 @@ export async function sendDiscordWebhook(
   let authorIconUrl = ''
   if (mod.authorId) {
     authorName = mod.authorId.globalName || mod.authorId.username || 'Unknown'
-    if (mod.authorId.avatar) {
+    if (mod.authorId.avatar && /^https?:\/\//.test(mod.authorId.avatar)) {
       authorIconUrl = mod.authorId.avatar
     }
   }
@@ -142,7 +156,8 @@ export async function sendDiscordWebhook(
     },
     footer: {
       text: 'modlist.org'
-    }
+    },
+    thumbnail: logoThumbnail(baseUrl, mod.logo)
   }
 
   // Add optional source link
@@ -231,17 +246,18 @@ export async function sendDiscordWebhook(
 }
 
 export async function sendFeaturedWebhook(
+  event: H3Event,
   mod: WebhookMod,
   isFeatured: boolean
 ) {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const webhookUrl = config.discordWebhookUrl
   if (!webhookUrl) {
     console.warn('DISCORD_WEBHOOK_URL is not set. Skipping Discord notification.')
     return
   }
 
-  const baseUrl = config.appBaseUrl || 'http://localhost:3000'
+  const baseUrl = config.siteUrl || 'http://localhost:3000'
   const modUrl = `${baseUrl}/mods/${mod.slug}`
 
   const gameName = mod.game === 'adofai'
@@ -279,7 +295,8 @@ export async function sendFeaturedWebhook(
     ],
     footer: {
       text: 'modlist.org'
-    }
+    },
+    thumbnail: logoThumbnail(baseUrl, mod.logo)
   }
 
   const content = undefined
@@ -298,4 +315,11 @@ export async function sendFeaturedWebhook(
   } catch (err) {
     console.error('Failed to send Discord webhook for featured mod:', err)
   }
+}
+
+// Workers drop un-awaited promises once the response is sent; keep notifications alive with waitUntil
+export function runInBackground(event: H3Event, task: Promise<unknown>, label: string) {
+  event.waitUntil(task.catch((err) => {
+    console.error(`${label} failed:`, err)
+  }))
 }

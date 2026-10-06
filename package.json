@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "deploy": "./deploy.sh",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
+    "preview": "nuxt build && wrangler dev",
+    "deploy": "nuxt build && wrangler d1 migrations apply modlist --remote && wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply modlist --local",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -15,13 +16,20 @@
     "@nuxtjs/eslint-module": "4.1.0",
     "@nuxtjs/i18n": "10.3.0",
     "@nuxtjs/tailwindcss": "6.14.0",
+    "drizzle-orm": "^0.45.3",
     "eslint": "^9.0.0 || ^10.0.0",
     "isomorphic-dompurify": "^4.4.0",
     "marked": "^12.0.0",
-    "mongoose": "^8.4.0",
     "nuxt": "^4.4.6",
     "overlayer-ui": "^1.1.3",
     "vue": "^3.5.34",
     "vue-router": "^5.0.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261006.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "~5.9",
+    "vue-tsc": "^3.3.12",
+    "wrangler": "^4.147.0"
   }
 }

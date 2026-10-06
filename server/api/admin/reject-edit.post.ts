@@ -1,54 +1,32 @@
-import { Mod } from '../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { findModById } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId, reason } = body
-
+  const { modId, reason } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing modId parameter.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing modId parameter.' })
   }
-
-  const rejectionReason = reason || 'No reason provided.'
 
   try {
-    const mod = await Mod.findById(modId)
-
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    // Save rejection reason and clear pending edits
-    mod.editRejectionReason = rejectionReason
-    mod.pendingEdit = null
-    mod.updatedAt = new Date()
-    await mod.save()
+    await db.update(mods).set({
+      editRejectionReason: reason || 'No reason provided.',
+      pendingEdit: null,
+      updatedAt: new Date()
+    }).where(eq(mods.id, mod.id))
 
-    return {
-      success: true,
-      message: 'Mod edits rejected successfully.'
-    }
+    return { success: true, message: 'Mod edits rejected successfully.' }
   } catch (error) {
-    console.error('Reject mod edits error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to reject mod edits.'
-    })
+    rethrowOr500(error, 'Reject mod edits error', 'Failed to reject mod edits.')
   }
 })

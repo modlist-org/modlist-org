@@ -1,145 +1,60 @@
-import { Mod } from '../../models/Mod'
-import type { IMod } from '../../models/Mod'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { User } from '../../models/User'
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { mods, modVersions } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { byNewest, hydrateMods } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
-
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
+  requireAdmin(event)
 
   try {
-    // 1. Fetch pending mods (where isApproved is false and not rejected)
-    const pendingMods = await Mod.find({
-      isApproved: false,
-      $or: [
-        { rejectionReason: '' },
-        { rejectionReason: { $exists: false } },
-        { rejectionReason: null }
-      ]
-    })
-      .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
-      .populate('dependencies', 'slug')
-      .sort({ createdAt: -1 })
+    const db = useDb(event)
 
-    // 2. Fetch mods that have pending versions (even if the mod itself is approved)
-    const modsWithPendingVersions = await Mod.find({
-      isApproved: true,
-      'versions.isApproved': false
-    })
-      .populate('authorId', 'username globalName avatar')
-      .populate('versions.submittedBy', 'username globalName avatar isVerifiedDeveloper')
+    const pendingVersionModIds = db.selectDistinct({ id: modVersions.modId }).from(modVersions)
+      .where(and(eq(modVersions.isApproved, false), eq(modVersions.rejectionReason, '')))
 
-    // Extract individual pending versions
-    interface IPendingVersion {
-      modId: unknown
-      modName: string
-      modSlug: string
-      game: string
-      versionId: unknown
-      version: string
-      downloadUrl: string
-      changelog: string
-      createdAt: Date
-      submittedBy: unknown
-    }
-    const pendingVersions: IPendingVersion[] = []
-    for (const mod of modsWithPendingVersions) {
-      for (const ver of mod.versions) {
-        if (!ver.isApproved && !ver.rejectionReason) {
-          pendingVersions.push({
-            modId: mod._id,
-            modName: mod.name,
-            modSlug: mod.slug,
-            game: mod.game,
-            versionId: ver._id,
-            version: ver.version,
-            downloadUrl: ver.downloadUrl,
-            changelog: ver.changelog,
-            submittedBy: ver.submittedBy,
-            createdAt: ver.createdAt
-          })
-        }
-      }
-    }
+    const [pendingModRows, versionModRows, pendingEditRows] = await Promise.all([
+      // 1. Unapproved mods that haven't been rejected
+      db.select().from(mods)
+        .where(and(eq(mods.isApproved, false), eq(mods.rejectionReason, '')))
+        .orderBy(desc(mods.createdAt)),
+      // 2. Approved mods with versions awaiting review
+      db.select().from(mods)
+        .where(and(eq(mods.isApproved, true), inArray(mods.id, pendingVersionModIds))),
+      // 3. Mods with staged metadata edits
+      db.select().from(mods)
+        .where(and(isNotNull(mods.pendingEdit), sql`${mods.pendingEdit} != 'null'`))
+        .orderBy(desc(mods.updatedAt))
+    ])
 
-    // Sort pending versions by creation date descending
-    pendingVersions.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
+    const [pendingMods, versionMods, pendingEdits] = await Promise.all([
+      hydrateMods(db, pendingModRows),
+      hydrateMods(db, versionModRows),
+      hydrateMods(db, pendingEditRows)
+    ])
 
-    // 3. Fetch mods that have pending edits
-    const pendingEdits = await Mod.find({
-      pendingEdit: { $ne: null }
-    })
-      .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
-      .populate('dependencies', 'slug')
-      .populate('pendingEdit.dependencies', 'slug')
-      .sort({ updatedAt: -1 })
-
-    const sanitizedPendingMods = pendingMods.map(mod => {
-      const modObj = mod.toObject() as unknown as Omit<IMod, 'dependencies'> & {
-        dependencies: string[]
-      }
-      const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
-      modObj.dependencies = rawDeps.map((d) => {
-        if (typeof d === 'object' && d && 'slug' in d) {
-          return d.slug as string
-        }
-        return String(d)
-      })
-      return modObj
-    })
-
-    const sanitizedPendingEdits = pendingEdits.map(mod => {
-      const modObj = mod.toObject() as unknown as Omit<IMod, 'dependencies' | 'pendingEdit'> & {
-        dependencies: string[]
-        pendingEdit?: {
-          name?: string
-          summary?: string
-          description?: string
-          game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
-          categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
-          logo?: string
-          sourceUrl?: string
-          communityUrl?: string
-          dependencies?: string[]
-        } | null
-      }
-      const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
-      modObj.dependencies = rawDeps.map((d) => {
-        if (typeof d === 'object' && d && 'slug' in d) {
-          return d.slug as string
-        }
-        return String(d)
-      })
-      if (modObj.pendingEdit && mod.pendingEdit && mod.pendingEdit.dependencies) {
-        const rawPendingDeps = (mod.pendingEdit.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
-        modObj.pendingEdit.dependencies = rawPendingDeps.map((d) => {
-          if (typeof d === 'object' && d && 'slug' in d) {
-            return d.slug as string
-          }
-          return String(d)
-        })
-      }
-      return modObj
-    })
+    const pendingVersions = versionMods.flatMap((mod) => mod.versions
+      .filter((ver) => !ver.isApproved && !ver.rejectionReason)
+      .map((ver) => ({
+        modId: mod._id,
+        modName: mod.name,
+        modSlug: mod.slug,
+        game: mod.game,
+        versionId: ver._id,
+        version: ver.version,
+        downloadUrl: ver.downloadUrl,
+        changelog: ver.changelog,
+        submittedBy: ver.submittedBy,
+        createdAt: ver.createdAt
+      }))
+    ).sort(byNewest)
 
     return {
-      pendingMods: sanitizedPendingMods,
+      pendingMods,
       pendingVersions,
-      pendingEdits: sanitizedPendingEdits
+      pendingEdits
     }
   } catch (error) {
-    console.error('Fetch pending submissions error:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to retrieve pending submissions'
-    })
+    rethrowOr500(error, 'Fetch pending submissions error', 'Failed to retrieve pending submissions')
   }
 })

@@ -1,67 +1,40 @@
-import { Mod } from '../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods, modVersions } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { findModById, hydrateMods } from '../../utils/mod-repo'
+import { runInBackground, sendDiscordWebhook } from '../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId } = body
-
+  const { modId } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing modId parameter.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing modId parameter.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    const wasApproved = mod.isApproved
-    mod.isApproved = true
-    mod.rejectionReason = ''
-    // Also approve all of its versions (since the initial mod approval covers the initial release version)
-    for (const ver of mod.versions) {
-      ver.isApproved = true
-      ver.rejectionReason = ''
-    }
+    // Approving the mod also approves its submitted versions (covers the initial release)
+    await db.batch([
+      db.update(mods).set({ isApproved: true, rejectionReason: '', updatedAt: new Date() }).where(eq(mods.id, mod.id)),
+      db.update(modVersions).set({ isApproved: true, rejectionReason: '' }).where(eq(modVersions.modId, mod.id))
+    ])
 
-    mod.updatedAt = new Date()
-    await mod.save()
-
-    if (!wasApproved) {
-      const populatedMod = await Mod.findById(mod._id).populate('authorId')
-      if (populatedMod) {
-        sendDiscordWebhook(populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0]).catch((err) => {
-          console.error('Failed to send Discord webhook on approval:', err)
-        })
+    if (!mod.isApproved) {
+      const [hydrated] = await hydrateMods(db, [{ ...mod, isApproved: true }])
+      if (hydrated) {
+        runInBackground(event, sendDiscordWebhook(event, hydrated), 'Discord webhook on approval')
       }
     }
 
-    return {
-      success: true,
-      message: 'Mod approved successfully.'
-    }
+    return { success: true, message: 'Mod approved successfully.' }
   } catch (error) {
-    console.error('Approve mod error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to approve mod.'
-    })
+    rethrowOr500(error, 'Approve mod error', 'Failed to approve mod.')
   }
 })

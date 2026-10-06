@@ -1,6 +1,10 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods, modVersions } from '../../../db/schema'
+import { useDb, newId } from '../../../utils/db'
 import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../../utils/mod-platform'
+import { canManageMod, findModBySlug, hydrateMods } from '../../../utils/mod-repo'
+import type { ModDto } from '../../../utils/mod-repo'
+import { runInBackground, sendDiscordWebhook } from '../../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -28,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
   // Validations
-  if (!version || (!normalizedDownloadUrl && availablePlatforms.length === 0)) {
+  if (typeof version !== 'string' || !version.trim() || (!normalizedDownloadUrl && availablePlatforms.length === 0)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Version string and at least one platform download link are required.'
@@ -52,7 +56,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOne({ slug })
+    const db = useDb(event)
+    const mod = await findModBySlug(db, slug)
     if (!mod) {
       throw createError({
         statusCode: 404,
@@ -60,12 +65,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Check permissions: author, collaborator, or admin
-    const isOwner = mod.authorId.toString() === currentUser.id
-    const isCollab = mod.collaboratorIds.some((id) => id.toString() === currentUser.id)
-    const isAdmin = currentUser.isAdmin
-
-    if (!isOwner && !isCollab && !isAdmin) {
+    if (!await canManageMod(db, mod, currentUser)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'You do not have permission to submit updates to this mod.'
@@ -75,92 +75,54 @@ export default defineEventHandler(async (event) => {
     // Auto-approve version if submitted by verified developer or admin
     const isAutoApproved = currentUser.isVerifiedDeveloper || currentUser.isAdmin
 
-    // Check if version already exists
+    const existingVersions = await db.select().from(modVersions).where(eq(modVersions.modId, mod.id))
     const normalizedNewVersion = version.trim().replace(/^v/i, '')
-    const existingVersionIndex = mod.versions.findIndex((v) => v.version.trim().replace(/^v/i, '') === normalizedNewVersion)
+    const existingVer = existingVersions.find((v) => v.version.trim().replace(/^v/i, '') === normalizedNewVersion)
 
-    if (existingVersionIndex > -1) {
-      const existingVer = mod.versions[existingVersionIndex]
-      if (!existingVer) {
-        throw createError({
-          statusCode: 500,
-          statusMessage: 'Failed to access version document'
-        })
-      }
-      if (existingVer.isApproved) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: `Version ${version} is already approved and active.`
-        })
-      }
-
-      // Update existing unapproved/rejected version in-place
-      existingVer.downloadUrl = normalizedDownloadUrl as string
-      existingVer.platformDownloads = normalizedPlatformDownloads
-      existingVer.changelog = changelog || ''
-      existingVer.gameVersion = gameVersion || ''
-      existingVer.isApproved = isAutoApproved
-      existingVer.isBeta = !!isBeta
-      existingVer.rejectionReason = ''
-      existingVer.createdAt = new Date()
-      existingVer.submittedBy = new mongoose.Types.ObjectId(currentUser.id)
-
-      mod.updatedAt = new Date()
-      await mod.save()
-
-      if (isAutoApproved) {
-        const populatedMod = await Mod.findById(mod._id).populate('authorId')
-        if (populatedMod) {
-          sendDiscordWebhook(
-            populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-            { version, downloadUrl: normalizedDownloadUrl as string, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
-            true
-          ).catch((err) => {
-            console.error('Failed to send Discord webhook on version update:', err)
-          })
-        }
-      }
-
-      return {
-        success: true,
-        version: existingVer
-      }
+    if (existingVer?.isApproved) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Version ${version} is already approved and active.`
+      })
     }
 
-    // Construct version object
-    const newVersion = {
-      version,
+    const now = new Date()
+    const fields = {
       downloadUrl: normalizedDownloadUrl as string,
       platformDownloads: normalizedPlatformDownloads,
       changelog: changelog || '',
       gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
       isBeta: !!isBeta,
-      submittedBy: new mongoose.Types.ObjectId(currentUser.id),
-      createdAt: new Date()
+      rejectionReason: '',
+      submittedBy: currentUser.id,
+      createdAt: now
     }
 
-    // Push version
-    mod.versions.push(newVersion)
-    mod.updatedAt = new Date()
-    await mod.save()
+    // Resubmitting an unapproved/rejected version replaces it in place
+    const [saved] = await db.batch([
+      existingVer
+        ? db.update(modVersions).set(fields).where(eq(modVersions.id, existingVer.id)).returning()
+        : db.insert(modVersions).values({ id: newId(), modId: mod.id, version, ...fields }).returning(),
+      db.update(mods).set({ updatedAt: now }).where(eq(mods.id, mod.id))
+    ])
 
     if (isAutoApproved) {
-      const populatedMod = await Mod.findById(mod._id).populate('authorId')
-      if (populatedMod) {
-        sendDiscordWebhook(
-          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+      const [hydrated] = await hydrateMods(db, [mod])
+      if (hydrated) {
+        runInBackground(event, sendDiscordWebhook(
+          event,
+          hydrated as ModDto,
           { version, downloadUrl: normalizedDownloadUrl as string, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
           true
-        ).catch((err) => {
-          console.error('Failed to send Discord webhook on version update:', err)
-        })
+        ), 'Discord webhook on version update')
       }
     }
 
+    const savedVersion = saved[0]!
     return {
       success: true,
-      version: newVersion
+      version: { ...savedVersion, _id: savedVersion.id }
     }
   } catch (error) {
     console.error('Submit version update error:', error)

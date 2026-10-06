@@ -1,5 +1,7 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../../models/Mod'
+import { and, eq } from 'drizzle-orm'
+import { modCollaborators } from '../../../db/schema'
+import { useDb } from '../../../utils/db'
+import { findModBySlug, getCollaboratorIds } from '../../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -30,7 +32,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOne({ slug })
+    const db = useDb(event)
+    const mod = await findModBySlug(db, slug)
     if (!mod) {
       throw createError({
         statusCode: 404,
@@ -38,28 +41,23 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const userId = new mongoose.Types.ObjectId(currentUser.id)
-
-    // Check if the current user is in pendingCollaboratorIds
-    const isPending = mod.pendingCollaboratorIds.some((id) => id.toString() === currentUser.id)
-    if (!isPending) {
+    const pending = await getCollaboratorIds(db, mod.id, 'pending')
+    if (!pending.includes(currentUser.id)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'You do not have a pending invitation for this mod.'
       })
     }
 
-    // Process invitation action
+    const invitation = and(eq(modCollaborators.modId, mod.id), eq(modCollaborators.userId, currentUser.id))
     if (action === 'accept') {
-      mod.pendingCollaboratorIds = mod.pendingCollaboratorIds.filter((id) => id.toString() !== currentUser.id)
-      if (!mod.collaboratorIds.some((id) => id.toString() === currentUser.id)) {
-        mod.collaboratorIds.push(userId)
-      }
+      const accepted = await getCollaboratorIds(db, mod.id, 'accepted')
+      await db.update(modCollaborators)
+        .set({ status: 'accepted', position: accepted.length })
+        .where(invitation)
     } else {
-      mod.pendingCollaboratorIds = mod.pendingCollaboratorIds.filter((id) => id.toString() !== currentUser.id)
+      await db.delete(modCollaborators).where(invitation)
     }
-
-    await mod.save()
 
     return { success: true }
   } catch (error) {

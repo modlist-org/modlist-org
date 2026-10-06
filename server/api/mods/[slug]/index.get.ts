@@ -1,8 +1,5 @@
-import { Mod } from '../../../models/Mod'
-import type { IMod } from '../../../models/Mod'
-import { getAvailablePlatforms } from '../../../utils/mod-platform'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { User } from '../../../models/User'
+import { useDb } from '../../../utils/db'
+import { findModBySlug, hydrateMods, stripDownloadUrls } from '../../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -16,13 +13,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mod = await Mod.findOne({ slug })
-      .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
-      .populate('collaboratorIds', 'username globalName avatar isVerifiedDeveloper')
-      .populate('pendingCollaboratorIds', 'username globalName avatar isVerifiedDeveloper')
-      .populate('versions.submittedBy', 'username globalName avatar isVerifiedDeveloper')
-      .populate('dependencies', 'slug')
-      .populate('pendingEdit.dependencies', 'slug')
+    const db = useDb(event)
+    const row = await findModBySlug(db, slug)
+    const [mod] = row ? await hydrateMods(db, [row]) : []
 
     if (!mod) {
       throw createError({
@@ -31,61 +24,13 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    type VersionType = {
-      isApproved: boolean
-      isBeta?: boolean
-      createdAt: Date | string
-      version: string
-      downloadUrl?: string
-      platformDownloads?: unknown
-      changelog: string
-      submittedBy?: { username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
-    }
-
-    const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'pendingCollaboratorIds' | 'versions' | 'dependencies' | 'pendingEdit'> & {
-      authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
-      collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      pendingCollaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-      versions: VersionType[]
-      dependencies: string[]
-      pendingEdit?: {
-        name?: string
-        summary?: string
-        description?: string
-        game?: 'adofai' | 'rhythm-doctor' | 'dancing-line'
-        categories?: Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
-        logo?: string
-        sourceUrl?: string
-        communityUrl?: string
-        dependencies?: string[]
-      } | null
-    }
-
-    const rawDeps = (mod.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
-    modObj.dependencies = rawDeps.map((d) => {
-      if (typeof d === 'object' && d && 'slug' in d) {
-        return d.slug as string
-      }
-      return String(d)
-    })
-
-    if (modObj.pendingEdit && mod.pendingEdit && mod.pendingEdit.dependencies) {
-      const rawPendingDeps = (mod.pendingEdit.dependencies as unknown as Array<{ slug?: string } | string | null | undefined>) || []
-      modObj.pendingEdit.dependencies = rawPendingDeps.map((d) => {
-        if (typeof d === 'object' && d && 'slug' in d) {
-          return d.slug as string
-        }
-        return String(d)
-      })
-    }
-
-    const isOwnerOrAdmin = currentUser && (
+    const isOwnerOrAdmin = !!currentUser && (
       currentUser.isAdmin ||
-      modObj.authorId._id.toString() === currentUser.id ||
-      modObj.collaboratorIds.some((c: { _id: { toString(): string } }) => c._id.toString() === currentUser.id)
+      mod.authorId?._id === currentUser.id ||
+      mod.collaboratorIds.some((c) => c._id === currentUser.id)
     )
 
-    // If mod is not approved, only owners and admin can see it
+    // Unapproved mods are only visible to owners and admins
     if (!mod.isApproved && !isOwnerOrAdmin) {
       throw createError({
         statusCode: 404,
@@ -93,58 +38,24 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Filter versions
-    if (!isOwnerOrAdmin) {
-      modObj.versions = modObj.versions.filter((v: { isApproved: boolean }) => v.isApproved)
-    }
+    const versions = isOwnerOrAdmin ? mod.versions : mod.versions.filter((v) => v.isApproved)
 
-    // Sort versions by date descending
-    modObj.versions.sort(
-      (a: { createdAt: Date | string }, b: { createdAt: Date | string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-
-    // Compute latest versions
-    const approvedVersions = modObj.versions.filter((v: { isApproved: boolean }) => v.isApproved)
-    const latestVersion = approvedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || null
-    const latestBeta = approvedVersions.find((v: { isBeta?: boolean }) => v.isBeta) || null
-
-    let latestBetaVersion = null
-    if (latestBeta) {
-      if (!latestVersion || new Date(latestBeta.createdAt).getTime() > new Date(latestVersion.createdAt).getTime()) {
-        latestBetaVersion = latestBeta
-      }
-    }
-
-    if (!isOwnerOrAdmin) {
-      delete modObj.pendingEdit
-    }
-
-    // Strip downloadUrl from all versions for safety & size
-    const cleanVersions = (modObj.versions || []).map((v) => {
-      const { downloadUrl: _, platformDownloads, ...rest } = v
-      return { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
-    })
-
-    let cleanLatest = null
-    if (latestVersion) {
-      const { downloadUrl: _, platformDownloads, ...rest } = latestVersion
-      cleanLatest = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
-    }
-
-    let cleanLatestBeta = null
-    if (latestBetaVersion) {
-      const { downloadUrl: _, platformDownloads, ...rest } = latestBetaVersion
-      cleanLatestBeta = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
-    }
+    const approvedVersions = versions.filter((v) => v.isApproved)
+    const latestVersion = approvedVersions.find((v) => !v.isBeta) || null
+    const latestBeta = approvedVersions.find((v) => v.isBeta) || null
+    const latestBetaVersion = latestBeta && (!latestVersion || new Date(latestBeta.createdAt) > new Date(latestVersion.createdAt))
+      ? latestBeta
+      : null
 
     return {
       mod: {
-        ...modObj,
-        versions: cleanVersions
+        ...mod,
+        pendingEdit: isOwnerOrAdmin ? mod.pendingEdit : undefined,
+        versions: versions.map(stripDownloadUrls)
       },
-      latestVersion: cleanLatest,
-      latestBetaVersion: cleanLatestBeta,
-      isEditable: !!isOwnerOrAdmin
+      latestVersion: latestVersion ? stripDownloadUrls(latestVersion) : null,
+      latestBetaVersion: latestBetaVersion ? stripDownloadUrls(latestBetaVersion) : null,
+      isEditable: isOwnerOrAdmin
     }
   } catch (error) {
     console.error('Fetch mod details error:', error)

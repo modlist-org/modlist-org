@@ -1,5 +1,7 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../models/Mod'
+import { and, desc, eq, inArray } from 'drizzle-orm'
+import { mods, modCollaborators } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { hydrateMods } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -12,13 +14,17 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const mods = await Mod.find({
-      pendingCollaboratorIds: new mongoose.Types.ObjectId(currentUser.id)
-    })
-      .populate('authorId', 'username globalName avatar')
-      .sort({ updatedAt: -1 })
+    const db = useDb(event)
+    const invitedModIds = db.select({ id: modCollaborators.modId }).from(modCollaborators)
+      .where(and(eq(modCollaborators.userId, currentUser.id), eq(modCollaborators.status, 'pending')))
+    const rows = await db.select().from(mods)
+      .where(inArray(mods.id, invitedModIds))
+      .orderBy(desc(mods.updatedAt))
 
-    return { mods }
+    const hydrated = await hydrateMods(db, rows)
+    // Invitees are not collaborators yet: don't leak download URLs or pending edits
+    const result = hydrated.map(({ versions: _, pendingEdit: __, ...mod }) => mod)
+    return { mods: result }
   } catch (error) {
     console.error('Fetch invitations error:', error)
     throw createError({

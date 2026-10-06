@@ -1,74 +1,51 @@
-import { Mod } from '../../models/Mod'
+import { and, eq } from 'drizzle-orm'
+import { mods, modVersions } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { findModById, hydrateMods } from '../../utils/mod-repo'
+import { runInBackground, sendDiscordWebhook } from '../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId, versionId } = body
-
+  const { modId, versionId } = await readBody(event)
   if (!modId || !versionId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Required parameters: modId and versionId.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Required parameters: modId and versionId.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    // Find the version in the array
-    const ver = mod.versions.find((v) => v._id?.toString() === versionId)
+    const ver = await db.query.modVersions.findFirst({
+      where: and(eq(modVersions.id, versionId), eq(modVersions.modId, mod.id))
+    })
     if (!ver) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Version not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Version not found.' })
     }
 
-    const wasApproved = ver.isApproved
-    ver.isApproved = true
-    ver.rejectionReason = ''
-    mod.updatedAt = new Date()
-    await mod.save()
+    await db.batch([
+      db.update(modVersions).set({ isApproved: true, rejectionReason: '' }).where(eq(modVersions.id, ver.id)),
+      db.update(mods).set({ updatedAt: new Date() }).where(eq(mods.id, mod.id))
+    ])
 
-    if (!wasApproved) {
-      const populatedMod = await Mod.findById(mod._id).populate('authorId')
-      if (populatedMod) {
-        sendDiscordWebhook(
-          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
+    if (!ver.isApproved) {
+      const [hydrated] = await hydrateMods(db, [mod])
+      if (hydrated) {
+        runInBackground(event, sendDiscordWebhook(
+          event,
+          hydrated,
           { version: ver.version, downloadUrl: ver.downloadUrl, changelog: ver.changelog, gameVersion: ver.gameVersion, isBeta: ver.isBeta },
           true
-        ).catch((err) => {
-          console.error('Failed to send Discord webhook on version approval:', err)
-        })
+        ), 'Discord webhook on version approval')
       }
     }
 
-    return {
-      success: true,
-      message: 'Version approved successfully.'
-    }
+    return { success: true, message: 'Version approved successfully.' }
   } catch (error) {
-    console.error('Approve version error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to approve version.'
-    })
+    rethrowOr500(error, 'Approve version error', 'Failed to approve version.')
   }
 })

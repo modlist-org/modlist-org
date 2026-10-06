@@ -1,74 +1,35 @@
-import { Mod } from '../../models/Mod'
-import { sendFeaturedWebhook } from '../../utils/webhook'
-
-interface PopulatedUser {
-  username: string
-  globalName?: string
-  avatar?: string
-}
+import { eq } from 'drizzle-orm'
+import { mods } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { findModById, hydrateMods } from '../../utils/mod-repo'
+import { runInBackground, sendFeaturedWebhook } from '../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId } = body
-
+  const { modId } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Required parameter: modId.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Required parameter: modId.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-      .populate('authorId', 'username globalName avatar')
-    
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    mod.isFeatured = !mod.isFeatured
-    await mod.save()
+    const isFeatured = !mod.isFeatured
+    await db.update(mods).set({ isFeatured }).where(eq(mods.id, mod.id))
 
-    // Trigger webhook notification to Discord without role pings
-    await sendFeaturedWebhook({
-      name: mod.name,
-      slug: mod.slug,
-      game: mod.game,
-      categories: mod.categories || [],
-      summary: mod.summary,
-      sourceUrl: mod.sourceUrl,
-      communityUrl: mod.communityUrl,
-      authorId: mod.authorId ? {
-        username: (mod.authorId as unknown as PopulatedUser).username,
-        globalName: (mod.authorId as unknown as PopulatedUser).globalName,
-        avatar: (mod.authorId as unknown as PopulatedUser).avatar
-      } : undefined
-    }, mod.isFeatured)
-
-    return {
-      success: true,
-      modId: mod._id,
-      isFeatured: mod.isFeatured
+    const [hydrated] = await hydrateMods(db, [mod])
+    if (hydrated) {
+      runInBackground(event, sendFeaturedWebhook(event, hydrated, isFeatured), 'Discord webhook for featured mod')
     }
+
+    return { success: true, modId: mod.id, isFeatured }
   } catch (error) {
-    console.error('Toggle featured status error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to update featured status.'
-    })
+    rethrowOr500(error, 'Toggle featured status error', 'Failed to update featured status.')
   }
 })

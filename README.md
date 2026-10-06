@@ -1,51 +1,24 @@
 # Modlist.org - Mod Sharing Platform
 
-Modlist.org is a high-fidelity full-stack mod repository and sharing platform for rhythm games (such as *A Dance of Fire and Ice* and *Rhythm Doctor*). Built on **Nuxt 3** and **MongoDB**, it incorporates verified creator badges, automated OAuth authentication, and strict moderation workflows.
+Modlist.org is a high-fidelity full-stack mod repository and sharing platform for rhythm games (such as *A Dance of Fire and Ice* and *Rhythm Doctor*). Built on **Nuxt** and runs on **Cloudflare Workers** with **D1** and **R2**, it incorporates verified creator badges, automated OAuth authentication, and strict moderation workflows.
 
 ---
 
 ## ├── Project Structure
 
-The project is structured as a unified Nuxt 3 full-stack application:
-
 ```
-├── app/                          # Frontend Layer
-│   ├── assets/
-│   │   └── css/main.css          # Custom styling with glassmorphism & glows
-│   ├── composables/
-│   │   └── useAuth.ts            # Reactive authentication composable
-│   ├── layouts/
-│   │   └── default.vue           # Global navigation with logo & auth profile
-│   ├── locales/
-│   │   ├── en-US.json            # English translations
-│   │   └── ko-KR.json            # Korean translations
-│   └── pages/
-│       ├── index.vue             # Homepage with advanced filtering & mod grid
-│       ├── admin.vue             # Administrator moderation queue
-│       ├── pending.vue           # Creator pending queue & invitations panel
-│       ├── submit.vue            # Mod registration form
-│       ├── edit/[slug].vue       # Mod metadata editing form
-│       └── mods/[slug].vue       # Mod details, version history & update submission
-│
-├── server/                       # Backend Layer
-│   ├── api/                      # Serverless backend endpoints
-│   │   ├── admin/                # Moderation (approval, unapproval, user roles)
-│   │   ├── auth/                 # Discord OAuth login/callback lifecycle
-│   │   ├── mods/                 # Mod CRUD, version uploads, downloads count
-│   │   └── users/                # User profile search
-│   ├── middleware/
-│   │   └── auth.ts               # Decodes token & populates user session
-│   ├── models/
-│   │   ├── User.ts               # MongoDB Mongoose User model
-│   │   └── Mod.ts                # MongoDB Mongoose Mod model with subschemas
-│   ├── plugins/
-│   │   └── mongodb.ts            # Mongoose connection initiator
-│   └── utils/
-│       └── jwt.ts                # JWT authentication signing and verifying utilities
-│
-├── public/                       # Static public assets
-├── nuxt.config.ts                # Server module settings & environment variables
-└── docker-compose.yml            # Docker container configurations for local MongoDB
+├── app/                    # Frontend (pages, layouts, composables, locales)
+├── server/
+│   ├── api/                # API endpoints (admin, auth, mods, users)
+│   ├── db/
+│   │   ├── schema.ts       # Drizzle schema for D1
+│   │   └── migrations/     # SQL migrations (drizzle-kit generate)
+│   ├── middleware/auth.ts  # Resolves the session user from the JWT cookie / Bearer token
+│   ├── routes/logos/       # Serves mod logos from R2
+│   └── utils/              # DB access, mod hydration, JWT, webhooks
+├── scripts/mongo-to-d1.mjs # One-shot MongoDB -> D1/R2 migration
+├── nuxt.config.ts
+└── wrangler.jsonc          # Worker, D1 and R2 bindings
 ```
 
 ---
@@ -79,71 +52,37 @@ The project is structured as a unified Nuxt 3 full-stack application:
 
 ## 🛠️ Technology Stack
 
-- **Framework**: [Nuxt 3](https://nuxt.com/) (Vue 3, Serverless Backend, TypeScript)
-- **Database**: [MongoDB](https://www.mongodb.com/) via [Mongoose](https://mongoosejs.com/)
-- **UI Library**: `overlayer-ui` (Aesthetics modeled on high-fidelity glowing dark themes)
-- **CSS**: Vanilla CSS & TailwindCSS
-- **Localization**: `@nuxtjs/i18n` (Multi-language translation support)
+- **Framework**: [Nuxt](https://nuxt.com/) (Vue 3, Nitro `cloudflare_module` preset, TypeScript)
+- **Hosting**: Cloudflare Workers (static assets via Workers Assets)
+- **Database**: Cloudflare D1 via [Drizzle ORM](https://orm.drizzle.team/)
+- **Storage**: Cloudflare R2 for mod logos
+- **CSS**: TailwindCSS
+- **Localization**: `@nuxtjs/i18n`
 
 ---
 
 ## ⚙️ Getting Started
 
-### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18+) or [Bun](https://bun.sh/)
-- [MongoDB](https://www.mongodb.com/) (Local server or MongoDB Atlas)
-
-### 2. Set Up Environment Variables
-Create a `.env` file in the root directory and configure the variables (see `.env.example`):
-```env
-# MongoDB Connection URI
-MONGODB_URI=mongodb://localhost:27017/modlist
-
-# Discord Developer Portal Applications Credentials
-DISCORD_CLIENT_ID=your_client_id
-DISCORD_CLIENT_SECRET=your_client_secret
-DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/callback
-
-# JWT Token Secret
-JWT_SECRET=generate-a-secure-random-key-here
-
-# Admin Discord User IDs (comma-separated, e.g. "123456789012345678,987654321098765432")
-ADMIN_DISCORD_IDS=your_discord_id
-```
-
-### 3. Spin Up Local Database (Optional)
-If you have Docker installed, you can launch a local MongoDB container:
-```bash
-docker-compose up -d
-```
-
-### 4. Install Dependencies
 ```bash
 bun install
-# or
-npm install
+cp .env.example .dev.vars        # fill in Discord OAuth + JWT secret
+bun run db:migrate:local         # create the local D1 schema
+bun run dev                      # http://localhost:3000 (local D1/R2 emulated by wrangler)
 ```
 
-### 5. Run Local Development Server
-```bash
-bun run dev
-# or
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+`bun run preview` builds and runs the real Worker bundle locally with `wrangler dev`.
+
+### Schema changes
+
+Edit `server/db/schema.ts`, then `bun run db:generate` to create a migration in `server/db/migrations/`.
 
 ---
 
-## 📦 Production Build
-
-To compile and build the Nuxt application for production:
+## 📦 Deployment
 
 ```bash
-bun run build
-# or
-npm run build
+npx wrangler login
+bun run deploy   # nuxt build -> apply D1 migrations -> wrangler deploy
 ```
-Launch the compiled Node.js build:
-```bash
-node .output/server/index.mjs
-```
+
+Secrets are Worker secrets named `NUXT_*` (see `.env.example`), e.g. `npx wrangler secret put NUXT_JWT_SECRET`.

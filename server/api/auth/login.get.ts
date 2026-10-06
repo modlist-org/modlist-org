@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import { sendRedirect, setCookie } from 'h3'
 
 export default defineEventHandler(async (event) => {
@@ -13,10 +12,11 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const state = crypto.randomBytes(16).toString('hex')
+  const stateBytes = crypto.getRandomValues(new Uint8Array(16))
+  const state = Array.from(stateBytes, (b) => b.toString(16).padStart(2, '0')).join('')
   setCookie(event, 'oauth_state', state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: !import.meta.dev,
     sameSite: 'lax',
     path: '/api/auth',
     maxAge: 600

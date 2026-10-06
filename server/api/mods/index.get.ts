@@ -1,164 +1,114 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../models/Mod'
-import type { IMod } from '../../models/Mod'
-import { getAvailablePlatforms } from '../../utils/mod-platform'
-import { literalRegex } from '../../utils/regex'
+import { and, asc, count, desc, eq, exists, inArray, or, sql } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
+import { mods, modCollaborators, CATEGORIES, GAMES } from '../../db/schema'
+import { useDb, likePattern } from '../../utils/db'
+import { hydrateMods, stripDownloadUrls } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const game = query.game as string // 'adofai' | 'rhythm-doctor'
+  const game = query.game as string
   const categories = query.categories as string
   const search = query.search as string
   const slugs = query.slugs as string
   const currentUser = event.context.user
+  const db = useDb(event)
 
-  const filter: import('mongoose').FilterQuery<IMod> = {}
+  const conditions: SQL[] = []
 
-  // Filter by slugs if provided
   if (slugs) {
-    const slugList = slugs.split(',').filter(Boolean)
-    if (slugList.length > 0) {
-      filter.slug = { $in: slugList }
-    }
+    const slugList = slugs.split(',').filter(Boolean).slice(0, 90)
+    if (slugList.length > 0) conditions.push(inArray(mods.slug, slugList))
   }
 
-  // Filter by game
   if (game && game !== 'all') {
-    const games = game.split(',').filter(Boolean)
-    const validGames = games.filter((g) => ['adofai', 'rhythm-doctor', 'dancing-line'].includes(g))
-    if (validGames.length > 0) {
-      filter.game = { $in: validGames }
-    }
+    const validGames = game.split(',').filter((g): g is typeof GAMES[number] => (GAMES as readonly string[]).includes(g))
+    if (validGames.length > 0) conditions.push(inArray(mods.game, validGames))
   }
 
-  // Filter by categories
   if (categories && categories !== 'all') {
-    const cats = categories.split(',').filter(Boolean)
-    const validCats = cats.filter((cat) => ['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))
+    const validCats = categories.split(',').filter((c) => (CATEGORIES as readonly string[]).includes(c))
     if (validCats.length > 0) {
-      filter.categories = { $in: validCats }
+      conditions.push(sql`exists (select 1 from json_each(${mods.categories}) where json_each.value in (${sql.join(validCats.map((c) => sql`${c}`), sql`, `)}))`)
     }
   }
 
-  // Filter by search query
   if (typeof search === 'string' && search.trim().length > 0) {
-    const searchRegex = literalRegex(search)
-    filter.$or = [
-      { name: searchRegex },
-      { summary: searchRegex },
-      { slug: searchRegex }
-    ]
+    const pattern = likePattern(search.trim())
+    conditions.push(or(
+      sql`${mods.name} like ${pattern} escape '\\'`,
+      sql`${mods.summary} like ${pattern} escape '\\'`,
+      sql`${mods.slug} like ${pattern} escape '\\'`
+    )!)
   }
 
-  const pending = query.pending === 'true'
-
-  if (pending) {
+  if (query.pending === 'true') {
     if (!currentUser) {
       throw createError({
         statusCode: 401,
         statusMessage: 'You must be logged in to view pending mods.'
       })
     }
-    filter.isApproved = false
-    const originalOr = filter.$or
-    const pendingScoping = [
-      { authorId: new mongoose.Types.ObjectId(currentUser.id) },
-      { collaboratorIds: new mongoose.Types.ObjectId(currentUser.id) }
-    ]
-    if (originalOr && originalOr.length > 0) {
-      delete filter.$or
-      filter.$and = [
-        { $or: originalOr },
-        { $or: pendingScoping }
-      ]
-    } else {
-      filter.$or = pendingScoping
-    }
+    conditions.push(eq(mods.isApproved, false))
+    conditions.push(or(
+      eq(mods.authorId, currentUser.id),
+      exists(db.select({ one: sql`1` }).from(modCollaborators).where(and(
+        eq(modCollaborators.modId, mods.id),
+        eq(modCollaborators.userId, currentUser.id),
+        eq(modCollaborators.status, 'accepted')
+      )))
+    )!)
   } else {
-    // Normal query: only show approved mods to everyone
-    filter.isApproved = true
+    conditions.push(eq(mods.isApproved, true))
   }
 
-  // Pagination parameters
   const page = Math.max(1, parseInt(query.page as string) || 1)
   const limit = Math.max(1, Math.min(100, parseInt(query.limit as string) || 12))
 
-  // Sort parameters
   const sortBy = query.sortBy as string || 'downloads_desc'
-  const sortCriteria: Record<string, 1 | -1> = { isFeatured: -1 }
-
+  const orderBy: SQL[] = [desc(mods.isFeatured)]
   if (sortBy === 'downloads_desc' || sortBy === 'downloads') {
-    sortCriteria.downloads = -1
+    orderBy.push(desc(mods.downloads))
   } else if (sortBy === 'downloads_asc') {
-    sortCriteria.downloads = 1
+    orderBy.push(asc(mods.downloads))
   } else if (sortBy === 'name_asc') {
-    sortCriteria.name = 1
+    orderBy.push(sql`${mods.name} collate nocase asc`)
   } else if (sortBy === 'name_desc') {
-    sortCriteria.name = -1
+    orderBy.push(sql`${mods.name} collate nocase desc`)
   } else if (sortBy === 'created') {
-    sortCriteria.createdAt = -1
+    orderBy.push(desc(mods.createdAt))
   } else {
-    sortCriteria.updatedAt = -1 // Default: recently updated
+    orderBy.push(desc(mods.updatedAt))
   }
+  orderBy.push(asc(mods.id))
 
   try {
-    const total = await Mod.countDocuments(filter)
-    const totalPages = Math.ceil(total / limit)
+    const where = and(...conditions)
+    const [totalRow] = await db.select({ total: count() }).from(mods).where(where)
+    const total = totalRow?.total ?? 0
 
-    const queryChain = Mod.find(filter)
-      .populate('authorId', 'username globalName avatar isVerifiedDeveloper')
-      .populate('collaboratorIds', 'username globalName avatar isVerifiedDeveloper')
-      .sort(sortCriteria)
-      .skip((page - 1) * limit)
+    const rows = await db.select().from(mods).where(where)
+      .orderBy(...orderBy)
       .limit(limit)
+      .offset((page - 1) * limit)
 
-    // Apply collation for case-insensitive alphabetical sorting if name sorting is selected
-    if (sortBy === 'name_asc' || sortBy === 'name_desc') {
-      queryChain.collation({ locale: 'en', strength: 2 })
-    }
+    const hydrated = await hydrateMods(db, rows)
 
-    const mods = await queryChain
-
-    // Return the mods. For frontend display, we only return approved versions unless
-    // the user is authorized. We'll map versions count or latest version.
-    const sanitizedMods = mods.map((mod: import('mongoose').HydratedDocument<IMod>) => {
-      const modObj = mod.toObject() as unknown as Omit<IMod, 'authorId' | 'collaboratorIds' | 'versions'> & {
-        authorId: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }
-        collaboratorIds: { _id: { toString(): string }; username: string; globalName?: string; avatar?: string; isVerifiedDeveloper: boolean }[]
-        versions: { isApproved: boolean; isBeta?: boolean; createdAt: Date | string; version: string; downloadUrl?: string; platformDownloads?: unknown; changelog: string }[]
-      }
-      
-      // Filter approved versions for regular users
-      let approvedVersions = modObj.versions || []
+    const sanitizedMods = hydrated.map((mod) => {
       const isOwnerOrAdmin = currentUser && (
         currentUser.isAdmin ||
-        modObj.authorId?._id.toString() === currentUser.id ||
-        (modObj.collaboratorIds || []).some((c: { _id: { toString(): string } }) => c._id.toString() === currentUser.id)
+        mod.authorId?._id === currentUser.id ||
+        mod.collaboratorIds.some((c) => c._id === currentUser.id)
       )
 
-      if (!isOwnerOrAdmin) {
-        approvedVersions = approvedVersions.filter((v: { isApproved: boolean }) => v.isApproved)
-      }
-
-      const sortedVersions = approvedVersions.sort(
-        (a: { createdAt: Date | string }, b: { createdAt: Date | string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      const latestVersion = sortedVersions.find((v: { isBeta?: boolean }) => !v.isBeta) || sortedVersions[0] || null
-
-      const cleanVersions = approvedVersions.map((v) => {
-        const { downloadUrl: _, platformDownloads, ...rest } = v
-        return { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
-      })
-      let cleanLatest = null
-      if (latestVersion) {
-        const { downloadUrl: _, platformDownloads, ...rest } = latestVersion
-        cleanLatest = { ...rest, availablePlatforms: getAvailablePlatforms(platformDownloads) }
-      }
+      // Only owners/admins see unapproved versions
+      const visibleVersions = isOwnerOrAdmin ? mod.versions : mod.versions.filter((v) => v.isApproved)
+      const latestVersion = visibleVersions.find((v) => !v.isBeta) || visibleVersions[0] || null
 
       return {
-        ...modObj,
-        versions: cleanVersions,
-        latestVersion: cleanLatest
+        ...mod,
+        pendingEdit: isOwnerOrAdmin ? mod.pendingEdit : undefined,
+        versions: visibleVersions.map(stripDownloadUrls),
+        latestVersion: latestVersion ? stripDownloadUrls(latestVersion) : null
       }
     })
 
@@ -168,7 +118,7 @@ export default defineEventHandler(async (event) => {
         total,
         page,
         limit,
-        totalPages
+        totalPages: Math.ceil(total / limit)
       }
     }
   } catch (error) {

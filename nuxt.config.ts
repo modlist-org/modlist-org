@@ -16,6 +16,13 @@ export default defineNuxtConfig({
     '~/assets/css/main.css'
   ],
 
+  nitro: {
+    preset: 'cloudflare_module',
+    cloudflare: {
+      nodeCompat: true
+    }
+  },
+
   modules: [
     '@nuxt/eslint',
     '@nuxtjs/tailwindcss',
@@ -36,21 +43,21 @@ export default defineNuxtConfig({
     }
   },
 
+  // Values are injected at runtime from Worker secrets/vars named NUXT_<KEY> (e.g. NUXT_JWT_SECRET)
   runtimeConfig: {
-    mongodbUri: process.env.MONGODB_URI,
-    discordClientId: process.env.DISCORD_CLIENT_ID,
-    discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
-    discordRedirectUri: process.env.DISCORD_REDIRECT_URI,
-    jwtSecret: process.env.JWT_SECRET || '',
-    adminDiscordIds: process.env.ADMIN_DISCORD_IDS || '',
-    discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
-    discordModPingRoleIdAdofai: process.env.DISCORD_MOD_PING_ROLE_ID_ADOFAI || '',
-    discordModPingRoleIdRhythmDoctor: process.env.DISCORD_MOD_PING_ROLE_ID_RHYTHM_DOCTOR || '',
-    discordModPingRoleIdDancingLine: process.env.DISCORD_MOD_PING_ROLE_ID_DANCING_LINE || '',
-    discordModAllRoleIdAdofai: process.env.DISCORD_MOD_ALL_ROLE_ID_ADOFAI || '',
-    discordModAllRoleIdRhythmDoctor: process.env.DISCORD_MOD_ALL_ROLE_ID_RHYTHM_DOCTOR || '',
-    discordModAllRoleIdDancingLine: process.env.DISCORD_MOD_ALL_ROLE_ID_DANCING_LINE || '',
-    appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+    discordClientId: '',
+    discordClientSecret: '',
+    discordRedirectUri: '',
+    jwtSecret: '',
+    adminDiscordIds: '',
+    discordWebhookUrl: '',
+    discordModPingRoleIdAdofai: '',
+    discordModPingRoleIdRhythmDoctor: '',
+    discordModPingRoleIdDancingLine: '',
+    discordModAllRoleIdAdofai: '',
+    discordModAllRoleIdRhythmDoctor: '',
+    discordModAllRoleIdDancingLine: '',
+    siteUrl: 'http://localhost:3000',
     public: {}
   }
 })

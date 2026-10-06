@@ -1,74 +1,56 @@
-import { Mod } from '../../models/Mod'
+import { eq } from 'drizzle-orm'
+import { mods, modDependencies } from '../../db/schema'
+import { useDb } from '../../utils/db'
+import { requireAdmin, rethrowOr500 } from '../../utils/admin'
+import { dependencyRows, findModById, validateDependencyIds } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
-  const currentUser = event.context.user
+  requireAdmin(event)
 
-  if (!currentUser || !currentUser.isAdmin) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Access denied. Administrator privileges required.'
-    })
-  }
-
-  const body = await readBody(event)
-  const { modId } = body
-
+  const { modId } = await readBody(event)
   if (!modId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing modId parameter.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Missing modId parameter.' })
   }
 
   try {
-    const mod = await Mod.findById(modId)
-
+    const db = useDb(event)
+    const mod = await findModById(db, modId)
     if (!mod) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Mod not found.'
-      })
+      throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
     }
 
-    if (!mod.pendingEdit) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Mod does not have a pending edit to approve.'
-      })
-    }
-
-    // Apply pendingEdit changes to root document
     const edit = mod.pendingEdit
-    if (edit.name) mod.name = edit.name
-    if (edit.summary) mod.summary = edit.summary
-    if (edit.description !== undefined) mod.description = edit.description
-    if (edit.game) mod.game = edit.game
-    if (edit.logo !== undefined) mod.logo = edit.logo
-    if (edit.sourceUrl !== undefined) mod.sourceUrl = edit.sourceUrl
-    if (edit.communityUrl !== undefined) mod.communityUrl = edit.communityUrl
-    if (edit.categories && edit.categories.length > 0) {
-      mod.categories = edit.categories
+    if (!edit) {
+      throw createError({ statusCode: 400, statusMessage: 'Mod does not have a pending edit to approve.' })
     }
+
+    const game = edit.game || mod.game
+    const updates: Partial<typeof mods.$inferInsert> = {
+      pendingEdit: null,
+      editRejectionReason: '',
+      updatedAt: new Date()
+    }
+    if (edit.name) updates.name = edit.name
+    if (edit.summary) updates.summary = edit.summary
+    if (edit.description !== undefined) updates.description = edit.description
+    if (edit.game) updates.game = edit.game
+    if (edit.logo !== undefined) updates.logo = edit.logo
+    if (edit.sourceUrl !== undefined) updates.sourceUrl = edit.sourceUrl
+    if (edit.communityUrl !== undefined) updates.communityUrl = edit.communityUrl
+    if (edit.categories && edit.categories.length > 0) updates.categories = edit.categories
+
+    const statements = []
     if (edit.dependencies !== undefined) {
-      mod.dependencies = edit.dependencies
+      // Dependencies may have been deleted since the edit was proposed
+      const depIds = await validateDependencyIds(db, edit.dependencies, game, mod.id)
+      statements.push(db.delete(modDependencies).where(eq(modDependencies.modId, mod.id)))
+      if (depIds.length > 0) statements.push(db.insert(modDependencies).values(dependencyRows(mod.id, depIds)))
     }
 
-    mod.pendingEdit = null
-    mod.editRejectionReason = ''
-    mod.updatedAt = new Date()
-    await mod.save()
+    await db.batch([db.update(mods).set(updates).where(eq(mods.id, mod.id)), ...statements])
 
-    return {
-      success: true,
-      message: 'Mod edits approved and applied successfully.'
-    }
+    return { success: true, message: 'Mod edits approved and applied successfully.' }
   } catch (error) {
-    console.error('Approve mod edits error:', error)
-    const err = error as { statusCode?: number }
-    if (err.statusCode) throw error
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to approve mod edits.'
-    })
+    rethrowOr500(error, 'Approve mod edits error', 'Failed to approve mod edits.')
   }
 })

@@ -1,7 +1,19 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../../models/Mod'
-import { User } from '../../../models/User'
+import { eq } from 'drizzle-orm'
+import { mods, modCollaborators, modDependencies, CATEGORIES, GAMES } from '../../../db/schema'
+import type { Category, Game, PendingModEdit } from '../../../db/schema'
+import { useDb } from '../../../utils/db'
 import { isHttpUrl } from '../../../utils/mod-platform'
+import {
+  canManageMod,
+  collaboratorRows,
+  dependencyRows,
+  findModBySlug,
+  getCollaboratorIds,
+  getDependencyIds,
+  validateDependencyIds,
+  validateUserIds
+} from '../../../utils/mod-repo'
+import { storeLogo } from '../../../utils/logo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -24,13 +36,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { name, summary, description, game, categories, collaboratorIds, logo, sourceUrl, communityUrl, dependencies } = body
 
-  if (logo && typeof logo === 'string' && logo.length > 1500000) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Logo size must be smaller than 1MB.'
-    })
-  }
-
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
       statusCode: 400,
@@ -45,8 +50,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  if (categories !== undefined && (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !(CATEGORIES as readonly string[]).includes(cat)))) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid or empty categories selected.'
+    })
+  }
+
+  const db = useDb(event)
+
   try {
-    const mod = await Mod.findOne({ slug })
+    const mod = await findModBySlug(db, slug)
     if (!mod) {
       throw createError({
         statusCode: 404,
@@ -54,181 +68,97 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Check permissions: author, collaborator, or admin
-    const isOwner = mod.authorId.toString() === currentUser.id
-    const isCollab = mod.collaboratorIds.some((id) => id.toString() === currentUser.id)
+    const isOwner = mod.authorId === currentUser.id
     const isAdmin = currentUser.isAdmin
-
-    if (!isOwner && !isCollab && !isAdmin) {
+    if (!await canManageMod(db, mod, currentUser)) {
       throw createError({
         statusCode: 403,
         statusMessage: 'You do not have permission to edit this mod.'
       })
     }
 
-    // Update basic fields
+    const validGame: Game | undefined = game && (GAMES as readonly string[]).includes(game) ? game : undefined
+    const targetGame = validGame || mod.game
+    const storedLogo = logo !== undefined ? await storeLogo(event, logo) : undefined
+    const newDepIds = dependencies !== undefined ? await validateDependencyIds(db, dependencies, targetGame, mod.id) : undefined
+
+    const updates: Partial<typeof mods.$inferInsert> = {}
+    const statements: Parameters<typeof db.batch>[0][number][] = []
+
     if (isAdmin || !mod.isApproved) {
-      if (name) mod.name = name
-      if (summary) mod.summary = summary
-      if (description !== undefined) mod.description = description
-      if (game && ['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) mod.game = game
-      if (logo !== undefined) mod.logo = logo
-      if (sourceUrl !== undefined) mod.sourceUrl = sourceUrl
-      if (communityUrl !== undefined) mod.communityUrl = communityUrl
-      if (categories !== undefined) {
-        if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid or empty categories selected.'
-          })
-        }
-        mod.categories = categories
+      // Admins and unapproved mods edit in place
+      if (name) updates.name = name
+      if (summary) updates.summary = summary
+      if (description !== undefined) updates.description = description
+      if (validGame) updates.game = validGame
+      if (storedLogo !== undefined) updates.logo = storedLogo
+      if (sourceUrl !== undefined) updates.sourceUrl = sourceUrl
+      if (communityUrl !== undefined) updates.communityUrl = communityUrl
+      if (categories !== undefined) updates.categories = categories
+      if (newDepIds !== undefined) {
+        statements.push(db.delete(modDependencies).where(eq(modDependencies.modId, mod.id)))
+        if (newDepIds.length > 0) statements.push(db.insert(modDependencies).values(dependencyRows(mod.id, newDepIds)))
       }
-      if (dependencies !== undefined) {
-        const validatedDepIds: mongoose.Types.ObjectId[] = []
-        if (Array.isArray(dependencies)) {
-          for (const depId of dependencies) {
-            if (!mongoose.Types.ObjectId.isValid(depId)) continue
-            const depMod = await Mod.findById(depId)
-            if (depMod && depMod.game === (game || mod.game)) {
-              validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
-            }
-          }
-        }
-        mod.dependencies = validatedDepIds
-      }
-      if (!mod.isApproved) {
-        mod.rejectionReason = '' // Reset rejection reason on update
-      }
-      mod.pendingEdit = null
+      if (!mod.isApproved) updates.rejectionReason = ''
+      updates.pendingEdit = null
     } else {
-      let isChanged = false
-      const proposedEdit: Partial<import('../../../models/Mod').IPendingModEdit> = {}
+      // Approved mods keep their live details; changes are staged for admin review
+      const proposedEdit: PendingModEdit = {}
 
-      if (name && name !== mod.name) {
-        proposedEdit.name = name
-        isChanged = true
-      }
-      if (summary && summary !== mod.summary) {
-        proposedEdit.summary = summary
-        isChanged = true
-      }
-      if (description !== undefined && description !== mod.description) {
-        proposedEdit.description = description
-        isChanged = true
-      }
-      if (game && game !== mod.game && ['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) {
-        proposedEdit.game = game
-        isChanged = true
-      }
-      if (logo !== undefined && logo !== mod.logo) {
-        proposedEdit.logo = logo
-        isChanged = true
-      }
-      if (sourceUrl !== undefined && sourceUrl !== mod.sourceUrl) {
-        proposedEdit.sourceUrl = sourceUrl
-        isChanged = true
-      }
-      if (communityUrl !== undefined && communityUrl !== mod.communityUrl) {
-        proposedEdit.communityUrl = communityUrl
-        isChanged = true
-      }
+      if (name && name !== mod.name) proposedEdit.name = name
+      if (summary && summary !== mod.summary) proposedEdit.summary = summary
+      if (description !== undefined && description !== mod.description) proposedEdit.description = description
+      if (validGame && validGame !== mod.game) proposedEdit.game = validGame
+      if (storedLogo !== undefined && storedLogo !== mod.logo) proposedEdit.logo = storedLogo
+      if (sourceUrl !== undefined && sourceUrl !== mod.sourceUrl) proposedEdit.sourceUrl = sourceUrl
+      if (communityUrl !== undefined && communityUrl !== mod.communityUrl) proposedEdit.communityUrl = communityUrl
       if (categories !== undefined) {
-        if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid or empty categories selected.'
-          })
-        }
-        const categoriesChanged = categories.length !== mod.categories.length || categories.some(cat => !mod.categories.includes(cat as 'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'))
-        if (categoriesChanged) {
-          proposedEdit.categories = categories as Array<'ui' | 'gameplay' | 'utility' | 'visuals' | 'library'>
-          isChanged = true
-        }
+        const changed = categories.length !== mod.categories.length || categories.some((cat: string) => !mod.categories.includes(cat as Category))
+        if (changed) proposedEdit.categories = categories
       }
-      if (dependencies !== undefined) {
-        const validatedDepIds: mongoose.Types.ObjectId[] = []
-        if (Array.isArray(dependencies)) {
-          for (const depId of dependencies) {
-            if (!mongoose.Types.ObjectId.isValid(depId)) continue
-            const depMod = await Mod.findById(depId)
-            if (depMod && depMod.game === (game || mod.game)) {
-              validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
-            }
-          }
-        }
-        const currentDepIds = mod.dependencies.map(id => id.toString())
-        const newDepIds = validatedDepIds.map(id => id.toString())
-        const depChanged = currentDepIds.length !== newDepIds.length || newDepIds.some(id => !currentDepIds.includes(id))
-        if (depChanged) {
-          proposedEdit.dependencies = validatedDepIds
-          isChanged = true
-        }
+      if (newDepIds !== undefined) {
+        const currentDepIds = await getDependencyIds(db, mod.id)
+        const changed = currentDepIds.length !== newDepIds.length || newDepIds.some((id) => !currentDepIds.includes(id))
+        if (changed) proposedEdit.dependencies = newDepIds
       }
 
-      if (isChanged) {
-        const prevPending = mod.pendingEdit ? {
-          name: mod.pendingEdit.name,
-          summary: mod.pendingEdit.summary,
-          description: mod.pendingEdit.description,
-          game: mod.pendingEdit.game,
-          logo: mod.pendingEdit.logo,
-          sourceUrl: mod.pendingEdit.sourceUrl,
-          communityUrl: mod.pendingEdit.communityUrl,
-          categories: mod.pendingEdit.categories ? [...mod.pendingEdit.categories] : undefined,
-          dependencies: mod.pendingEdit.dependencies ? [...mod.pendingEdit.dependencies] : undefined
-        } : {}
-        mod.pendingEdit = {
-          ...prevPending,
+      if (Object.keys(proposedEdit).length > 0) {
+        updates.pendingEdit = {
+          ...(mod.pendingEdit || {}),
           ...proposedEdit,
-          createdAt: new Date()
+          createdAt: new Date().toISOString()
         }
-        mod.editRejectionReason = '' // Reset rejection reason when proposing new edits
+        updates.editRejectionReason = ''
       }
     }
 
-    // Update collaborators (only author or admin can manage collaborators)
+    // Only the author or an admin can manage collaborators; new collaborators must accept an invitation
     if (collaboratorIds !== undefined && (isOwner || isAdmin)) {
-      const newPendingCollabIds: mongoose.Types.ObjectId[] = []
-      const newAcceptedCollabIds: mongoose.Types.ObjectId[] = []
-
-      if (Array.isArray(collaboratorIds)) {
-        for (const collabId of collaboratorIds) {
-          if (collabId === mod.authorId.toString()) continue // Already the author
-          const collabUser = await User.findById(collabId)
-          if (collabUser) {
-            const objectId = new mongoose.Types.ObjectId(collabUser._id)
-            // If already accepted, keep in accepted
-            if (mod.collaboratorIds && mod.collaboratorIds.some((id) => id.toString() === collabId)) {
-              newAcceptedCollabIds.push(objectId)
-            } 
-            // If already pending, keep in pending
-            else if (mod.pendingCollaboratorIds && mod.pendingCollaboratorIds.some((id) => id.toString() === collabId)) {
-              newPendingCollabIds.push(objectId)
-            } 
-            // Otherwise, it's a new invitation -> add to pending
-            else {
-              newPendingCollabIds.push(objectId)
-            }
-          }
-        }
-      }
-      mod.collaboratorIds = newAcceptedCollabIds
-      mod.pendingCollaboratorIds = newPendingCollabIds
+      const requested = await validateUserIds(db, collaboratorIds, mod.authorId)
+      const accepted = await getCollaboratorIds(db, mod.id, 'accepted')
+      const nextAccepted = requested.filter((id) => accepted.includes(id))
+      const nextPending = requested.filter((id) => !accepted.includes(id))
+      statements.push(db.delete(modCollaborators).where(eq(modCollaborators.modId, mod.id)))
+      const rows = collaboratorRows(mod.id, nextAccepted, nextPending)
+      if (rows.length > 0) statements.push(db.insert(modCollaborators).values(rows))
     }
 
-    mod.updatedAt = new Date()
-    await mod.save()
+    updates.updatedAt = new Date()
+    const [updated] = await db.batch([
+      db.update(mods).set(updates).where(eq(mods.id, mod.id)).returning(),
+      ...statements
+    ])
 
+    const updatedMod = updated[0] ?? mod
     return {
       success: true,
       mod: {
-        name: mod.name,
-        slug: mod.slug,
-        summary: mod.summary,
-        game: mod.game,
-        categories: mod.categories,
-        collaboratorIds: mod.collaboratorIds
+        name: updatedMod.name,
+        slug: updatedMod.slug,
+        summary: updatedMod.summary,
+        game: updatedMod.game,
+        categories: updatedMod.categories,
+        collaboratorIds: await getCollaboratorIds(db, mod.id, 'accepted')
       }
     }
   } catch (error) {

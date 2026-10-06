@@ -1,7 +1,9 @@
-import mongoose from 'mongoose'
-import { Mod } from '../../models/Mod'
-import { User } from '../../models/User'
+import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, GAMES } from '../../db/schema'
+import { useDb, newId } from '../../utils/db'
 import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
+import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
+import { storeLogo } from '../../utils/logo'
+import { runInBackground, sendDiscordWebhook } from '../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -45,13 +47,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (logo && typeof logo === 'string' && logo.length > 1500000) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Logo size must be smaller than 1MB.'
-    })
-  }
-
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
       statusCode: 400,
@@ -66,22 +61,24 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (!['adofai', 'rhythm-doctor', 'dancing-line'].includes(game)) {
+  if (!(GAMES as readonly string[]).includes(game)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid game selected.'
     })
   }
 
-  if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !['ui', 'gameplay', 'utility', 'visuals', 'library'].includes(cat))) {
+  if (!Array.isArray(categories) || categories.length === 0 || categories.some((cat) => !(CATEGORIES as readonly string[]).includes(cat))) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Invalid or empty categories selected.'
     })
   }
 
+  const db = useDb(event)
+
   // Ensure slug format is lowercase URL friendly
-  const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-_]/g, '')
+  const formattedSlug = String(slug).toLowerCase().replace(/[^a-z0-9-_]/g, '')
   if (formattedSlug.length === 0) {
     throw createError({
       statusCode: 400,
@@ -90,7 +87,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check slug uniqueness
-  const existingMod = await Mod.findOne({ slug: formattedSlug })
+  const existingMod = await findModBySlug(db, formattedSlug)
   if (existingMod) {
     throw createError({
       statusCode: 400,
@@ -116,88 +113,72 @@ export default defineEventHandler(async (event) => {
 
   const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
-  // Validate collaborators
-  const validatedCollabIds: mongoose.Types.ObjectId[] = []
-  if (Array.isArray(collaboratorIds) && collaboratorIds.length > 0) {
-    for (const collabId of collaboratorIds) {
-      if (collabId === currentUser.id) continue // Author is already the owner
-      const collabUser = await User.findById(collabId)
-      if (collabUser) {
-        validatedCollabIds.push(new mongoose.Types.ObjectId(collabUser._id))
-      }
-    }
-  }
-
-  // Validate dependencies
-  const validatedDepIds: mongoose.Types.ObjectId[] = []
-  if (Array.isArray(dependencies) && dependencies.length > 0) {
-    for (const depId of dependencies) {
-      if (!mongoose.Types.ObjectId.isValid(depId)) continue
-      const depMod = await Mod.findById(depId)
-      if (depMod && depMod.game === game) {
-        validatedDepIds.push(new mongoose.Types.ObjectId(depMod._id))
-      }
-    }
-  }
+  const validatedCollabIds = await validateUserIds(db, collaboratorIds, currentUser.id)
+  const validatedDepIds = await validateDependencyIds(db, dependencies, game)
+  const storedLogo = await storeLogo(event, logo)
 
   // 2. Determine approval status
   // Mod approval bypass is allowed only for verified developers or admins.
   const isAutoApproved = currentUser.isVerifiedDeveloper || currentUser.isAdmin
 
   try {
-    const mod = new Mod({
-      name,
-      slug: formattedSlug,
-      game,
-      categories,
-      summary,
-      description: description || '',
-      authorId: new mongoose.Types.ObjectId(currentUser.id),
-      collaboratorIds: [],
-      pendingCollaboratorIds: validatedCollabIds,
-      isApproved: isAutoApproved,
-      logo: logo || '',
-      sourceUrl: sourceUrl || '',
-      communityUrl: communityUrl || '',
-      dependencies: validatedDepIds,
-      downloads: 0,
-      versions: [
-        {
-          version,
-          downloadUrl: normalizedDownloadUrl,
-          platformDownloads: normalizedPlatformDownloads,
-          changelog: changelog || 'Initial release',
-          gameVersion: gameVersion || '',
-          isApproved: isAutoApproved,
-          isBeta: !!isBeta,
-          submittedBy: new mongoose.Types.ObjectId(currentUser.id),
-          createdAt: new Date()
-        }
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    })
+    const modId = newId()
+    const now = new Date()
+    const initialChangelog = changelog || 'Initial release'
 
-    await mod.save()
+    await db.batch([
+      db.insert(mods).values({
+        id: modId,
+        name,
+        slug: formattedSlug,
+        game,
+        categories,
+        summary,
+        description: description || '',
+        authorId: currentUser.id,
+        isApproved: isAutoApproved,
+        logo: storedLogo,
+        sourceUrl: sourceUrl || '',
+        communityUrl: communityUrl || '',
+        downloads: 0,
+        createdAt: now,
+        updatedAt: now
+      }),
+      db.insert(modVersions).values({
+        id: newId(),
+        modId,
+        version,
+        downloadUrl: normalizedDownloadUrl!,
+        platformDownloads: normalizedPlatformDownloads,
+        changelog: initialChangelog,
+        gameVersion: gameVersion || '',
+        isApproved: isAutoApproved,
+        isBeta: !!isBeta,
+        submittedBy: currentUser.id,
+        createdAt: now
+      }),
+      ...(validatedCollabIds.length > 0 ? [db.insert(modCollaborators).values(collaboratorRows(modId, [], validatedCollabIds))] : []),
+      ...(validatedDepIds.length > 0 ? [db.insert(modDependencies).values(dependencyRows(modId, validatedDepIds))] : [])
+    ])
 
-    if (mod.isApproved) {
-      const populatedMod = await Mod.findById(mod._id).populate('authorId')
-      if (populatedMod) {
-        sendDiscordWebhook(
-          populatedMod as unknown as Parameters<typeof sendDiscordWebhook>[0],
-          { version, downloadUrl: normalizedDownloadUrl, changelog: changelog || 'Initial release', gameVersion: gameVersion || '', isBeta: !!isBeta }
-        ).catch((err) => {
-          console.error('Failed to send Discord webhook on creation:', err)
-        })
+    if (isAutoApproved) {
+      const created = await findModBySlug(db, formattedSlug)
+      const [hydrated] = created ? await hydrateMods(db, [created]) : []
+      if (hydrated) {
+        runInBackground(event, sendDiscordWebhook(
+          event,
+          hydrated,
+          { version, downloadUrl: normalizedDownloadUrl!, changelog: initialChangelog, gameVersion: gameVersion || '', isBeta: !!isBeta }
+        ), 'Discord webhook on creation')
       }
     }
 
     return {
       success: true,
       mod: {
-        id: mod._id,
-        slug: mod.slug,
-        isApproved: mod.isApproved
+        id: modId,
+        slug: formattedSlug,
+        isApproved: isAutoApproved
       }
     }
   } catch (error) {
