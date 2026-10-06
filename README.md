@@ -82,7 +82,7 @@ Edit `server/db/schema.ts`, then `bun run db:generate` to create a migration in 
 
 ```bash
 npx wrangler login
-bun run deploy   # nuxt build -> apply D1 migrations -> wrangler deploy
+bun run deploy   # ./deploy.sh: build -> D1 migrations -> deploy -> smoke test (--dry-run validates only)
 ```
 
 Secrets are Worker secrets named `NUXT_*` (see `.env.example`), e.g. `npx wrangler secret put NUXT_JWT_SECRET`.

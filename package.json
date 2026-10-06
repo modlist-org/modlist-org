@@ -6,7 +6,7 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt build && wrangler dev",
-    "deploy": "nuxt build && wrangler d1 migrations apply modlist --remote && wrangler deploy",
+    "deploy": "./deploy.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply modlist --local",
     "postinstall": "nuxt prepare"
