@@ -1,5 +1,11 @@
 import type { H3Event } from 'h3'
 
+interface WebhookUser {
+  username: string
+  globalName?: string
+  avatar?: string
+}
+
 interface WebhookMod {
   name: string
   slug: string
@@ -10,16 +16,13 @@ interface WebhookMod {
   logo?: string
   sourceUrl?: string
   communityUrl?: string
-  authorId?: {
-    username: string
-    globalName?: string
-    avatar?: string
-  } | null
+  authorId?: WebhookUser | null
   versions?: {
     version: string
     downloadUrl: string
     changelog?: string
     gameVersion?: string
+    submittedBy?: WebhookUser | null
   }[]
 }
 
@@ -115,16 +118,6 @@ export async function sendDiscordWebhook(
     }).join(', ')
     : ''
 
-  // Get Author Info
-  let authorName = 'Unknown'
-  let authorIconUrl = ''
-  if (mod.authorId) {
-    authorName = mod.authorId.globalName || mod.authorId.username || 'Unknown'
-    if (mod.authorId.avatar && /^https?:\/\//.test(mod.authorId.avatar)) {
-      authorIconUrl = mod.authorId.avatar
-    }
-  }
-
   // Get Version Info
   const latestVerObj = specificVersion || mod.versions?.[0]
   const versionStr = latestVerObj?.version || '1.0.0'
@@ -132,6 +125,12 @@ export async function sendDiscordWebhook(
   const changelogText = latestVerObj?.changelog || ''
   const gameVersionStr = latestVerObj?.gameVersion || ''
   const isBeta = (latestVerObj as { isBeta?: boolean })?.isBeta || false
+
+  // Credit whoever uploaded this version (may be a collaborator), not the mod owner.
+  // Version numbers are unique per mod, so match the hydrated version by number.
+  const uploader = mod.versions?.find((v) => v.version === versionStr)?.submittedBy || mod.authorId
+  const authorName = uploader ? (uploader.globalName || uploader.username || 'Unknown') : 'Unknown'
+  const authorIconUrl = uploader?.avatar && /^https?:\/\//.test(uploader.avatar) ? uploader.avatar : ''
 
   // Determine Title and Color
   let embedTitle = isUpdate ? `🚀 Mod Updated: ${mod.name}` : `🆕 New Mod: ${mod.name}`
