@@ -84,6 +84,15 @@
         </NuxtLink>
         <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" rel="noopener" class="site-nav-link">{{ t('nav.download') }}</a>
         <a href="https://discord.modlist.org" target="_blank" rel="noopener" class="site-nav-link">Discord</a>
+        <div class="mobile-nav-lang" @click.stop>
+          <UIDropdown
+            v-model="state.language"
+            default-value="en-US"
+            :values="languages.map((l) => l.value)"
+            :display="getLanguageName"
+            disable-reset
+          />
+        </div>
       </nav>
     </header>
 

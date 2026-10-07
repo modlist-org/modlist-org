@@ -427,6 +427,10 @@ a {
   display: none;
 }
 
+.mobile-nav-lang {
+  display: none;
+}
+
 @media (max-width: 960px) {
   .site-nav {
     display: none;
@@ -450,6 +454,31 @@ a {
   }
   .lang-dropdown {
     width: 112px;
+  }
+}
+
+/* Phones: header only fits brand + account + menu; language moves into the menu */
+@media (max-width: 640px) {
+  .site-header-inner {
+    gap: 12px;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .header-actions .lang-dropdown {
+    display: none;
+  }
+  .mobile-nav-lang {
+    display: block;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 330px) {
+  .brand-name {
+    display: none;
   }
 }
 
