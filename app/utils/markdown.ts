@@ -25,6 +25,7 @@ const filter = new FilterXSS({
   }
 })
 
-export function renderSafeMarkdown(source: string): string {
-  return filter.process(marked.parse(source, { async: false }) as string)
+// `breaks` turns single newlines into <br>, like GitHub release notes and comments
+export function renderSafeMarkdown(source: string, options: { breaks?: boolean } = {}): string {
+  return filter.process(marked.parse(source, { async: false, gfm: true, breaks: options.breaks ?? false }) as string)
 }

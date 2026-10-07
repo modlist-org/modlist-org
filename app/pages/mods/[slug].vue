@@ -223,7 +223,7 @@
               <details v-if="ver.changelog" class="version-changelog" :open="versionPage === 1 && idx === 0">
                 <summary>{{ t('mod.details.changelog') }}</summary>
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <div class="markdown-body" v-html="renderMarkdown(ver.changelog)" />
+                <div class="markdown-body" v-html="renderChangelog(ver.changelog)" />
               </details>
             </div>
           </div>
@@ -997,10 +997,10 @@ const renderedDescription = computed(() => {
   }
 })
 
-const renderMarkdown = (text: string) => {
+const renderChangelog = (text: string) => {
   if (!text) return ''
   try {
-    return renderSafeMarkdown(text)
+    return renderSafeMarkdown(text, { breaks: true })
   } catch {
     return ''
   }
