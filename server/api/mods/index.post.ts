@@ -3,7 +3,7 @@ import { useDb, newId } from '../../utils/db'
 import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
 import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
 import { storeLogo } from '../../utils/logo'
-import { runInBackground, sendDiscordWebhook } from '../../utils/webhook'
+import { runInBackground, sendAdminPendingWebhook, sendDiscordWebhook } from '../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
   const currentUser = event.context.user
@@ -171,6 +171,8 @@ export default defineEventHandler(async (event) => {
           { version, downloadUrl: normalizedDownloadUrl!, changelog: initialChangelog, gameVersion: gameVersion || '', isBeta: !!isBeta }
         ), 'Discord webhook on creation')
       }
+    } else {
+      runInBackground(event, sendAdminPendingWebhook(event, 'mod', { name, slug: formattedSlug }, `v${version}`), 'Admin webhook on pending mod')
     }
 
     return {

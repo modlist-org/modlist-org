@@ -15,6 +15,7 @@ import {
   validateUserIds
 } from '../../../utils/mod-repo'
 import { storeLogo } from '../../../utils/logo'
+import { runInBackground, sendAdminPendingWebhook } from '../../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -171,6 +172,13 @@ export default defineEventHandler(async (event) => {
     ])
 
     const updatedMod = updated[0] ?? mod
+    if (updates.pendingEdit) {
+      const fields = Object.keys(updates.pendingEdit).filter((k) => k !== 'createdAt').join(', ')
+      runInBackground(event, sendAdminPendingWebhook(event, 'edit', updatedMod, fields), 'Admin webhook on pending edit')
+    } else if (!isAdmin && !mod.isApproved && mod.rejectionReason) {
+      // Editing a rejected mod puts it back in the review queue
+      runInBackground(event, sendAdminPendingWebhook(event, 'mod', updatedMod, 'Resubmitted after rejection'), 'Admin webhook on resubmitted mod')
+    }
     return {
       success: true,
       mod: {

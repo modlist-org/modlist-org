@@ -312,3 +312,38 @@ export function runInBackground(event: H3Event, task: Promise<unknown>, label: s
     console.error(`${label} failed:`, err)
   }))
 }
+
+// Pings the admin on the separate admin webhook whenever something lands in the review queue
+export async function sendAdminPendingWebhook(
+  event: H3Event,
+  kind: 'mod' | 'edit' | 'version',
+  mod: { name: string; slug: string },
+  detail?: string
+) {
+  const config = useRuntimeConfig(event)
+  const webhookUrl = config.discordAdminWebhookUrl
+  if (!webhookUrl) {
+    console.warn('NUXT_DISCORD_ADMIN_WEBHOOK_URL is not set. Skipping admin notification.')
+    return
+  }
+
+  const baseUrl = config.siteUrl || 'http://localhost:3000'
+  const titles = { mod: '🆕 Pending Mod', edit: '✏️ Pending Edit', version: '📦 Pending Version' }
+  const adminId = config.discordAdminId
+
+  await $fetch(webhookUrl, {
+    method: 'POST',
+    body: {
+      content: adminId ? `<@${adminId}>` : undefined,
+      allowed_mentions: { users: adminId ? [adminId] : [] },
+      embeds: [{
+        title: `${titles[kind]}: ${mod.name}`,
+        url: `${baseUrl}/admin`,
+        description: detail || undefined,
+        color: 15773006,
+        timestamp: new Date().toISOString(),
+        footer: { text: `modlist.org • /mods/${mod.slug}` }
+      }]
+    }
+  })
+}

@@ -51,6 +51,8 @@ export default defineNuxtConfig({
     jwtSecret: '',
     adminDiscordIds: '',
     discordWebhookUrl: '',
+    discordAdminWebhookUrl: '',
+    discordAdminId: '',
     discordModPingRoleIdAdofai: '',
     discordModPingRoleIdRhythmDoctor: '',
     discordModPingRoleIdDancingLine: '',

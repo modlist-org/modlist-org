@@ -4,7 +4,7 @@ import { useDb, newId } from '../../../utils/db'
 import { normalizeVersionString, parseVersionInput } from '../../../utils/mod-platform'
 import { canManageMod, findModBySlug, hydrateMods } from '../../../utils/mod-repo'
 import type { ModDto } from '../../../utils/mod-repo'
-import { runInBackground, sendDiscordWebhook } from '../../../utils/webhook'
+import { runInBackground, sendAdminPendingWebhook, sendDiscordWebhook } from '../../../utils/webhook'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -89,6 +89,9 @@ export default defineEventHandler(async (event) => {
           true
         ), 'Discord webhook on version update')
       }
+    } else if (mod.isApproved) {
+      // Versions of unapproved mods are reviewed together with the mod itself
+      runInBackground(event, sendAdminPendingWebhook(event, 'version', mod, `v${version}`), 'Admin webhook on pending version')
     }
 
     const savedVersion = saved[0]!
