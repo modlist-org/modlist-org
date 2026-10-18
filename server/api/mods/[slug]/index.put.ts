@@ -11,6 +11,7 @@ import {
   getCollaboratorIds,
   getDependencyIds,
   isModOwner,
+  orgMemberIds,
   modGames,
   validateDependencyIds,
   validateUserIds
@@ -157,7 +158,8 @@ export default defineEventHandler(async (event) => {
 
     // Only the author or an admin can manage collaborators; new collaborators must accept an invitation
     if (collaboratorIds !== undefined && (isOwner || isAdmin)) {
-      const requested = await validateUserIds(db, collaboratorIds, mod.authorId)
+      const members = mod.organizationId ? await orgMemberIds(db, mod.organizationId) : []
+      const requested = (await validateUserIds(db, collaboratorIds, mod.authorId)).filter((id) => !members.includes(id))
       const accepted = await getCollaboratorIds(db, mod.id, 'accepted')
       const nextAccepted = requested.filter((id) => accepted.includes(id))
       const nextPending = requested.filter((id) => !accepted.includes(id))

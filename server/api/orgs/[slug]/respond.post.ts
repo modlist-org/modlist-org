@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm'
-import { organizationMembers } from '../../../db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
+import { modCollaborators, mods, organizationMembers } from '../../../db/schema'
 import { loadOrg } from '../../../utils/org'
 
 // accept / reject a pending invitation, or leave as an accepted member
@@ -21,7 +21,15 @@ export default defineEventHandler(async (event) => {
   }
 
   const where = and(eq(organizationMembers.organizationId, org.id), eq(organizationMembers.userId, user.id))
-  if (action === 'accept') await db.update(organizationMembers).set({ status: 'accepted' }).where(where)
-  else await db.delete(organizationMembers).where(where)
+  if (action === 'accept') {
+    // A new member reaches the organization's mods through it, so their collaborator rows there go away
+    const orgMods = db.select({ id: mods.id }).from(mods).where(eq(mods.organizationId, org.id))
+    await db.batch([
+      db.update(organizationMembers).set({ status: 'accepted' }).where(where),
+      db.delete(modCollaborators).where(and(eq(modCollaborators.userId, user.id), inArray(modCollaborators.modId, orgMods)))
+    ])
+  } else {
+    await db.delete(organizationMembers).where(where)
+  }
   return { success: true }
 })

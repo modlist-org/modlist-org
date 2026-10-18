@@ -296,6 +296,13 @@ export async function canManageMod(db: Db, mod: ModRow, user: { id: string; isAd
   return !!mod.organizationId && await isOrgMember(db, mod.organizationId, user.id)
 }
 
+// Accepted members of an organization; they reach its mods through the organization, never as collaborators
+export async function orgMemberIds(db: Db, organizationId: string) {
+  const rows = await db.select({ id: organizationMembers.userId }).from(organizationMembers)
+    .where(and(eq(organizationMembers.organizationId, organizationId), eq(organizationMembers.status, 'accepted')))
+  return rows.map((r) => r.id)
+}
+
 export async function isOrgMember(db: Db, organizationId: string, userId: string, role?: 'owner') {
   const row = await db.query.organizationMembers.findFirst({
     where: and(

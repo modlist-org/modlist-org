@@ -1,7 +1,7 @@
 import { mods, modBranches, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames, normalizeTranslations } from '../../db/schema'
 import { useDb, newId } from '../../utils/db'
 import { isHttpUrl, parseVersionInput } from '../../utils/mod-platform'
-import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, isOrgMember, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
+import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, isOrgMember, orgMemberIds, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
 import { storeLogo } from '../../utils/logo'
 import { runInBackground, sendAdminPendingWebhook, sendDiscordWebhook } from '../../utils/webhook'
 
@@ -95,7 +95,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const validatedCollabIds = await validateUserIds(db, collaboratorIds, currentUser.id)
+  const orgMembers = organizationId ? await orgMemberIds(db, organizationId) : []
+  const validatedCollabIds = (await validateUserIds(db, collaboratorIds, currentUser.id)).filter((id) => !orgMembers.includes(id))
   const validatedDepIds = await validateDependencyIds(db, dependencies, targetGames)
   const storedLogo = await storeLogo(event, logo)
 
