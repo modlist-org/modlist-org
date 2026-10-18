@@ -97,8 +97,8 @@ export default defineEventHandler(async (event) => {
     const updates: Partial<typeof mods.$inferInsert> = {}
     const statements: Parameters<typeof db.batch>[0][number][] = []
 
-    if (isAdmin || !mod.isApproved) {
-      // Admins and unapproved mods edit in place
+    if (isAdmin || currentUser.isVerifiedDeveloper || !mod.isApproved) {
+      // Admins, verified developers and unapproved mods edit in place
       if (name) updates.name = name
       if (summary) updates.summary = summary
       if (description !== undefined) updates.description = description

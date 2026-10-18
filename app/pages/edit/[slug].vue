@@ -437,7 +437,7 @@ const isAuthorOrAdmin = computed(() => {
   return user.value.isAdmin || mod.value.authorId._id === user.value.id
 })
 
-const requiresReview = computed(() => !!mod.value?.isApproved && !user.value?.isAdmin)
+const requiresReview = computed(() => !!mod.value?.isApproved && !user.value?.isAdmin && !user.value?.isVerifiedDeveloper)
 
 const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
