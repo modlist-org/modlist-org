@@ -313,7 +313,7 @@ export function runInBackground(event: H3Event, task: Promise<unknown>, label: s
   }))
 }
 
-// Pings the admin on the separate admin webhook whenever something lands in the review queue
+// Pings the admin role on the separate admin webhook whenever something lands in the review queue
 export async function sendAdminPendingWebhook(
   event: H3Event,
   kind: 'mod' | 'edit' | 'version',
@@ -329,13 +329,13 @@ export async function sendAdminPendingWebhook(
 
   const baseUrl = config.siteUrl || 'http://localhost:3000'
   const titles = { mod: '🆕 Pending Mod', edit: '✏️ Pending Edit', version: '📦 Pending Version' }
-  const adminId = config.discordAdminId
+  const roleId = config.discordAdminRoleId
 
   await $fetch(webhookUrl, {
     method: 'POST',
     body: {
-      content: adminId ? `<@${adminId}>` : undefined,
-      allowed_mentions: { users: adminId ? [adminId] : [] },
+      content: roleId ? `<@&${roleId}>` : undefined,
+      allowed_mentions: { roles: roleId ? [roleId] : [] },
       embeds: [{
         title: `${titles[kind]}: ${mod.name}`,
         url: `${baseUrl}/admin`,
