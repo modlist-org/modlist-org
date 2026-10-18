@@ -11,52 +11,46 @@ export function loaderLabel(id: string) {
   return MOD_LOADER_OPTIONS.find((l) => l.id === id)?.label ?? id
 }
 
-type PlatformLinks = Record<'windows' | 'macos' | 'linux', string>
+export type DownloadMode = 'unified' | 'platform' | 'loader'
+export type LoaderDownloadLinks = Record<ModLoaderId, string>
 
-export interface LoaderLinkForm {
-  mode: 'unified' | 'platform'
-  downloadUrl: string
-  platformDownloads: PlatformLinks
-}
+export const emptyLoaderLinks = (): LoaderDownloadLinks => ({ melonloader: '', umm: '', bepinex: '' })
 
-export type LoaderLinksForm = Partial<Record<ModLoaderId, LoaderLinkForm>>
-
-interface StoredLinks {
-  downloadUrl?: string
-  platformDownloads?: Partial<PlatformLinks>
-}
-
-// API shape -> form state (edit an existing version)
-export function loaderLinksToForm(value: Partial<Record<string, StoredLinks>> | undefined): LoaderLinksForm {
-  const form: LoaderLinksForm = {}
+// API shape -> one URL per loader (older loader entries with per-OS links use their first link)
+export function loaderLinksFromApi(value: Partial<Record<string, { downloadUrl?: string; platformDownloads?: Record<string, string | undefined> }>> | undefined): LoaderDownloadLinks {
+  const links = emptyLoaderLinks()
   for (const { id } of MOD_LOADER_OPTIONS) {
     const entry = value?.[id]
-    if (!entry) continue
-    const platforms = entry.platformDownloads || {}
-    const hasPlatform = Object.values(platforms).some((url) => !!url)
-    form[id] = {
-      mode: hasPlatform ? 'platform' : 'unified',
-      downloadUrl: hasPlatform ? '' : entry.downloadUrl || '',
-      platformDownloads: { windows: platforms.windows || '', macos: platforms.macos || '', linux: platforms.linux || '' }
-    }
+    links[id] = entry?.downloadUrl || Object.values(entry?.platformDownloads ?? {}).find((url) => !!url) || ''
   }
-  return form
+  return links
 }
 
-// Form state -> request body; only the active mode's links are sent
-export function loaderLinksToBody(form: LoaderLinksForm) {
-  const body: Record<string, { downloadUrl: string; platformDownloads: Partial<PlatformLinks> }> = {}
-  for (const [id, entry] of Object.entries(form)) {
-    if (!entry) continue
-    body[id] = entry.mode === 'unified'
-      ? { downloadUrl: entry.downloadUrl.trim(), platformDownloads: {} }
-      : { downloadUrl: '', platformDownloads: entry.platformDownloads }
-  }
-  return body
+export function loaderLinksToBody(links: LoaderDownloadLinks) {
+  return Object.fromEntries(Object.entries(links)
+    .filter(([, url]) => url.trim())
+    .map(([id, url]) => [id, { downloadUrl: url.trim(), platformDownloads: {} }]))
 }
 
-export function hasLoaderLink(form: LoaderLinksForm) {
-  return Object.values(form).some((entry) => !!entry && (entry.mode === 'unified'
-    ? !!entry.downloadUrl.trim()
-    : Object.values(entry.platformDownloads).some((url) => !!url.trim())))
+// Request fields for the chosen mode; links of the other modes are not sent
+export function downloadBody(form: { downloadMode: DownloadMode; downloadUrl: string; platformDownloads: Record<string, string>; loaderDownloads: LoaderDownloadLinks }) {
+  if (form.downloadMode === 'loader') {
+    return { downloadUrl: '', platformDownloads: {}, loaderDownloads: loaderLinksToBody(form.loaderDownloads) }
+  }
+  const platformDownloads = form.downloadMode === 'platform'
+    ? Object.fromEntries(Object.entries(form.platformDownloads).filter(([, url]) => url.trim()))
+    : {}
+  return {
+    downloadUrl: form.downloadMode === 'unified'
+      ? form.downloadUrl.trim()
+      : Object.values(form.platformDownloads).find((url) => url.trim()) || '',
+    platformDownloads,
+    loaderDownloads: {}
+  }
+}
+
+export function hasDownloadLink(form: { downloadMode: DownloadMode; downloadUrl: string; platformDownloads: Record<string, string>; loaderDownloads: LoaderDownloadLinks }) {
+  if (form.downloadMode === 'unified') return !!form.downloadUrl.trim()
+  const urls = Object.values(form.downloadMode === 'loader' ? form.loaderDownloads : form.platformDownloads)
+  return urls.some((url) => !!url.trim())
 }

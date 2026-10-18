@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     name: r.org.name,
     slug: r.org.slug,
     description: r.org.description,
+    logo: r.org.logo,
     role: r.role
   })
   return {

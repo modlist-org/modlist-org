@@ -8,7 +8,7 @@
 
     <template v-else>
       <header class="card org-head">
-        <span class="org-avatar" :style="gradient(org.name)">{{ org.name.charAt(0).toUpperCase() }}</span>
+        <OrgAvatar :name="org.name" :logo="org.logo" :size="72" />
         <div class="org-head-text">
           <h1 class="org-name">{{ org.name }}</h1>
           <p class="org-handle">@{{ org.slug }}</p>
@@ -48,10 +48,15 @@
             <img :src="m.user.avatar || '/images/default_avatar.png'" alt="">
             <span class="org-member-name">{{ m.user.globalName || m.user.username }}</span>
             <span v-if="m.status === 'pending'" class="badge badge-pending">{{ t('org.invited') }}</span>
-            <select v-if="isOwner" v-model="m.role" :aria-label="t('org.role')">
-              <option value="owner">{{ t('org.role_owner') }}</option>
-              <option value="member">{{ t('org.role_member') }}</option>
-            </select>
+            <div v-if="isOwner" class="org-role">
+              <UIDropdown
+                v-model="m.role"
+                default-value="member"
+                :values="['owner', 'member'] as const"
+                :display="(r: string) => t(`org.role_${r}`)"
+                disable-reset
+              />
+            </div>
             <span v-else class="badge badge-category">{{ t(`org.role_${m.role}`) }}</span>
             <button v-if="isOwner" type="button" class="btn btn-ghost btn-sm" @click="removeMember(m.user._id)">{{ t('org.remove') }}</button>
           </li>
@@ -63,6 +68,15 @@
 
       <section v-if="isOwner" class="card org-section">
         <h2 class="org-section-title">{{ t('org.settings') }}</h2>
+        <div class="form-group">
+          <label>{{ t('org.logo') }}</label>
+          <div class="org-logo-field">
+            <OrgAvatar :name="settings.name || org.name" :logo="settings.logo" :size="56" />
+            <input ref="logoInput" type="file" accept="image/*" class="org-logo-input" @change="pickLogo">
+            <button type="button" class="btn btn-secondary btn-sm" @click="logoInput?.click()">{{ t('submit.logo_select') }}</button>
+            <button v-if="settings.logo" type="button" class="btn btn-ghost btn-sm" @click="settings.logo = ''">{{ t('submit.logo_remove') }}</button>
+          </div>
+        </div>
         <div class="form-group">
           <label for="org-name">{{ t('org.name') }}</label>
           <input id="org-name" v-model="settings.name" type="text" maxlength="60">
@@ -84,6 +98,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useFetch, useI18n, useSeoMeta, navigateTo } from '#imports'
+import { UIDropdown } from 'overlayer-ui'
+import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../../utils/logo-image'
 import type { PickedUser } from '../../components/UserPicker.vue'
 
 interface Member {
@@ -93,7 +109,7 @@ interface Member {
 }
 
 interface OrgResponse {
-  organization: { _id: string; name: string; slug: string; description: string; members: Member[] }
+  organization: { _id: string; name: string; slug: string; description: string; logo: string; members: Member[] }
   mods: { _id: string; name: string; slug: string; summary: string; logo?: string; isApproved: boolean }[]
   myRole: 'owner' | 'member' | null
   isInvited: boolean
@@ -111,11 +127,11 @@ const isOwner = computed(() => data.value?.myRole === 'owner')
 
 // Editable copies; saved together with the settings
 const members = ref<Member[]>([])
-const settings = ref({ name: '', description: '' })
+const settings = ref({ name: '', description: '', logo: '' })
 watch(data, (d) => {
   if (!d) return
   members.value = d.organization.members.map((m) => ({ ...m }))
-  settings.value = { name: d.organization.name, description: d.organization.description }
+  settings.value = { name: d.organization.name, description: d.organization.description, logo: d.organization.logo }
 }, { immediate: true })
 const acceptedCount = computed(() => members.value.filter((m) => m.status === 'accepted').length)
 
@@ -143,6 +159,26 @@ const save = async () => {
   }
 }
 
+const logoInput = ref<HTMLInputElement | null>(null)
+const pickLogo = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  try {
+    const logo = file.size <= MAX_SOURCE_BYTES ? await prepareLogo(file) : ''
+    if (!logo || dataUrlBytes(logo) > MAX_LOGO_BYTES) {
+      message.value = t('submit.logo_too_large')
+      return
+    }
+    settings.value.logo = logo
+    message.value = t('org.unsaved')
+  } catch (e) {
+    console.error('Failed to read logo:', e)
+    message.value = t('submit.logo_too_large')
+  }
+}
+
 const addMember = (u: PickedUser) => {
   members.value.push({ user: u, role: 'member', status: 'pending' })
   message.value = t('org.unsaved')
@@ -167,7 +203,7 @@ const deleteOrg = async () => {
   if (!confirm(t('org.delete_confirm', { name: org.value.name }))) return
   try {
     await $fetch(orgUrl, { method: 'DELETE' })
-    await navigateTo('/profile')
+    await navigateTo('/orgs')
   } catch (err) {
     alert(errorText(err))
   }
@@ -203,17 +239,14 @@ const gradient = (name: string) => {
   gap: 20px;
 }
 
-.org-avatar {
-  display: inline-flex;
+.org-logo-field {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  border-radius: 16px;
-  color: #fff;
-  font-size: 28px;
-  font-weight: 800;
+  gap: 12px;
+}
+
+.org-logo-input {
+  display: none;
 }
 
 .org-head-text {
@@ -328,8 +361,8 @@ const gradient = (name: string) => {
   overflow-wrap: anywhere;
 }
 
-.org-member select {
-  width: auto;
+.org-role {
+  width: 140px;
 }
 
 .org-settings-actions {

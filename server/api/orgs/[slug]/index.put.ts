@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { organizationMembers, organizations } from '../../../db/schema'
 import { validateUserIds } from '../../../utils/mod-repo'
 import { loadOrg, parseOrgName, requireOrgOwner } from '../../../utils/org'
+import { storeLogo } from '../../../utils/logo'
 import type { OrgRole } from '../../../utils/org'
 
 // Owners edit details and the member list; new members get a pending invitation they must accept
@@ -14,6 +15,7 @@ export default defineEventHandler(async (event) => {
   const updates: Partial<typeof organizations.$inferInsert> = { updatedAt: new Date() }
   if (body.name !== undefined) updates.name = parseOrgName(body.name)
   if (typeof body.description === 'string') updates.description = body.description.slice(0, 2000)
+  if (body.logo !== undefined) updates.logo = await storeLogo(event, body.logo)
 
   const statements: Parameters<typeof db.batch>[0][number][] = []
   if (Array.isArray(body.members)) {

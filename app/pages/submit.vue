@@ -167,11 +167,8 @@
           v-model:mode="form.downloadMode"
           v-model:unified-url="form.downloadUrl"
           v-model:platform-downloads="form.platformDownloads"
-          :optional="hasLoaderLink(form.loaderLinks)"
-          :help="t('loader.generic_help')"
+          v-model:loader-downloads="form.loaderDownloads"
         />
-
-        <LoaderLinksInput v-model="form.loaderLinks" />
 
         <div class="form-group">
           <label for="mod-changelog">{{ t('submit.changelog') }}</label>
@@ -198,11 +195,14 @@
         <h2 class="section-title">{{ t('submit.section_team') }}</h2>
 
         <div v-if="myOrgs.length > 0" class="form-group">
-          <label for="mod-org">{{ t('org.owner_label') }}</label>
-          <select id="mod-org" v-model="form.organizationId">
-            <option value="">{{ t('transfer.personal') }}</option>
-            <option v-for="o in myOrgs" :key="o._id" :value="o._id">{{ o.name }}</option>
-          </select>
+          <label>{{ t('org.owner_label') }}</label>
+          <UIDropdown
+            v-model="form.organizationId"
+            default-value=""
+            :values="['', ...myOrgs.map((o) => o._id)]"
+            :display="(id: string) => id ? myOrgs.find((o) => o._id === id)?.name ?? id : t('transfer.personal')"
+            disable-reset
+          />
           <span class="form-help-text">{{ t('org.owner_help') }}</span>
         </div>
 
@@ -320,11 +320,11 @@
 <script setup lang="ts">
 import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../utils/logo-image'
 import type { ModTranslations } from '../utils/locales'
-import { hasLoaderLink, loaderLinksToBody } from '../utils/loaders'
-import type { LoaderLinksForm } from '../utils/loaders'
+import { downloadBody, emptyLoaderLinks, hasDownloadLink } from '../utils/loaders'
+import type { DownloadMode } from '../utils/loaders'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
-import { UIToggle } from 'overlayer-ui'
+import { UIDropdown, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
@@ -360,7 +360,7 @@ const form = ref({
   description: '',
   translations: {} as ModTranslations,
   version: '',
-  downloadMode: 'unified' as 'unified' | 'platform',
+  downloadMode: 'unified' as DownloadMode,
   downloadUrl: '',
   platformDownloads: {
     windows: '',
@@ -371,7 +371,7 @@ const form = ref({
   gameVersion: '',
   isBeta: false,
   organizationId: '',
-  loaderLinks: {} as LoaderLinksForm
+  loaderDownloads: emptyLoaderLinks()
 })
 
 const myOrgs = ref<{ _id: string; name: string }[]>([])
@@ -401,9 +401,7 @@ const successMsg = ref('')
 
 const logoInput = ref<HTMLInputElement | null>(null)
 
-const hasDownload = computed(() => hasLoaderLink(form.value.loaderLinks) || (form.value.downloadMode === 'unified'
-  ? form.value.downloadUrl.trim().length > 0
-  : Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0)))
+const hasDownload = computed(() => hasDownloadLink(form.value))
 
 const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
@@ -585,14 +583,7 @@ const handleSubmit = async () => {
     const payload = {
       ...form.value,
       game: form.value.games[0],
-      downloadUrl: form.value.downloadMode === 'unified'
-        ? form.value.downloadUrl.trim()
-        : Object.values(form.value.platformDownloads).find((url) => url.trim()) || '',
-      platformDownloads: form.value.downloadMode === 'platform'
-        ? Object.fromEntries(Object.entries(form.value.platformDownloads).filter(([, url]) => url.trim()))
-        : {},
-      loaderLinks: undefined,
-      loaderDownloads: loaderLinksToBody(form.value.loaderLinks),
+      ...downloadBody(form.value),
       organizationId: form.value.organizationId || undefined,
       collaboratorIds: selectedCollabs.value.map((c) => c._id),
       dependencies: selectedDependencies.value.map((d) => d._id)

@@ -43,6 +43,7 @@ export interface OrganizationRef {
   _id: string
   name: string
   slug: string
+  logo: string
   memberIds: string[]
 }
 
@@ -163,7 +164,7 @@ export async function hydrateMods(db: Db, rows: ModRow[]): Promise<ModDto[]> {
       categories: mod.categories,
       authorId: userMap.get(mod.authorId) ?? null,
       organization: org
-        ? { _id: org.id, name: org.name, slug: org.slug, memberIds: orgMemberRows.filter((m) => m.organizationId === org.id).map((m) => m.userId) }
+        ? { _id: org.id, name: org.name, slug: org.slug, logo: org.logo, memberIds: orgMemberRows.filter((m) => m.organizationId === org.id).map((m) => m.userId) }
         : null,
       transferToUserId: mod.transferToUserId,
       collaboratorIds: pick('accepted'),

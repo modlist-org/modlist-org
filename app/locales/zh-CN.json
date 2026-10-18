@@ -257,10 +257,6 @@
   "branch.name_prompt": "分支名称（例如 stable、beta、fork）",
   "branch.empty": "此分支暂无版本。",
   "branch.failed": "分支操作失败。",
-  "loader.title": "按模组加载器提供文件",
-  "loader.help": "可选：为每个模组加载器添加单独的下载链接。",
-  "loader.entry_help": "使用 {loader} 安装时使用。",
-  "loader.generic_help": "适用于任意加载器的通用文件。添加了加载器专用文件时可省略。",
   "org.label": "组织",
   "org.my_orgs": "我的组织",
   "org.none": "你还没有加入任何组织。",
@@ -304,5 +300,14 @@
   "transfer.confirm_user": "将此模组转交给 {user}？对方接受后你将失去所有权。",
   "pending.invite_kind_collab": "协作者",
   "pending.invite_kind_transfer": "所有权转移",
-  "pending.invite_kind_org": "组织"
+  "pending.invite_kind_org": "组织",
+  "submit.download_mode_loader": "按加载器",
+  "submit.platform_downloads_help": "使用一个链接、按操作系统分别提供，或按模组加载器分别提供。",
+  "nav.organizations": "组织",
+  "org.page_subtitle": "创建组织，与成员一起管理模组。",
+  "org.logo": "头像",
+  "org.new": "新建组织",
+  "org.all": "全部组织",
+  "org.empty_directory": "还没有组织。",
+  "org.counts": "{mods} 个模组 · {members} 名成员"
 }

@@ -64,6 +64,7 @@ export const organizations = sqliteTable('organizations', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   description: text('description').notNull().default(''),
+  logo: text('logo').notNull().default(''),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 })

@@ -2,8 +2,8 @@
   <div class="download-links">
     <div class="download-links-header">
       <div class="download-links-heading">
-        <span class="download-links-title">{{ title || t('submit.platform_downloads', 'Download links') }}</span>
-        <span class="form-help-text">{{ help || t('submit.platform_downloads_help', 'Choose one link for every OS or provide separate OS links.') }}</span>
+        <span class="download-links-title">{{ t('submit.platform_downloads', 'Download links') }}</span>
+        <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Use one link, separate links per OS, or separate links per mod loader.') }}</span>
       </div>
 
       <div class="segmented" role="tablist">
@@ -27,6 +27,16 @@
         >
           {{ t('submit.download_mode_platform', 'OS-specific') }}
         </button>
+        <button
+          type="button"
+          role="tab"
+          class="segmented-option"
+          :class="{ active: mode === 'loader' }"
+          :aria-selected="mode === 'loader'"
+          @click="setMode('loader')"
+        >
+          {{ t('submit.download_mode_loader', 'Loader-specific') }}
+        </button>
       </div>
     </div>
 
@@ -41,8 +51,22 @@
           type="url"
           :placeholder="t('submit.download_placeholder')"
           :aria-label="t('submit.download_all_platforms', 'All platforms')"
-          :required="!optional"
+          required
           @input="updateUnifiedUrl"
+        >
+      </div>
+    </div>
+
+    <div v-else-if="mode === 'loader'" class="download-rows">
+      <div v-for="loader in MOD_LOADER_OPTIONS" :key="loader.id" class="download-row">
+        <span class="download-kind">{{ loader.label }}</span>
+        <input
+          :value="loaderDownloads[loader.id]"
+          type="url"
+          :placeholder="t('submit.download_placeholder')"
+          :aria-label="loader.label"
+          :required="!hasLoaderDownload"
+          @input="updateLoaderUrl(loader.id, $event)"
         >
       </div>
     </div>
@@ -55,7 +79,7 @@
           type="url"
           :placeholder="t('submit.download_placeholder')"
           :aria-label="platform.label"
-          :required="!optional && !hasPlatformDownload"
+          :required="!hasPlatformDownload"
           @input="updatePlatformUrl(platform.key, $event)"
         >
       </div>
@@ -66,8 +90,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '#imports'
+import { MOD_LOADER_OPTIONS } from '../utils/loaders'
+import type { DownloadMode, LoaderDownloadLinks, ModLoaderId } from '../utils/loaders'
 
-type DownloadMode = 'unified' | 'platform'
 type PlatformKey = 'windows' | 'macos' | 'linux'
 type PlatformDownloads = Record<PlatformKey, string>
 
@@ -75,15 +100,14 @@ const props = defineProps<{
   mode: DownloadMode
   unifiedUrl: string
   platformDownloads: PlatformDownloads
-  optional?: boolean
-  title?: string
-  help?: string
+  loaderDownloads: LoaderDownloadLinks
 }>()
 
 const emit = defineEmits<{
   (event: 'update:mode', value: DownloadMode): void
   (event: 'update:unifiedUrl', value: string): void
   (event: 'update:platformDownloads', value: PlatformDownloads): void
+  (event: 'update:loaderDownloads', value: LoaderDownloadLinks): void
 }>()
 
 const { t } = useI18n()
@@ -94,6 +118,7 @@ const platforms: Array<{ key: PlatformKey; label: string }> = [
   { key: 'linux', label: 'Linux' }
 ]
 
+const hasLoaderDownload = computed(() => Object.values(props.loaderDownloads).some((url) => url.trim().length > 0))
 const hasPlatformDownload = computed(() => Object.values(props.platformDownloads).some((url) => url.trim().length > 0))
 
 const setMode = (value: DownloadMode) => {
@@ -102,6 +127,13 @@ const setMode = (value: DownloadMode) => {
 
 const updateUnifiedUrl = (event: Event) => {
   emit('update:unifiedUrl', (event.target as HTMLInputElement).value)
+}
+
+const updateLoaderUrl = (loader: ModLoaderId, event: Event) => {
+  emit('update:loaderDownloads', {
+    ...props.loaderDownloads,
+    [loader]: (event.target as HTMLInputElement).value
+  })
 }
 
 const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
@@ -145,7 +177,7 @@ const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
 
 .segmented {
   display: inline-grid;
-  grid-template-columns: repeat(2, max-content);
+  grid-template-columns: repeat(3, max-content);
   gap: 2px;
   flex-shrink: 0;
   padding: 3px;
@@ -202,7 +234,7 @@ const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  width: 116px;
+  width: 148px;
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -229,7 +261,7 @@ const updatePlatformUrl = (platform: PlatformKey, event: Event) => {
 
   .segmented {
     width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .download-row {

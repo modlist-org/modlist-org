@@ -36,6 +36,13 @@
       "when": 1792291633808,
       "tag": "0004_mod_transfer",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792292541738,
+      "tag": "0005_org_logo",
+      "breakpoints": true
     }
   ]
 }

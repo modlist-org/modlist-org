@@ -25,24 +25,6 @@
           </div>
         </div>
       </section>
-
-      <section class="card org-card">
-        <h2 class="org-title">{{ t('org.my_orgs') }}</h2>
-        <ul v-if="orgs.length > 0" class="org-list">
-          <li v-for="o in orgs" :key="o._id">
-            <NuxtLink :to="`/orgs/${o.slug}`">{{ o.name }}</NuxtLink>
-            <span class="badge badge-category">{{ t(`org.role_${o.role}`) }}</span>
-          </li>
-        </ul>
-        <p v-else class="form-help-text">{{ t('org.none') }}</p>
-
-        <form class="org-create" @submit.prevent="createOrg">
-          <input v-model="newOrg.name" type="text" :placeholder="t('org.name')" maxlength="60" required>
-          <input v-model="newOrg.slug" type="text" :placeholder="t('org.slug')" maxlength="40" pattern="[a-zA-Z0-9_\-]+">
-          <button type="submit" class="btn btn-primary btn-sm" :disabled="creating">{{ t('org.create') }}</button>
-        </form>
-        <p v-if="orgError" class="form-help-text org-error">{{ orgError }}</p>
-      </section>
     </template>
 
     <div v-else class="card signed-out">
@@ -58,40 +40,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
-import { useI18n, navigateTo } from '#imports'
+import { useI18n } from '#imports'
 
 const { t } = useI18n()
 const { user, loading } = useAuth()
-
-const orgs = ref<{ _id: string; name: string; slug: string; role: 'owner' | 'member' }[]>([])
-const newOrg = ref({ name: '', slug: '' })
-const creating = ref(false)
-const orgError = ref('')
-
-watch(user, async (u) => {
-  if (!u) return
-  try {
-    orgs.value = (await $fetch<{ organizations: typeof orgs.value }>('/api/orgs/mine')).organizations
-  } catch (e) {
-    console.error('Failed to load organizations:', e)
-  }
-}, { immediate: true })
-
-const createOrg = async () => {
-  creating.value = true
-  orgError.value = ''
-  try {
-    const res = await $fetch<{ organization: { slug: string } }>('/api/orgs', { method: 'POST', body: newOrg.value })
-    await navigateTo(`/orgs/${res.organization.slug}`)
-  } catch (err: unknown) {
-    const e = err as { data?: { statusMessage?: string } }
-    orgError.value = e.data?.statusMessage || t('org.failed')
-  } finally {
-    creating.value = false
-  }
-}
 
 const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
@@ -184,47 +137,6 @@ const onAvatarError = (e: Event) => {
 .signed-out p {
   margin: 0 0 8px;
   color: var(--text-secondary);
-}
-
-.org-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.org-title {
-  margin: 0;
-  font-size: 18px;
-}
-
-.org-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.org-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.org-create {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.org-create input {
-  flex: 1;
-  min-width: 140px;
-}
-
-.org-error {
-  color: var(--danger);
 }
 
 @media (max-width: 520px) {

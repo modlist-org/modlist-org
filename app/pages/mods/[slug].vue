@@ -49,12 +49,16 @@
         <p class="mod-summary">{{ shownSummary }}</p>
 
         <div class="mod-creators">
-          <span class="creator-chip">
+          <NuxtLink v-if="mod.organization" :to="`/orgs/${mod.organization.slug}`" class="creator-chip creator-chip-org">
+            <OrgAvatar :name="mod.organization.name" :logo="mod.organization.logo" :size="22" />
+            <span class="creator-name">{{ mod.organization.name }}</span>
+          </NuxtLink>
+          <span v-if="!isOrgMember(mod.authorId?._id)" class="creator-chip">
             <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
             <span class="creator-name">{{ mod.authorId?.globalName || mod.authorId?.username }}</span>
             <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
           </span>
-          <span v-for="c in mod.collaboratorIds" :key="c._id" class="creator-chip">
+          <span v-for="c in outsideCollaborators" :key="c._id" class="creator-chip">
             <img :src="c.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
             <span class="creator-name">{{ c.globalName || c.username }}</span>
             <span v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
@@ -328,12 +332,14 @@
             </div>
 
             <div class="form-group">
-              <label for="new-branch">{{ t('branch.label') }}</label>
-              <select id="new-branch" v-model="updateForm.branchId">
-                <option v-for="b in mod.branches" :key="b._id" :value="b._id">
-                  {{ b.name }}{{ b.isDefault ? ` (${t('branch.default')})` : b.isBeta ? ` (${t('branch.default_beta')})` : '' }}
-                </option>
-              </select>
+              <label>{{ t('branch.label') }}</label>
+              <UIDropdown
+                v-model="updateForm.branchId"
+                :default-value="mod.defaultBranchId"
+                :values="mod.branches.map((b) => b._id)"
+                :display="branchLabel"
+                disable-reset
+              />
             </div>
 
             <div class="form-group">
@@ -341,13 +347,8 @@
                 v-model:mode="updateForm.downloadMode"
                 v-model:unified-url="updateForm.downloadUrl"
                 v-model:platform-downloads="updateForm.platformDownloads"
-                :optional="hasLoaderLink(updateForm.loaderLinks)"
-                :help="t('loader.generic_help')"
+                v-model:loader-downloads="updateForm.loaderDownloads"
               />
-            </div>
-
-            <div class="form-group">
-              <LoaderLinksInput v-model="updateForm.loaderLinks" />
             </div>
 
             <div class="form-group">
@@ -506,13 +507,13 @@
           <h3 class="side-title">{{ t('mod.details.creators') }}</h3>
           <div class="creator-list">
             <NuxtLink v-if="mod.organization" :to="`/orgs/${mod.organization.slug}`" class="creator-item creator-org">
-              <span class="org-avatar" :style="getFallbackGradientStyle(mod.organization.name)">{{ mod.organization.name.charAt(0).toUpperCase() }}</span>
+              <OrgAvatar :name="mod.organization.name" :logo="mod.organization.logo" />
               <div class="creator-text">
                 <span class="creator-item-name">{{ mod.organization.name }}</span>
                 <span class="creator-role">{{ t('org.label') }}</span>
               </div>
             </NuxtLink>
-            <div class="creator-item">
+            <div v-if="!isOrgMember(mod.authorId?._id)" class="creator-item">
               <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <div class="creator-text">
                 <span class="creator-item-name">
@@ -522,7 +523,7 @@
                 <span class="creator-role">{{ t('mod.details.author') }}</span>
               </div>
             </div>
-            <div v-for="c in mod.collaboratorIds" :key="c._id" class="creator-item">
+            <div v-for="c in outsideCollaborators" :key="c._id" class="creator-item">
               <img :src="c.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <div class="creator-text">
                 <span class="creator-item-name">
@@ -593,12 +594,12 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useI18n, navigateTo, useFetch, useSeoMeta } from '#imports'
-import { UIToggle } from 'overlayer-ui'
+import { UIDropdown, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { renderSafeMarkdown } from '../../utils/markdown'
 import { SITE_LOCALES } from '../../utils/locales'
-import { hasLoaderLink, loaderLabel, loaderLinksToBody, loaderLinksToForm } from '../../utils/loaders'
-import type { LoaderLinksForm } from '../../utils/loaders'
+import { downloadBody, emptyLoaderLinks, hasDownloadLink, loaderLabel, loaderLinksFromApi } from '../../utils/loaders'
+import type { DownloadMode } from '../../utils/loaders'
 import type { ModTranslations } from '../../utils/locales'
 
 interface CreatorUser {
@@ -679,7 +680,7 @@ interface ModItem {
   branches: ModBranch[]
   defaultBranchId: string
   betaBranchId: string | null
-  organization: { _id: string; name: string; slug: string } | null
+  organization: { _id: string; name: string; slug: string; logo?: string; memberIds: string[] } | null
   transferToUserId?: string | null
   isFeatured?: boolean
 }
@@ -753,6 +754,10 @@ watch([modData, fetchError], ([newVal, err]) => {
   }
 }, { immediate: true })
 
+// With an owning organization, the creators card lists the org plus only the people outside it
+const isOrgMember = (id?: string) => !!id && !!mod.value?.organization?.memberIds.includes(id)
+const outsideCollaborators = computed(() => mod.value?.collaboratorIds.filter((c) => !isOrgMember(c._id)) ?? [])
+
 // Branches: the version list shows one branch at a time, default branch first
 const selectedBranchId = ref('')
 const selectedBranch = computed(() => mod.value?.branches?.find((b) => b._id === selectedBranchId.value) ?? null)
@@ -760,6 +765,12 @@ const branchVersions = computed(() => mod.value?.versions?.filter((v) => v.branc
 watch(mod, (m) => {
   if (m && !m.branches?.some((b) => b._id === selectedBranchId.value)) selectedBranchId.value = m.defaultBranchId
 }, { immediate: true })
+
+const branchLabel = (id: string) => {
+  const b = mod.value?.branches.find((x) => x._id === id)
+  if (!b) return id
+  return b.isDefault ? `${b.name} (${t('branch.default')})` : b.isBeta ? `${b.name} (${t('branch.default_beta')})` : b.name
+}
 
 const selectBranch = (id: string) => {
   selectedBranchId.value = id
@@ -855,7 +866,7 @@ useSeoMeta({
 // Update Release form state
 const updateForm = ref({
   version: '',
-  downloadMode: 'unified' as 'unified' | 'platform',
+  downloadMode: 'unified' as DownloadMode,
   downloadUrl: '',
   platformDownloads: {
     windows: '',
@@ -865,18 +876,16 @@ const updateForm = ref({
   changelog: '',
   gameVersion: '',
   branchId: selectedBranchId.value,
-  loaderLinks: {} as LoaderLinksForm
+  loaderDownloads: emptyLoaderLinks()
 })
-const hasUpdateDownload = computed(() => hasLoaderLink(updateForm.value.loaderLinks) || (updateForm.value.downloadMode === 'unified'
-  ? updateForm.value.downloadUrl.trim().length > 0
-  : Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0)))
+const hasUpdateDownload = computed(() => hasDownloadLink(updateForm.value))
 const submittingUpdate = ref(false)
 const editingVersionId = ref<string | null>(null)
 const editingVersion = computed(() => mod.value?.versions?.find((v) => v._id === editingVersionId.value) ?? null)
 
 const emptyUpdateForm = () => ({
   version: '',
-  downloadMode: 'unified' as 'unified' | 'platform',
+  downloadMode: 'unified' as DownloadMode,
   downloadUrl: '',
   platformDownloads: {
     windows: '',
@@ -886,17 +895,18 @@ const emptyUpdateForm = () => ({
   changelog: '',
   gameVersion: '',
   branchId: selectedBranchId.value,
-  loaderLinks: {} as LoaderLinksForm
+  loaderDownloads: emptyLoaderLinks()
 })
 
 const startEditVersion = (ver: ModVersion) => {
   if (!ver._id) return
   const platformLinks = ver.platformDownloads || {}
   const hasPlatformLinks = Object.values(platformLinks).some((url) => !!url)
+  const hasLoaderLinks = !!ver.loaderDownloads && Object.keys(ver.loaderDownloads).length > 0
   editingVersionId.value = ver._id
   updateForm.value = {
     version: ver.version,
-    downloadMode: hasPlatformLinks ? 'platform' : 'unified',
+    downloadMode: hasLoaderLinks ? 'loader' : hasPlatformLinks ? 'platform' : 'unified',
     downloadUrl: hasPlatformLinks ? '' : ver.downloadUrl || '',
     platformDownloads: {
       windows: platformLinks.windows || '',
@@ -906,7 +916,7 @@ const startEditVersion = (ver: ModVersion) => {
     changelog: ver.changelog || '',
     gameVersion: ver.gameVersion || '',
     branchId: ver.branchId,
-    loaderLinks: loaderLinksToForm(ver.loaderDownloads)
+    loaderDownloads: loaderLinksFromApi(ver.loaderDownloads)
   }
   formError.value = ''
   formSuccess.value = ''
@@ -1175,9 +1185,6 @@ const submitUpdate = async () => {
   }
 
   try {
-    const platformDownloads = updateForm.value.downloadMode === 'platform'
-      ? Object.fromEntries(Object.entries(updateForm.value.platformDownloads).filter(([, url]) => url.trim()))
-      : {}
     const isEditing = !!editingVersionId.value
     const response = await $fetch<{ requiresReview?: boolean }>(isEditing ? `/api/mods/${slug}/versions/${editingVersionId.value}` : `/api/mods/${slug}/versions`, {
       method: isEditing ? 'PUT' : 'POST',
@@ -1186,11 +1193,7 @@ const submitUpdate = async () => {
         changelog: updateForm.value.changelog,
         gameVersion: updateForm.value.gameVersion,
         branchId: updateForm.value.branchId,
-        loaderDownloads: loaderLinksToBody(updateForm.value.loaderLinks),
-        downloadUrl: updateForm.value.downloadMode === 'unified'
-          ? updateForm.value.downloadUrl.trim()
-          : Object.values(updateForm.value.platformDownloads).find((url) => url.trim()) || '',
-        platformDownloads
+        ...downloadBody(updateForm.value)
       }
     })
 
@@ -2369,20 +2372,21 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.creator-chip-org {
+  color: inherit;
+  text-decoration: none;
+}
+
+.creator-chip .org-avatar {
+  border-radius: 5px;
+}
+
+.creator-item .org-avatar {
+  border-radius: 8px;
+}
+
 .creator-org {
   text-decoration: none;
   color: inherit;
-}
-
-.org-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  color: #fff;
-  font-weight: 700;
 }
 </style>

@@ -4,13 +4,17 @@
     <p class="form-help-text">{{ t('transfer.help') }}</p>
 
     <div class="transfer-row">
-      <label for="transfer-org">{{ t('transfer.organization') }}</label>
+      <label>{{ t('transfer.organization') }}</label>
       <div class="transfer-inline">
-        <select id="transfer-org" v-model="orgChoice">
-          <option value="">{{ t('transfer.personal') }}</option>
-          <option v-if="mod.organization && !myOrgs.some((o) => o._id === mod.organization!._id)" :value="mod.organization._id">{{ mod.organization.name }}</option>
-          <option v-for="o in myOrgs" :key="o._id" :value="o._id">{{ o.name }}</option>
-        </select>
+        <div class="transfer-dropdown">
+          <UIDropdown
+            v-model="orgChoice"
+            default-value=""
+            :values="orgValues"
+            :display="orgLabel"
+            disable-reset
+          />
+        </div>
         <button type="button" class="btn btn-secondary btn-sm" :disabled="busy || orgChoice === (mod.organization?._id || '')" @click="moveToOrg">
           {{ t('transfer.move') }}
         </button>
@@ -18,7 +22,7 @@
     </div>
 
     <div class="transfer-row">
-      <span class="field-label">{{ t('transfer.to_user') }}</span>
+      <label>{{ t('transfer.to_user') }}</label>
       <div v-if="mod.transferToUserId" class="callout callout-warning callout-sm transfer-pending">
         <span>{{ t('transfer.pending') }}</span>
         <button type="button" class="btn btn-ghost btn-sm" :disabled="busy" @click="send({ cancel: true })">{{ t('transfer.cancel') }}</button>
@@ -33,6 +37,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
+import { UIDropdown } from 'overlayer-ui'
 import { useAuth } from '../composables/useAuth'
 import type { PickedUser } from './UserPicker.vue'
 
@@ -50,6 +55,14 @@ const { user } = useAuth()
 
 const myOrgs = ref<{ _id: string; name: string; role: 'owner' | 'member' }[]>([])
 const orgChoice = ref(props.mod.organization?._id || '')
+const orgValues = computed(() => {
+  const ids = myOrgs.value.map((o) => o._id)
+  const current = props.mod.organization?._id
+  return ['', ...(current && !ids.includes(current) ? [current] : []), ...ids]
+})
+const orgLabel = (id: string) => id
+  ? myOrgs.value.find((o) => o._id === id)?.name ?? props.mod.organization?.name ?? id
+  : t('transfer.personal')
 const busy = ref(false)
 const message = ref('')
 watch(() => props.mod.organization?._id, (id) => { orgChoice.value = id || '' })
@@ -117,7 +130,7 @@ const transferToUser = (u: PickedUser) => {
   gap: 8px;
 }
 
-.transfer-inline select {
+.transfer-dropdown {
   flex: 1;
   min-width: 0;
 }

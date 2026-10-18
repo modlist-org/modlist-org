@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
     // Invitees are not collaborators yet: don't leak download URLs or pending edits
     const strip = (list: Awaited<ReturnType<typeof hydrateMods>>) => list.map(({ versions: _, pendingEdit: __, ...mod }) => mod)
-    const orgRows = await db.select({ _id: organizations.id, name: organizations.name, slug: organizations.slug })
+    const orgRows = await db.select({ _id: organizations.id, name: organizations.name, slug: organizations.slug, logo: organizations.logo })
       .from(organizationMembers)
       .innerJoin(organizations, eq(organizations.id, organizationMembers.organizationId))
       .where(and(eq(organizationMembers.userId, currentUser.id), eq(organizationMembers.status, 'pending')))

@@ -257,10 +257,6 @@
   "branch.name_prompt": "브랜치 이름 (예: stable, beta, fork)",
   "branch.empty": "이 브랜치에는 아직 버전이 없습니다.",
   "branch.failed": "브랜치 변경에 실패했습니다.",
-  "loader.title": "모드 로더별 파일",
-  "loader.help": "선택: 모드 로더마다 별도 다운로드 링크를 추가합니다.",
-  "loader.entry_help": "{loader}로 설치할 때 사용됩니다.",
-  "loader.generic_help": "모든 로더 공통 파일. 로더별 파일이 있으면 생략할 수 있습니다.",
   "org.label": "조직",
   "org.my_orgs": "내 조직",
   "org.none": "아직 속한 조직이 없습니다.",
@@ -304,5 +300,14 @@
   "transfer.confirm_user": "이 모드를 {user}에게 이전할까요? 상대가 수락하면 소유권을 잃습니다.",
   "pending.invite_kind_collab": "협업자",
   "pending.invite_kind_transfer": "소유권 이전",
-  "pending.invite_kind_org": "조직"
+  "pending.invite_kind_org": "조직",
+  "submit.download_mode_loader": "로더별",
+  "submit.platform_downloads_help": "링크 하나, OS별 링크, 또는 모드 로더별 링크를 입력하세요.",
+  "nav.organizations": "조직",
+  "org.page_subtitle": "조직을 만들고 멤버들과 함께 모드를 관리하세요.",
+  "org.logo": "프로필 이미지",
+  "org.new": "새 조직",
+  "org.all": "전체 조직",
+  "org.empty_directory": "아직 조직이 없습니다.",
+  "org.counts": "모드 {mods} · 멤버 {members}"
 }

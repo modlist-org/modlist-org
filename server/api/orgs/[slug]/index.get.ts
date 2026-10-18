@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
       name: org.name,
       slug: org.slug,
       description: org.description,
+      logo: org.logo,
       createdAt: org.createdAt.toISOString(),
       members: visibleMembers
         .map((m) => ({ user: userMap.get(m.userId), role: m.role, status: m.status }))

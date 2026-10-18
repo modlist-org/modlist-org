@@ -1,6 +1,7 @@
 import { organizationMembers, organizations } from '../../db/schema'
 import { newId, useDb } from '../../utils/db'
 import { formatOrgSlug, parseOrgName } from '../../utils/org'
+import { storeLogo } from '../../utils/logo'
 
 // Any logged-in user can create an organization and becomes its first owner
 export default defineEventHandler(async (event) => {
@@ -30,6 +31,7 @@ export default defineEventHandler(async (event) => {
       name,
       slug,
       description: typeof body.description === 'string' ? body.description.slice(0, 2000) : '',
+      logo: await storeLogo(event, body.logo),
       createdAt: now,
       updatedAt: now
     }),
