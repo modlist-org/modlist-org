@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const input = parseVersionInput(await readBody(event))
-  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, changelog, gameVersion } = input
+  const { version, files, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, changelog, gameVersion } = input
 
   try {
     const db = useDb(event)
@@ -75,6 +75,7 @@ export default defineEventHandler(async (event) => {
       downloadUrl: normalizedDownloadUrl,
       platformDownloads: normalizedPlatformDownloads,
       loaderDownloads,
+      files,
       changelog: changelog || '',
       gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
@@ -98,7 +99,7 @@ export default defineEventHandler(async (event) => {
         runInBackground(event, sendDiscordWebhook(
           event,
           hydrated as ModDto,
-          { version, downloadUrl: normalizedDownloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta },
+          { version, downloadUrl: normalizedDownloadUrl || files[0]!.url, changelog: changelog || '', gameVersion: gameVersion || '', isBeta },
           true
         ), 'Discord webhook on version update')
       }

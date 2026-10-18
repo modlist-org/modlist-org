@@ -67,11 +67,12 @@ const busy = ref(false)
 const message = ref('')
 watch(() => props.mod.organization?._id, (id) => { orgChoice.value = id || '' })
 
-// Same rule as the API: author, admin, or owner of the organization that owns the mod
+// Same rule as the API: admins, the owners of the owning organization, or the author of a personal mod
 const canTransfer = computed(() => !!user.value && (
   user.value.isAdmin ||
-  props.mod.authorId?._id === user.value.id ||
-  myOrgs.value.some((o) => o._id === props.mod.organization?._id && o.role === 'owner')
+  (props.mod.organization
+    ? myOrgs.value.some((o) => o._id === props.mod.organization?._id && o.role === 'owner')
+    : props.mod.authorId?._id === user.value.id)
 ))
 
 onMounted(async () => {

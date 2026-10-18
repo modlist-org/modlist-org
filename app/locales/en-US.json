@@ -306,12 +306,21 @@
   "pending.invite_kind_collab": "Collaborator",
   "pending.invite_kind_transfer": "Ownership transfer",
   "pending.invite_kind_org": "Organization",
-  "submit.download_mode_loader": "Loader-specific",
   "nav.organizations": "Organizations",
   "org.page_subtitle": "Create an organization and manage mods together with its members.",
   "org.logo": "Logo",
   "org.new": "New organization",
   "org.all": "All organizations",
   "org.empty_directory": "No organizations yet.",
-  "org.counts": "{mods} mods · {members} members"
+  "org.counts": "{mods} mods · {members} members",
+  "files.title": "Download files",
+  "files.help": "Add a file per mod loader, OS and game version as needed. Leave a field on Any to use the file for everything.",
+  "files.any_loader": "Any loader",
+  "files.any_os": "Any OS",
+  "files.any_game_version": "Any game version",
+  "files.url": "Download link",
+  "files.add": "Add file",
+  "files.remove": "Remove file",
+  "admin.tab_orgs": "Organizations",
+  "admin.no_orgs": "No organizations."
 }

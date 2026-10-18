@@ -3,8 +3,8 @@ import { mods, modBranches, modCollaborators, modDependencies, modVersions, orga
 import type { ModBranchRow, ModRow, ModVersionRow, PendingModEdit, UserRow, Category, Game, ModTranslations } from '../db/schema'
 import type { Db } from './db'
 import { inChunks } from './db'
-import { MOD_PLATFORMS, getAvailableLoaders, getAvailablePlatforms } from './mod-platform'
-import type { LoaderDownloads, PlatformDownloads } from './mod-platform'
+import { MOD_LOADERS, MOD_PLATFORMS, versionFiles } from './mod-platform'
+import type { LoaderDownloads, PlatformDownloads, VersionFile } from './mod-platform'
 
 export interface PublicUser {
   _id: string
@@ -21,6 +21,7 @@ export interface VersionDto {
   downloadUrl: string
   platformDownloads: PlatformDownloads
   loaderDownloads: LoaderDownloads
+  files: VersionFile[]
   changelog: string
   gameVersion: string
   isApproved: boolean
@@ -209,6 +210,7 @@ function toVersionDto(v: ModVersionRow, userMap: Map<string, PublicUser>, defaul
     downloadUrl: v.downloadUrl,
     platformDownloads: v.platformDownloads,
     loaderDownloads: v.loaderDownloads ?? {},
+    files: versionFiles(v),
     changelog: v.changelog,
     gameVersion: v.gameVersion,
     isApproved: v.isApproved,
@@ -220,20 +222,19 @@ function toVersionDto(v: ModVersionRow, userMap: Map<string, PublicUser>, defaul
   }
 }
 
-// Public version shape: never expose raw download URLs, only which platforms exist
+// Public version shape: never expose raw download URLs, only which files exist
 export function stripDownloadUrls(version: VersionDto) {
-  const { downloadUrl: _, platformDownloads, loaderDownloads, ...rest } = version
-  const availableLoaders = getAvailableLoaders(loaderDownloads)
-  // Platforms reachable through the generic link or any loader file
-  const platforms = new Set([
-    ...getAvailablePlatforms(platformDownloads),
-    ...availableLoaders.flatMap((l) => getAvailablePlatforms(loaderDownloads[l]?.platformDownloads))
-  ])
+  const { downloadUrl: _, platformDownloads: __, loaderDownloads: ___, files, ...rest } = version
+  const unique = <T>(values: (T | undefined)[]) => [...new Set(values.filter((v): v is T => !!v))]
+  const loaders = unique(files.map((f) => f.loader))
+  const platforms = unique(files.map((f) => f.platform))
   return {
     ...rest,
-    availablePlatforms: MOD_PLATFORMS.filter((p) => platforms.has(p)),
-    availableLoaders,
-    hasGenericDownload: !!version.downloadUrl
+    files: files.map(({ url: _url, ...file }, index) => ({ index, ...file })),
+    availablePlatforms: MOD_PLATFORMS.filter((p) => platforms.includes(p)),
+    availableLoaders: MOD_LOADERS.filter((l) => loaders.includes(l)),
+    availableGameVersions: unique(files.map((f) => f.gameVersion)),
+    hasGenericDownload: files.some((f) => !f.loader)
   }
 }
 
@@ -241,7 +242,7 @@ export function stripDownloadUrls(version: VersionDto) {
 export function isModManager(mod: ModDto, user: { id: string; isAdmin: boolean } | null | undefined) {
   return !!user && (
     user.isAdmin ||
-    mod.authorId?._id === user.id ||
+    (!mod.organization && mod.authorId?._id === user.id) ||
     mod.collaboratorIds.some((c) => c._id === user.id) ||
     !!mod.organization?.memberIds.includes(user.id)
   )
@@ -281,8 +282,15 @@ export async function getDependencyIds(db: Db, modId: string) {
   return rows.map((r) => r.id)
 }
 
+// Owner of the mod: its organization's owners when an organization owns it (like GitHub), else the author
+export async function isModOwner(db: Db, mod: ModRow, user: { id: string; isAdmin: boolean }) {
+  if (user.isAdmin) return true
+  return mod.organizationId ? isOrgMember(db, mod.organizationId, user.id, 'owner') : mod.authorId === user.id
+}
+
 export async function canManageMod(db: Db, mod: ModRow, user: { id: string; isAdmin: boolean }) {
-  if (user.isAdmin || mod.authorId === user.id) return true
+  // An organization-owned mod ignores its original author; access comes from membership
+  if (user.isAdmin || (!mod.organizationId && mod.authorId === user.id)) return true
   const accepted = await getCollaboratorIds(db, mod.id, 'accepted')
   if (accepted.includes(user.id)) return true
   return !!mod.organizationId && await isOrgMember(db, mod.organizationId, user.id)
@@ -344,9 +352,9 @@ export async function validateUserIds(db: Db, ids: unknown, excludeId?: string):
 }
 
 export async function applyUserTransfer(db: Db, modId: string, toUserId: string) {
-  // The new owner is the author now, so drop any collaborator row they had
+  // The new owner is the author now (and the mod leaves any organization), so drop any collaborator row they had
   await db.batch([
-    db.update(mods).set({ authorId: toUserId, transferToUserId: null, updatedAt: new Date() }).where(eq(mods.id, modId)),
+    db.update(mods).set({ authorId: toUserId, organizationId: null, transferToUserId: null, updatedAt: new Date() }).where(eq(mods.id, modId)),
     db.delete(modCollaborators).where(and(eq(modCollaborators.modId, modId), eq(modCollaborators.userId, toUserId)))
   ])
 }

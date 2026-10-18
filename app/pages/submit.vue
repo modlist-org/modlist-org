@@ -163,12 +163,7 @@
           </div>
         </div>
 
-        <DownloadLinksInput
-          v-model:mode="form.downloadMode"
-          v-model:unified-url="form.downloadUrl"
-          v-model:platform-downloads="form.platformDownloads"
-          v-model:loader-downloads="form.loaderDownloads"
-        />
+        <VersionFilesInput v-model="form.files" />
 
         <div class="form-group">
           <label for="mod-changelog">{{ t('submit.changelog') }}</label>
@@ -320,8 +315,7 @@
 <script setup lang="ts">
 import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../utils/logo-image'
 import type { ModTranslations } from '../utils/locales'
-import { downloadBody, emptyLoaderLinks, hasDownloadLink } from '../utils/loaders'
-import type { DownloadMode } from '../utils/loaders'
+import { emptyFileRow, filesToBody, hasFile } from '../utils/loaders'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIDropdown, UIToggle } from 'overlayer-ui'
@@ -360,18 +354,11 @@ const form = ref({
   description: '',
   translations: {} as ModTranslations,
   version: '',
-  downloadMode: 'unified' as DownloadMode,
-  downloadUrl: '',
-  platformDownloads: {
-    windows: '',
-    macos: '',
-    linux: ''
-  },
+  files: [emptyFileRow()],
   changelog: '',
   gameVersion: '',
   isBeta: false,
-  organizationId: '',
-  loaderDownloads: emptyLoaderLinks()
+  organizationId: ''
 })
 
 const myOrgs = ref<{ _id: string; name: string }[]>([])
@@ -401,7 +388,7 @@ const successMsg = ref('')
 
 const logoInput = ref<HTMLInputElement | null>(null)
 
-const hasDownload = computed(() => hasDownloadLink(form.value))
+const hasDownload = computed(() => hasFile(form.value.files))
 
 const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
@@ -583,7 +570,7 @@ const handleSubmit = async () => {
     const payload = {
       ...form.value,
       game: form.value.games[0],
-      ...downloadBody(form.value),
+      files: filesToBody(form.value.files),
       organizationId: form.value.organizationId || undefined,
       collaboratorIds: selectedCollabs.value.map((c) => c._id),
       dependencies: selectedDependencies.value.map((d) => d._id)

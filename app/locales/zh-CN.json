@@ -301,7 +301,6 @@
   "pending.invite_kind_collab": "协作者",
   "pending.invite_kind_transfer": "所有权转移",
   "pending.invite_kind_org": "组织",
-  "submit.download_mode_loader": "按加载器",
   "submit.platform_downloads_help": "使用一个链接、按操作系统分别提供，或按模组加载器分别提供。",
   "nav.organizations": "组织",
   "org.page_subtitle": "创建组织，与成员一起管理模组。",
@@ -309,5 +308,15 @@
   "org.new": "新建组织",
   "org.all": "全部组织",
   "org.empty_directory": "还没有组织。",
-  "org.counts": "{mods} 个模组 · {members} 名成员"
+  "org.counts": "{mods} 个模组 · {members} 名成员",
+  "files.title": "下载文件",
+  "files.help": "按模组加载器、操作系统和游戏版本添加文件。保留“全部”则适用于所有情况。",
+  "files.any_loader": "全部加载器",
+  "files.any_os": "全部系统",
+  "files.any_game_version": "全部游戏版本",
+  "files.url": "下载链接",
+  "files.add": "添加文件",
+  "files.remove": "删除文件",
+  "admin.tab_orgs": "组织",
+  "admin.no_orgs": "没有组织。"
 }

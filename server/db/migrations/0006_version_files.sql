@@ -1,0 +1,1 @@
+ALTER TABLE `mod_versions` ADD `files` text DEFAULT '[]' NOT NULL;

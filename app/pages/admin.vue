@@ -58,6 +58,17 @@
           {{ t('admin.users') }}
           <span class="tab-count">{{ totalUsers }}</span>
         </button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          :class="{ active: activeTab === 'orgs' }"
+          :aria-selected="activeTab === 'orgs'"
+          @click="activeTab = 'orgs'"
+        >
+          {{ t('admin.tab_orgs') }}
+          <span class="tab-count">{{ orgs.length }}</span>
+        </button>
       </nav>
 
       <!-- PENDING MODS TAB -->
@@ -94,9 +105,9 @@
             <p class="review-summary">{{ mod.summary }}</p>
 
             <div v-if="mod.versions?.[0]" class="release-box">
-              <div class="release-row">
-                <span class="release-label">{{ t('admin.initial_release', { version: mod.versions[0].version }) }}</span>
-                <a :href="mod.versions[0].downloadUrl" target="_blank" rel="noopener" class="release-link">{{ mod.versions[0].downloadUrl }}</a>
+              <div v-for="(file, i) in mod.versions[0].files || []" :key="i" class="release-row">
+                <span class="release-label">{{ t('admin.initial_release', { version: mod.versions[0].version }) }} · {{ fileLabel(file) }}</span>
+                <a :href="file.url" target="_blank" rel="noopener" class="release-link">{{ file.url }}</a>
               </div>
               <details v-if="mod.versions[0].changelog" class="release-details">
                 <summary>{{ t('mod.details.changelog') }}</summary>
@@ -152,16 +163,10 @@
             </div>
 
             <div class="release-box">
-              <div v-if="ver.downloadUrl" class="release-row">
-                <span class="release-label">{{ t('admin.download_link') }}</span>
-                <a :href="ver.downloadUrl" target="_blank" rel="noopener" class="release-link">{{ ver.downloadUrl }}</a>
+              <div v-for="(file, i) in ver.files || []" :key="i" class="release-row">
+                <span class="release-label">{{ fileLabel(file) }}</span>
+                <a :href="file.url" target="_blank" rel="noopener" class="release-link">{{ file.url }}</a>
               </div>
-              <template v-for="(entry, loader) in ver.loaderDownloads || {}" :key="loader">
-                <div v-for="(url, platform) in loaderLinks(entry)" :key="`${loader}-${platform}`" class="release-row">
-                  <span class="release-label">{{ loaderLabel(String(loader)) }}{{ platform === 'all' ? '' : ` (${platform})` }}</span>
-                  <a :href="url" target="_blank" rel="noopener" class="release-link">{{ url }}</a>
-                </div>
-              </template>
               <details v-if="ver.changelog" class="release-details" open>
                 <summary>{{ t('mod.details.changelog') }}</summary>
                 <p class="release-changelog">{{ ver.changelog }}</p>
@@ -323,6 +328,35 @@
       </section>
 
       <!-- MANAGE USERS TAB -->
+      <section v-if="activeTab === 'orgs'" class="pane">
+        <div v-if="orgs.length > 0" class="review-list">
+          <article v-for="org in orgs" :key="org._id" class="review-card">
+            <div class="review-head">
+              <OrgAvatar :name="org.name" :logo="org.logo" :size="48" />
+              <div class="review-info">
+                <div class="review-title-row">
+                  <h3 class="review-title">
+                    <NuxtLink :to="`/orgs/${org.slug}`" class="review-title-link">{{ org.name }}</NuxtLink>
+                  </h3>
+                  <span class="review-slug">/{{ org.slug }}</span>
+                </div>
+                <div class="review-meta">
+                  <span>{{ t('org.counts', { mods: org.modCount, members: org.memberCount }) }}</span>
+                </div>
+              </div>
+              <div class="review-actions">
+                <NuxtLink :to="`/orgs/${org.slug}`" class="btn btn-sm btn-secondary">{{ t('org.settings') }}</NuxtLink>
+                <button type="button" class="btn btn-sm btn-danger" @click="deleteOrg(org)">{{ t('org.delete') }}</button>
+              </div>
+            </div>
+            <p v-if="org.description" class="review-summary">{{ org.description }}</p>
+          </article>
+        </div>
+        <div v-else class="empty-state">
+          <p>{{ t('admin.no_orgs') }}</p>
+        </div>
+      </section>
+
       <section v-if="activeTab === 'users'" class="pane">
         <div class="users-toolbar">
           <div class="search-field">
@@ -416,7 +450,7 @@
 
 <script setup lang="ts">
 import { SITE_LOCALES } from '../utils/locales'
-import { loaderLabel } from '../utils/loaders'
+import { loaderLabel, platformLabel } from '../utils/loaders'
 import type { ModTranslation, ModTranslations } from '../utils/locales'
 import { ref, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
@@ -424,9 +458,34 @@ import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
 
-const loaderLinks = (entry: { downloadUrl: string; platformDownloads: Record<string, string> }) => {
-  const platforms = Object.entries(entry.platformDownloads || {}).filter(([, url]) => !!url)
-  return platforms.length > 0 ? Object.fromEntries(platforms) : { all: entry.downloadUrl }
+interface VersionFileRow { url: string; loader?: string; platform?: string; gameVersion?: string }
+
+const fileLabel = (f: VersionFileRow) => [
+  f.loader ? loaderLabel(f.loader) : t('files.any_loader'),
+  f.platform ? platformLabel(f.platform) : t('files.any_os'),
+  ...(f.gameVersion ? [f.gameVersion] : [])
+].join(' · ')
+
+// Organizations tab
+interface AdminOrg { _id: string; name: string; slug: string; logo: string; description: string; modCount: number; memberCount: number }
+const orgs = ref<AdminOrg[]>([])
+const fetchOrgs = async () => {
+  try {
+    orgs.value = (await $fetch<{ organizations: AdminOrg[] }>('/api/orgs')).organizations
+  } catch (e) {
+    console.error('Failed to load organizations:', e)
+  }
+}
+const deleteOrg = async (org: AdminOrg) => {
+  if (!confirm(t('org.delete_confirm', { name: org.name }))) return
+  try {
+    const url: string = `/api/orgs/${org.slug}`
+    await $fetch(url, { method: 'DELETE' })
+    await fetchOrgs()
+  } catch (e) {
+    console.error('Failed to delete organization:', e)
+    alert(t('org.failed'))
+  }
 }
 const { user, loading: authLoading } = useAuth()
 
@@ -462,7 +521,7 @@ interface PendingVersion {
   version: string
   downloadUrl: string
   branchName?: string
-  loaderDownloads?: Record<string, { downloadUrl: string; platformDownloads: Record<string, string> }>
+  files?: VersionFileRow[]
   changelog: string
   submittedBy?: {
     username: string
@@ -477,6 +536,7 @@ interface ModVersion {
   _id?: string
   version: string
   downloadUrl: string
+  files?: VersionFileRow[]
   changelog: string
   isApproved: boolean
   createdAt: string
@@ -555,7 +615,7 @@ const fetchData = async () => {
     pendingEdits.value = pendingRes.pendingEdits || []
 
     // Fetch users
-    await fetchUsersList()
+    await Promise.all([fetchUsersList(), fetchOrgs()])
   } catch (e) {
     console.error('Failed to load admin panel data:', e)
   } finally {

@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core'
-import type { LoaderDownloads, PlatformDownloads } from '../utils/mod-platform'
+import type { LoaderDownloads, PlatformDownloads, VersionFile } from '../utils/mod-platform'
 
 export const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
 export const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
@@ -169,6 +169,8 @@ export const modVersions = sqliteTable('mod_versions', {
   downloadUrl: text('download_url').notNull(),
   platformDownloads: text('platform_downloads', { mode: 'json' }).$type<PlatformDownloads>().notNull(),
   loaderDownloads: text('loader_downloads', { mode: 'json' }).$type<LoaderDownloads>().notNull().default(sql`'{}'`),
+  // Source of truth for downloads since migration 0006; the link columns above are derived from it
+  files: text('files', { mode: 'json' }).$type<VersionFile[]>().notNull().default(sql`'[]'`),
   changelog: text('changelog').notNull().default(''),
   gameVersion: text('game_version').notNull().default(''),
   isApproved: integer('is_approved', { mode: 'boolean' }).notNull().default(false),

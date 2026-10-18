@@ -301,7 +301,6 @@
   "pending.invite_kind_collab": "협업자",
   "pending.invite_kind_transfer": "소유권 이전",
   "pending.invite_kind_org": "조직",
-  "submit.download_mode_loader": "로더별",
   "submit.platform_downloads_help": "링크 하나, OS별 링크, 또는 모드 로더별 링크를 입력하세요.",
   "nav.organizations": "조직",
   "org.page_subtitle": "조직을 만들고 멤버들과 함께 모드를 관리하세요.",
@@ -309,5 +308,15 @@
   "org.new": "새 조직",
   "org.all": "전체 조직",
   "org.empty_directory": "아직 조직이 없습니다.",
-  "org.counts": "모드 {mods} · 멤버 {members}"
+  "org.counts": "모드 {mods} · 멤버 {members}",
+  "files.title": "다운로드 파일",
+  "files.help": "모드 로더·OS·게임 버전별로 파일을 추가하세요. '전체'로 두면 모든 경우에 사용됩니다.",
+  "files.any_loader": "전체 로더",
+  "files.any_os": "전체 OS",
+  "files.any_game_version": "전체 게임 버전",
+  "files.url": "다운로드 링크",
+  "files.add": "파일 추가",
+  "files.remove": "파일 삭제",
+  "admin.tab_orgs": "조직",
+  "admin.no_orgs": "조직이 없습니다."
 }

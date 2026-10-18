@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm'
-import { mods } from '../../../db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
+import { mods, modCollaborators, organizationMembers } from '../../../db/schema'
 import { useDb } from '../../../utils/db'
-import { applyUserTransfer, findModBySlug, isOrgMember, validateUserIds } from '../../../utils/mod-repo'
+import { applyUserTransfer, findModBySlug, isModOwner, isOrgMember, validateUserIds } from '../../../utils/mod-repo'
 
 // GitHub-style transfer. Body: { toUserId } offers the mod to a user (they accept; admins transfer at once),
 // { organizationId } moves it into an organization you belong to (null moves it out), { cancel: true } withdraws an offer.
-// Allowed for the author, admins and owners of the organization that currently owns the mod.
+// Allowed for the mod owner: the author, or the owners of the organization that owns it; admins always.
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
   const currentUser = event.context.user
@@ -18,9 +18,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Mod not found.' })
   }
 
-  const canTransfer = currentUser.isAdmin || mod.authorId === currentUser.id
-    || (!!mod.organizationId && await isOrgMember(db, mod.organizationId, currentUser.id, 'owner'))
-  if (!canTransfer) {
+  if (!await isModOwner(db, mod, currentUser)) {
     throw createError({ statusCode: 403, statusMessage: 'Only the mod owner can transfer this mod.' })
   }
 
@@ -40,7 +38,23 @@ export default defineEventHandler(async (event) => {
     if (organizationId && !await db.query.organizations.findFirst({ where: (o, { eq }) => eq(o.id, organizationId) })) {
       throw createError({ statusCode: 404, statusMessage: 'Organization not found.' })
     }
-    await db.update(mods).set({ organizationId, updatedAt: now }).where(eq(mods.id, mod.id))
+    if (organizationId) {
+      // GitHub-style: the organization becomes the owner. Collaborators who are members get access
+      // through the organization, so their separate collaborator rows go away; outside collaborators stay.
+      const memberIds = db.select({ id: organizationMembers.userId }).from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, organizationId), eq(organizationMembers.status, 'accepted')))
+      await db.batch([
+        db.update(mods).set({ organizationId, transferToUserId: null, updatedAt: now }).where(eq(mods.id, mod.id)),
+        db.delete(modCollaborators).where(and(eq(modCollaborators.modId, mod.id), inArray(modCollaborators.userId, memberIds)))
+      ])
+    } else {
+      // Leaving an organization hands the mod to whoever moved it out (admins keep the recorded author)
+      const authorId = currentUser.isAdmin ? mod.authorId : currentUser.id
+      await db.batch([
+        db.update(mods).set({ organizationId: null, authorId, updatedAt: now }).where(eq(mods.id, mod.id)),
+        db.delete(modCollaborators).where(and(eq(modCollaborators.modId, mod.id), eq(modCollaborators.userId, authorId)))
+      ])
+    }
     return { success: true, transferred: true }
   }
 

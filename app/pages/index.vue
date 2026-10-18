@@ -118,17 +118,17 @@
 
                 <div class="mod-authors">
                   <div class="avatar-stack">
-                    <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
+                    <OrgAvatar v-if="mod.organization" :name="mod.organization.name" :logo="mod.organization.logo" :size="18" />
                     <img
-                      v-for="collab in (mod.collaboratorIds || []).slice(0, 2)"
-                      :key="collab._id"
-                      :src="collab.avatar || '/images/default_avatar.png'"
+                      v-for="person in creditedPeople(mod).slice(0, mod.organization ? 2 : 3)"
+                      :key="person._id"
+                      :src="person.avatar || '/images/default_avatar.png'"
                       alt=""
                       @error="onAvatarError"
                     >
                   </div>
                   <span class="mod-author-names" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
-                  <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                  <span v-if="!mod.organization && mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
                 </div>
 
                 <p class="mod-summary">{{ localizedText(mod, locale).summary }}</p>
@@ -184,6 +184,7 @@ import { localizedText } from '../utils/locales'
 import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n, useSeoMeta } from '#imports'
 import { UIDropdown, UIToggle } from 'overlayer-ui'
+import { creditedPeople } from '../utils/credits'
 import { GAME_IDS, gameLabelKey } from '../utils/games'
 
 interface ModVersion {
@@ -220,6 +221,7 @@ interface ModItem {
     globalName?: string
     avatar?: string
   }>
+  organization?: { _id: string; name: string; slug: string; logo?: string; memberIds: string[] } | null
   isApproved: boolean
   downloads: number
   versions: ModVersion[]
@@ -240,35 +242,18 @@ useSeoMeta({
   twitterCard: 'summary'
 })
 
+const creditNames = (mod: ModItem) => [
+  ...(mod.organization ? [mod.organization.name] : []),
+  ...creditedPeople(mod).map((p) => p.globalName || p.username)
+]
+
 const getAuthorsText = (mod: ModItem) => {
-  const names = []
-  if (mod.authorId) {
-    names.push(mod.authorId.globalName || mod.authorId.username)
-  }
-  if (mod.collaboratorIds && mod.collaboratorIds.length > 0) {
-    const displayed = mod.collaboratorIds.slice(0, 2)
-    displayed.forEach(collab => {
-      names.push(collab.globalName || collab.username)
-    })
-    if (mod.collaboratorIds.length > 2) {
-      return names.join(', ') + ` +${mod.collaboratorIds.length - 2}`
-    }
-  }
-  return names.length > 0 ? names.join(', ') : 'Unknown'
+  const names = creditNames(mod)
+  if (names.length === 0) return 'Unknown'
+  return names.length > 3 ? `${names.slice(0, 3).join(', ')} +${names.length - 3}` : names.join(', ')
 }
 
-const getFullAuthorsText = (mod: ModItem) => {
-  const names = []
-  if (mod.authorId) {
-    names.push(mod.authorId.globalName || mod.authorId.username)
-  }
-  if (mod.collaboratorIds && mod.collaboratorIds.length > 0) {
-    mod.collaboratorIds.forEach(collab => {
-      names.push(collab.globalName || collab.username)
-    })
-  }
-  return names.length > 0 ? names.join(', ') : 'Unknown'
-}
+const getFullAuthorsText = (mod: ModItem) => creditNames(mod).join(', ') || 'Unknown'
 
 const getFallbackGradientStyle = (name: string) => {
   let hash = 0
@@ -773,6 +758,11 @@ onMounted(() => {
 
 .avatar-stack img:first-child {
   margin-left: 0;
+}
+
+.avatar-stack .org-avatar {
+  margin-left: 0;
+  border-radius: 5px;
 }
 
 .mod-author-names {

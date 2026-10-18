@@ -99,6 +99,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useFetch, useI18n, useSeoMeta, navigateTo } from '#imports'
 import { UIDropdown } from 'overlayer-ui'
+import { useAuth } from '../../composables/useAuth'
 import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../../utils/logo-image'
 import type { PickedUser } from '../../components/UserPicker.vue'
 
@@ -123,7 +124,9 @@ const { t } = useI18n()
 const orgUrl: string = `/api/orgs/${slug}`
 const { data, pending, refresh } = await useFetch<OrgResponse>(orgUrl)
 const org = computed(() => data.value!.organization)
-const isOwner = computed(() => data.value?.myRole === 'owner')
+// Admins manage every organization
+const { user } = useAuth()
+const isOwner = computed(() => data.value?.myRole === 'owner' || !!user.value?.isAdmin)
 
 // Editable copies; saved together with the settings
 const members = ref<Member[]>([])

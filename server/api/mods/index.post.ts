@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, gameVersion, isBeta } = parseVersionInput(body)
+  const { version, files, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, gameVersion, isBeta } = parseVersionInput(body)
 
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
@@ -146,6 +146,7 @@ export default defineEventHandler(async (event) => {
         downloadUrl: normalizedDownloadUrl,
         platformDownloads: normalizedPlatformDownloads,
         loaderDownloads,
+        files,
         changelog: initialChangelog,
         gameVersion: gameVersion || '',
         isApproved: isAutoApproved,
@@ -164,7 +165,7 @@ export default defineEventHandler(async (event) => {
         runInBackground(event, sendDiscordWebhook(
           event,
           hydrated,
-          { version, downloadUrl: normalizedDownloadUrl, changelog: initialChangelog, gameVersion, isBeta }
+          { version, downloadUrl: normalizedDownloadUrl || files[0]!.url, changelog: initialChangelog, gameVersion, isBeta }
         ), 'Discord webhook on creation')
       }
     } else {

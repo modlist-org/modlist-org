@@ -43,6 +43,13 @@
       "when": 1792292541738,
       "tag": "0005_org_logo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792293141346,
+      "tag": "0006_version_files",
+      "breakpoints": true
     }
   ]
 }

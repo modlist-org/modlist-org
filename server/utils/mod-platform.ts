@@ -63,38 +63,100 @@ export function isHttpUrl(value: unknown): value is string {
   return typeof value === 'string' && /^https?:\/\//i.test(value)
 }
 
-export function getVersionDownloadUrl(
-  version: { downloadUrl?: string; platformDownloads?: unknown },
+export interface VersionFile {
+  url: string
+  // Unset dimension = works for any loader / OS / game version
+  loader?: ModLoader
   platform?: ModPlatform
-): string | undefined {
-  const downloads = normalizePlatformDownloads(version.platformDownloads)
-  const hasPlatformDownloads = getAvailablePlatforms(downloads).length > 0
-
-  if (hasPlatformDownloads) {
-    return platform ? downloads[platform] : undefined
-  }
-
-  return version.downloadUrl || undefined
+  gameVersion?: string
 }
 
-// Requested loader's own file first, then the generic link; without a loader, generic then the first loader file
-export function resolveDownloadUrl(
-  version: { downloadUrl?: string; platformDownloads?: unknown; loaderDownloads?: LoaderDownloads | null },
-  platform?: ModPlatform,
-  loader?: ModLoader
-): string | undefined {
+// Rows written before the files column existed only have the legacy link columns
+export function versionFiles(version: { files?: VersionFile[] | null; downloadUrl?: string; platformDownloads?: unknown; loaderDownloads?: LoaderDownloads | null }): VersionFile[] {
+  if (version.files?.length) return version.files
+  const files: VersionFile[] = []
+  const add = (entry: { downloadUrl?: string; platformDownloads?: unknown }, loader?: ModLoader) => {
+    const links = normalizePlatformDownloads(entry.platformDownloads)
+    const platforms = getAvailablePlatforms(links)
+    if (platforms.length > 0) platforms.forEach((platform) => files.push({ url: links[platform]!, platform, ...(loader ? { loader } : {}) }))
+    else if (entry.downloadUrl) files.push({ url: entry.downloadUrl, ...(loader ? { loader } : {}) })
+  }
+  add(version)
   const loaders = version.loaderDownloads ?? {}
-  if (loader && loaders[loader]) {
-    const url = getVersionDownloadUrl(loaders[loader], platform)
-    if (url) return url
+  for (const loader of getAvailableLoaders(loaders)) add(loaders[loader]!, loader)
+  return files
+}
+
+const sameGameVersion = (a?: string, b?: string) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
+
+// Best file for the request. Per dimension: an exact match beats a file that works for anything, which beats
+// a file specific to something the client did not ask about; a file specific to something else never matches.
+// Dimensions rank loader > game version > OS. Without a loader, MelonLoader files win (older apps only install those).
+export function pickVersionFile(
+  files: VersionFile[],
+  want: { platform?: ModPlatform; loader?: ModLoader; gameVersion?: string }
+): VersionFile | undefined {
+  const dimScore = (have: string | undefined, req: string | undefined, equal: boolean) =>
+    !have ? 2 : !req ? 1 : equal ? 3 : -Infinity
+  let best: VersionFile | undefined
+  let bestScore = -Infinity
+  for (const file of files) {
+    const loader = dimScore(file.loader, want.loader, file.loader === want.loader)
+      + (!want.loader && file.loader === MOD_LOADERS[0] ? 0.5 : 0)
+    const game = dimScore(file.gameVersion || undefined, want.gameVersion || undefined, sameGameVersion(file.gameVersion, want.gameVersion))
+    const platform = dimScore(file.platform, want.platform, file.platform === want.platform)
+    const score = loader * 100 + game * 10 + platform
+    if (score > bestScore) {
+      best = file
+      bestScore = score
+    }
   }
-  const generic = getVersionDownloadUrl(version, platform)
-  if (generic || loader) return generic
-  for (const l of getAvailableLoaders(loaders)) {
-    const url = getVersionDownloadUrl(loaders[l]!, platform)
-    if (url) return url
+  return best
+}
+
+// Fill the legacy columns from the file list so older readers keep working
+export function legacyLinkColumns(files: VersionFile[]) {
+  const plain = files.filter((f) => !f.gameVersion)
+  const linksOf = (list: VersionFile[]): LoaderDownload => {
+    const platformDownloads: PlatformDownloads = {}
+    for (const f of list) if (f.platform && !platformDownloads[f.platform]) platformDownloads[f.platform] = f.url
+    return { downloadUrl: list.find((f) => !f.platform)?.url ?? Object.values(platformDownloads)[0] ?? '', platformDownloads }
   }
-  return undefined
+  const generic = linksOf(plain.filter((f) => !f.loader))
+  const loaderDownloads: LoaderDownloads = {}
+  for (const loader of MOD_LOADERS) {
+    const list = plain.filter((f) => f.loader === loader)
+    if (list.length > 0) loaderDownloads[loader] = linksOf(list)
+  }
+  return { downloadUrl: generic.downloadUrl, platformDownloads: generic.platformDownloads, loaderDownloads }
+}
+
+export function parseVersionFiles(value: unknown): VersionFile[] {
+  if (!Array.isArray(value)) return []
+  if (value.length > 30) {
+    throw createError({ statusCode: 400, statusMessage: 'A version can have at most 30 files.' })
+  }
+  const files: VersionFile[] = []
+  for (const raw of value as Record<string, unknown>[]) {
+    if (!raw || typeof raw !== 'object') continue
+    const url = typeof raw.url === 'string' ? raw.url.trim() : ''
+    if (!url) continue
+    if (!isHttpUrl(url)) {
+      throw createError({ statusCode: 400, statusMessage: 'Download links must be valid direct HTTP/HTTPS URLs.' })
+    }
+    const loader = raw.loader ? normalizeLoader(raw.loader) : undefined
+    const platform = raw.platform ? normalizePlatform(raw.platform) : undefined
+    if ((raw.loader && !loader) || (raw.platform && !platform)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid mod loader or OS for a download file.' })
+    }
+    const gameVersion = typeof raw.gameVersion === 'string' ? raw.gameVersion.trim().slice(0, 40) : ''
+    const file: VersionFile = { url, ...(loader ? { loader } : {}), ...(platform ? { platform } : {}), ...(gameVersion ? { gameVersion } : {}) }
+    if (files.some((f) => f.loader === file.loader && f.platform === file.platform && sameGameVersion(f.gameVersion, file.gameVersion))) {
+      throw createError({ statusCode: 400, statusMessage: 'Two files have the same mod loader, OS and game version.' })
+    }
+    files.push(file)
+  }
+  return files
 }
 
 export function normalizeVersionString(version: string) {
@@ -140,14 +202,16 @@ export function parseLoaderDownloads(value: unknown): LoaderDownloads {
   return result
 }
 
-// Validate the version + download link fields shared by version create/edit requests
+// Validate the version + download fields shared by version create/edit requests.
+// New clients send `files`; older ones send downloadUrl / platformDownloads / loaderDownloads.
 export function parseVersionInput(body: Record<string, unknown>) {
   const { version, downloadUrl, platformDownloads, loaderDownloads, changelog, gameVersion, isBeta, branchId } = body
 
-  const generic = parseLinks(downloadUrl, platformDownloads, 'Generic')
-  const loaders = parseLoaderDownloads(loaderDownloads)
+  const files = Array.isArray(body.files)
+    ? parseVersionFiles(body.files)
+    : versionFiles({ ...parseLinks(downloadUrl, platformDownloads, 'Generic'), loaderDownloads: parseLoaderDownloads(loaderDownloads) })
 
-  if (typeof version !== 'string' || !version.trim() || (!generic.downloadUrl && Object.keys(loaders).length === 0)) {
+  if (typeof version !== 'string' || !version.trim() || files.length === 0) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Version string and at least one download link are required.'
@@ -156,9 +220,8 @@ export function parseVersionInput(body: Record<string, unknown>) {
 
   return {
     version: version.trim(),
-    downloadUrl: generic.downloadUrl,
-    platformDownloads: generic.platformDownloads,
-    loaderDownloads: loaders,
+    files,
+    ...legacyLinkColumns(files),
     changelog: typeof changelog === 'string' ? changelog : '',
     gameVersion: typeof gameVersion === 'string' ? gameVersion.trim() : '',
     isBeta: !!isBeta,

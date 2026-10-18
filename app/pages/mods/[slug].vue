@@ -53,7 +53,7 @@
             <OrgAvatar :name="mod.organization.name" :logo="mod.organization.logo" :size="22" />
             <span class="creator-name">{{ mod.organization.name }}</span>
           </NuxtLink>
-          <span v-if="!isOrgMember(mod.authorId?._id)" class="creator-chip">
+          <span v-if="!mod.organization" class="creator-chip">
             <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
             <span class="creator-name">{{ mod.authorId?.globalName || mod.authorId?.username }}</span>
             <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
@@ -251,6 +251,19 @@
                 </div>
               </div>
 
+              <div v-if="(ver.files?.length ?? 0) > 1" class="version-file-list">
+                <button
+                  v-for="f in ver.files"
+                  :key="f.index"
+                  type="button"
+                  class="version-file"
+                  @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}&branch=${ver.branchId}&file=${f.index}`)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                  {{ fileLabel(f) }}
+                </button>
+              </div>
+
               <div v-if="!ver.isApproved && ver.rejectionReason" class="callout callout-danger callout-sm">
                 <span><strong>{{ t('mod.details.rejection_reason_label') || 'Rejection Reason:' }}</strong> {{ ver.rejectionReason }}</span>
               </div>
@@ -343,12 +356,7 @@
             </div>
 
             <div class="form-group">
-              <DownloadLinksInput
-                v-model:mode="updateForm.downloadMode"
-                v-model:unified-url="updateForm.downloadUrl"
-                v-model:platform-downloads="updateForm.platformDownloads"
-                v-model:loader-downloads="updateForm.loaderDownloads"
-              />
+              <VersionFilesInput v-model="updateForm.files" />
             </div>
 
             <div class="form-group">
@@ -513,7 +521,7 @@
                 <span class="creator-role">{{ t('org.label') }}</span>
               </div>
             </NuxtLink>
-            <div v-if="!isOrgMember(mod.authorId?._id)" class="creator-item">
+            <div v-if="!mod.organization" class="creator-item">
               <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <div class="creator-text">
                 <span class="creator-item-name">
@@ -598,8 +606,7 @@ import { UIDropdown, UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { renderSafeMarkdown } from '../../utils/markdown'
 import { SITE_LOCALES } from '../../utils/locales'
-import { downloadBody, emptyLoaderLinks, hasDownloadLink, loaderLabel, loaderLinksFromApi } from '../../utils/loaders'
-import type { DownloadMode } from '../../utils/loaders'
+import { emptyFileRow, filesFromApi, filesToBody, hasFile, loaderLabel, platformLabel } from '../../utils/loaders'
 import type { ModTranslations } from '../../utils/locales'
 
 interface CreatorUser {
@@ -620,7 +627,8 @@ interface ModVersion {
   isApproved: boolean
   availablePlatforms?: Array<'windows' | 'macos' | 'linux'>
   availableLoaders?: string[]
-  loaderDownloads?: Record<string, { downloadUrl?: string; platformDownloads?: Partial<Record<'windows' | 'macos' | 'linux', string>> }>
+  files?: Array<{ index: number; loader?: string; platform?: string; gameVersion?: string }>
+  rawFiles?: Array<{ url: string; loader?: string; platform?: string; gameVersion?: string }>
   branchId: string
   isBeta?: boolean
   rejectionReason?: string
@@ -754,9 +762,10 @@ watch([modData, fetchError], ([newVal, err]) => {
   }
 }, { immediate: true })
 
-// With an owning organization, the creators card lists the org plus only the people outside it
-const isOrgMember = (id?: string) => !!id && !!mod.value?.organization?.memberIds.includes(id)
-const outsideCollaborators = computed(() => mod.value?.collaboratorIds.filter((c) => !isOrgMember(c._id)) ?? [])
+// An organization-owned mod is credited to the organization plus collaborators outside it (like GitHub)
+const outsideCollaborators = computed(() => mod.value?.organization
+  ? mod.value.collaboratorIds.filter((c) => !mod.value!.organization!.memberIds.includes(c._id))
+  : mod.value?.collaboratorIds ?? [])
 
 // Branches: the version list shows one branch at a time, default branch first
 const selectedBranchId = ref('')
@@ -866,57 +875,33 @@ useSeoMeta({
 // Update Release form state
 const updateForm = ref({
   version: '',
-  downloadMode: 'unified' as DownloadMode,
-  downloadUrl: '',
-  platformDownloads: {
-    windows: '',
-    macos: '',
-    linux: ''
-  },
+  files: [emptyFileRow()],
   changelog: '',
   gameVersion: '',
-  branchId: selectedBranchId.value,
-  loaderDownloads: emptyLoaderLinks()
+  branchId: selectedBranchId.value
 })
-const hasUpdateDownload = computed(() => hasDownloadLink(updateForm.value))
+const hasUpdateDownload = computed(() => hasFile(updateForm.value.files))
 const submittingUpdate = ref(false)
 const editingVersionId = ref<string | null>(null)
 const editingVersion = computed(() => mod.value?.versions?.find((v) => v._id === editingVersionId.value) ?? null)
 
 const emptyUpdateForm = () => ({
   version: '',
-  downloadMode: 'unified' as DownloadMode,
-  downloadUrl: '',
-  platformDownloads: {
-    windows: '',
-    macos: '',
-    linux: ''
-  },
+  files: [emptyFileRow()],
   changelog: '',
   gameVersion: '',
-  branchId: selectedBranchId.value,
-  loaderDownloads: emptyLoaderLinks()
+  branchId: selectedBranchId.value
 })
 
 const startEditVersion = (ver: ModVersion) => {
   if (!ver._id) return
-  const platformLinks = ver.platformDownloads || {}
-  const hasPlatformLinks = Object.values(platformLinks).some((url) => !!url)
-  const hasLoaderLinks = !!ver.loaderDownloads && Object.keys(ver.loaderDownloads).length > 0
   editingVersionId.value = ver._id
   updateForm.value = {
     version: ver.version,
-    downloadMode: hasLoaderLinks ? 'loader' : hasPlatformLinks ? 'platform' : 'unified',
-    downloadUrl: hasPlatformLinks ? '' : ver.downloadUrl || '',
-    platformDownloads: {
-      windows: platformLinks.windows || '',
-      macos: platformLinks.macos || '',
-      linux: platformLinks.linux || ''
-    },
+    files: filesFromApi(ver.rawFiles),
     changelog: ver.changelog || '',
     gameVersion: ver.gameVersion || '',
-    branchId: ver.branchId,
-    loaderDownloads: loaderLinksFromApi(ver.loaderDownloads)
+    branchId: ver.branchId
   }
   formError.value = ''
   formSuccess.value = ''
@@ -1057,6 +1042,12 @@ const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
 }
 
+const fileLabel = (f: { loader?: string; platform?: string; gameVersion?: string }) => [
+  f.loader ? loaderLabel(f.loader) : t('files.any_loader'),
+  f.platform ? platformLabel(f.platform) : t('files.any_os'),
+  ...(f.gameVersion ? [f.gameVersion] : [])
+].join(' · ')
+
 const getPlatformLabel = (platform: string) => {
   if (platform === 'windows') return 'Windows'
   if (platform === 'macos') return 'macOS'
@@ -1193,7 +1184,7 @@ const submitUpdate = async () => {
         changelog: updateForm.value.changelog,
         gameVersion: updateForm.value.gameVersion,
         branchId: updateForm.value.branchId,
-        ...downloadBody(updateForm.value)
+        files: filesToBody(updateForm.value.files)
       }
     })
 
@@ -2315,6 +2306,38 @@ onMounted(() => {
   .app-recommend-card {
     padding: 28px 20px 20px;
   }
+}
+
+.version-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.version-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.version-file:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.version-file svg {
+  width: 12px;
+  height: 12px;
 }
 
 .branch-bar {

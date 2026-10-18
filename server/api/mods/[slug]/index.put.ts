@@ -10,6 +10,7 @@ import {
   findModBySlug,
   getCollaboratorIds,
   getDependencyIds,
+  isModOwner,
   modGames,
   validateDependencyIds,
   validateUserIds
@@ -70,7 +71,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const isOwner = mod.authorId === currentUser.id
+    const isOwner = await isModOwner(db, mod, currentUser)
     const isAdmin = currentUser.isAdmin
     if (!await canManageMod(db, mod, currentUser)) {
       throw createError({

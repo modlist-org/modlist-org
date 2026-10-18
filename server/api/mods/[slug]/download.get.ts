@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { mods, modBranches, modVersions } from '../../../db/schema'
 import { useDb } from '../../../utils/db'
-import { detectPlatform, normalizeLoader, normalizePlatform, resolveDownloadUrl } from '../../../utils/mod-platform'
+import { detectPlatform, normalizeLoader, normalizePlatform, pickVersionFile, versionFiles } from '../../../utils/mod-platform'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -73,15 +73,19 @@ export default defineEventHandler(async (event) => {
         ?? (branchQuery ? undefined : approvedVersions.find((v) => v.version === versionStr))
       : approvedVersions.find(inBranch)
 
-    const targetDownloadUrl = targetVersion
-      ? resolveDownloadUrl(targetVersion, platform, loader)
-      : undefined
+    // `file` picks an exact file (index from the version's public file list); otherwise match loader / OS / game version
+    const files = targetVersion ? versionFiles(targetVersion) : []
+    const fileIndex = typeof query.file === 'string' && /^\d+$/.test(query.file) ? Number(query.file) : undefined
+    const gameVersion = typeof query.gameVersion === 'string' ? query.gameVersion : undefined
+    const targetDownloadUrl = fileIndex !== undefined
+      ? files[fileIndex]?.url
+      : pickVersionFile(files, { platform, loader, gameVersion })?.url
 
     if (!targetVersion || !targetDownloadUrl) {
       throw createError({
         statusCode: 404,
         statusMessage: platform || loader
-          ? `Requested version has no ${[loader, platform].filter(Boolean).join(' ')} download link.`
+          ? `Requested version has no ${[loader, platform, gameVersion].filter(Boolean).join(' ')} download link.`
           : 'Requested version not found or download link is missing.'
       })
     }

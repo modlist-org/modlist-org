@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
         pendingEdit: isOwnerOrAdmin ? mod.pendingEdit : undefined,
         // Editors get the raw links back so they can edit versions
         versions: versions.map((v) => isOwnerOrAdmin
-          ? { ...stripDownloadUrls(v), downloadUrl: v.downloadUrl, platformDownloads: v.platformDownloads, loaderDownloads: v.loaderDownloads }
+          ? { ...stripDownloadUrls(v), downloadUrl: v.downloadUrl, rawFiles: v.files }
           : stripDownloadUrls(v)),
         branches: mod.branches.map((b) => {
           const latest = latestIn(b._id)

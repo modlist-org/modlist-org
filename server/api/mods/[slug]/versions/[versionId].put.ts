@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { mods, modVersions } from '../../../../db/schema'
 import { useDb } from '../../../../utils/db'
-import { normalizeVersionString, parseVersionInput } from '../../../../utils/mod-platform'
+import { normalizeVersionString, parseVersionInput, versionFiles } from '../../../../utils/mod-platform'
 import { runInBackground, sendAdminPendingWebhook } from '../../../../utils/webhook'
 import { canManageMod, findBranch, findModBySlug } from '../../../../utils/mod-repo'
 
@@ -72,9 +72,7 @@ export default defineEventHandler(async (event) => {
 
     const changed = target.version !== input.version
       || branchOf(target) !== branchId
-      || JSON.stringify(target.loaderDownloads ?? {}) !== JSON.stringify(input.loaderDownloads)
-      || target.downloadUrl !== input.downloadUrl
-      || JSON.stringify(target.platformDownloads ?? {}) !== JSON.stringify(input.platformDownloads)
+      || JSON.stringify(versionFiles(target)) !== JSON.stringify(input.files)
       || target.changelog !== input.changelog
       || target.gameVersion !== input.gameVersion
 

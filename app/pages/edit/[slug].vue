@@ -436,10 +436,24 @@ const clearLogo = () => {
   if (logoInput.value) logoInput.value.value = ''
 }
 
+// Mod owner, same rule as the API: an organization's owners for an organization-owned mod, else the author
+const myOrgRoles = ref<Record<string, string>>({})
 const isAuthorOrAdmin = computed(() => {
   if (!mod.value || !user.value) return false
-  return user.value.isAdmin || mod.value.authorId._id === user.value.id
+  if (user.value.isAdmin) return true
+  return mod.value.organization
+    ? myOrgRoles.value[mod.value.organization._id] === 'owner'
+    : mod.value.authorId._id === user.value.id
 })
+watch(user, async (u) => {
+  if (!u) return
+  try {
+    const res = await $fetch<{ organizations: { _id: string; role: string }[] }>('/api/orgs/mine')
+    myOrgRoles.value = Object.fromEntries(res.organizations.map((o) => [o._id, o.role]))
+  } catch {
+    myOrgRoles.value = {}
+  }
+}, { immediate: true })
 
 const requiresReview = computed(() => !!mod.value?.isApproved && !user.value?.isAdmin && !user.value?.isVerifiedDeveloper)
 
