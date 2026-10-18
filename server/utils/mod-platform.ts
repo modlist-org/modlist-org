@@ -90,20 +90,21 @@ export function versionFiles(version: { files?: VersionFile[] | null; downloadUr
 const sameGameVersion = (a?: string, b?: string) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 
 // Best file for the request. Per dimension: an exact match beats a file that works for anything, which beats
-// a file specific to something the client did not ask about; a file specific to something else never matches.
+// a file specific to something the client did not ask about. A file for another loader or OS never matches; a file
+// for another game version is only a last resort (game versions are usually still compatible).
 // Dimensions rank loader > game version > OS. Without a loader, MelonLoader files win (older apps only install those).
 export function pickVersionFile(
   files: VersionFile[],
   want: { platform?: ModPlatform; loader?: ModLoader; gameVersion?: string }
 ): VersionFile | undefined {
-  const dimScore = (have: string | undefined, req: string | undefined, equal: boolean) =>
-    !have ? 2 : !req ? 1 : equal ? 3 : -Infinity
+  const dimScore = (have: string | undefined, req: string | undefined, equal: boolean, mismatch = -Infinity) =>
+    !have ? 2 : !req ? 1 : equal ? 3 : mismatch
   let best: VersionFile | undefined
   let bestScore = -Infinity
   for (const file of files) {
     const loader = dimScore(file.loader, want.loader, file.loader === want.loader)
       + (!want.loader && file.loader === MOD_LOADERS[0] ? 0.5 : 0)
-    const game = dimScore(file.gameVersion || undefined, want.gameVersion || undefined, sameGameVersion(file.gameVersion, want.gameVersion))
+    const game = dimScore(file.gameVersion || undefined, want.gameVersion || undefined, sameGameVersion(file.gameVersion, want.gameVersion), 0)
     const platform = dimScore(file.platform, want.platform, file.platform === want.platform)
     const score = loader * 100 + game * 10 + platform
     if (score > bestScore) {
@@ -116,7 +117,8 @@ export function pickVersionFile(
 
 // Fill the legacy columns from the file list so older readers keep working
 export function legacyLinkColumns(files: VersionFile[]) {
-  const plain = files.filter((f) => !f.gameVersion)
+  // Files for any game version first, so they win the single legacy slot per loader / OS
+  const plain = [...files.filter((f) => !f.gameVersion), ...files.filter((f) => f.gameVersion)]
   const linksOf = (list: VersionFile[]): LoaderDownload => {
     const platformDownloads: PlatformDownloads = {}
     for (const f of list) if (f.platform && !platformDownloads[f.platform]) platformDownloads[f.platform] = f.url
@@ -129,6 +131,17 @@ export function legacyLinkColumns(files: VersionFile[]) {
     if (list.length > 0) loaderDownloads[loader] = linksOf(list)
   }
   return { downloadUrl: generic.downloadUrl, platformDownloads: generic.platformDownloads, loaderDownloads }
+}
+
+// Give `gameVersion` to the files without one, unless that would duplicate another file's loader / OS / game version
+export function applyGameVersion(files: VersionFile[], gameVersion: string): VersionFile[] {
+  const result = files.map((f) => ({ ...f }))
+  for (const file of result) {
+    if (file.gameVersion) continue
+    const clash = result.some((o) => o !== file && o.loader === file.loader && o.platform === file.platform && sameGameVersion(o.gameVersion, gameVersion))
+    if (!clash) file.gameVersion = gameVersion
+  }
+  return result
 }
 
 export function parseVersionFiles(value: unknown): VersionFile[] {
@@ -207,9 +220,11 @@ export function parseLoaderDownloads(value: unknown): LoaderDownloads {
 export function parseVersionInput(body: Record<string, unknown>) {
   const { version, downloadUrl, platformDownloads, loaderDownloads, changelog, gameVersion, isBeta, branchId } = body
 
-  const files = Array.isArray(body.files)
+  let files = Array.isArray(body.files)
     ? parseVersionFiles(body.files)
     : versionFiles({ ...parseLinks(downloadUrl, platformDownloads, 'Generic'), loaderDownloads: parseLoaderDownloads(loaderDownloads) })
+  // Older clients send one game version for the whole version; it applies to files that do not name their own
+  if (typeof gameVersion === 'string' && gameVersion.trim()) files = applyGameVersion(files, gameVersion.trim().slice(0, 40))
 
   if (typeof version !== 'string' || !version.trim() || files.length === 0) {
     throw createError({
@@ -223,7 +238,8 @@ export function parseVersionInput(body: Record<string, unknown>) {
     files,
     ...legacyLinkColumns(files),
     changelog: typeof changelog === 'string' ? changelog : '',
-    gameVersion: typeof gameVersion === 'string' ? gameVersion.trim() : '',
+    // Game versions live on the files; the version-level value is their summary for display and older readers
+    gameVersion: [...new Set(files.map((f) => f.gameVersion).filter(Boolean))].join(', '),
     isBeta: !!isBeta,
     branchId: typeof branchId === 'string' && branchId ? branchId : undefined
   }

@@ -150,17 +150,6 @@
               required
             >
           </div>
-
-          <div class="form-group">
-            <label for="mod-game-version">{{ t('submit.game_version') }}</label>
-            <input
-              id="mod-game-version"
-              v-model="form.gameVersion"
-              type="text"
-              :placeholder="t('submit.game_version_placeholder')"
-            >
-            <span class="form-help-text">{{ t('submit.game_version_help') }}</span>
-          </div>
         </div>
 
         <VersionFilesInput v-model="form.files" />
@@ -356,7 +345,6 @@ const form = ref({
   version: '',
   files: [emptyFileRow()],
   changelog: '',
-  gameVersion: '',
   isBeta: false,
   organizationId: ''
 })

@@ -334,25 +334,15 @@
               </div>
 
               <div class="form-group">
-                <label for="new-game-version">{{ t('submit.game_version') }}</label>
-                <input
-                  id="new-game-version"
-                  v-model="updateForm.gameVersion"
-                  type="text"
-                  :placeholder="t('submit.game_version_placeholder')"
-                >
+                <label>{{ t('branch.label') }}</label>
+                <UIDropdown
+                  v-model="updateForm.branchId"
+                  :default-value="mod.defaultBranchId"
+                  :values="mod.branches.map((b) => b._id)"
+                  :display="branchLabel"
+                  disable-reset
+                />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label>{{ t('branch.label') }}</label>
-              <UIDropdown
-                v-model="updateForm.branchId"
-                :default-value="mod.defaultBranchId"
-                :values="mod.branches.map((b) => b._id)"
-                :display="branchLabel"
-                disable-reset
-              />
             </div>
 
             <div class="form-group">
@@ -877,7 +867,6 @@ const updateForm = ref({
   version: '',
   files: [emptyFileRow()],
   changelog: '',
-  gameVersion: '',
   branchId: selectedBranchId.value
 })
 const hasUpdateDownload = computed(() => hasFile(updateForm.value.files))
@@ -889,7 +878,6 @@ const emptyUpdateForm = () => ({
   version: '',
   files: [emptyFileRow()],
   changelog: '',
-  gameVersion: '',
   branchId: selectedBranchId.value
 })
 
@@ -900,7 +888,6 @@ const startEditVersion = (ver: ModVersion) => {
     version: ver.version,
     files: filesFromApi(ver.rawFiles),
     changelog: ver.changelog || '',
-    gameVersion: ver.gameVersion || '',
     branchId: ver.branchId
   }
   formError.value = ''
@@ -1182,7 +1169,6 @@ const submitUpdate = async () => {
       body: {
         version: updateForm.value.version,
         changelog: updateForm.value.changelog,
-        gameVersion: updateForm.value.gameVersion,
         branchId: updateForm.value.branchId,
         files: filesToBody(updateForm.value.files)
       }

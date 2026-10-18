@@ -105,8 +105,6 @@
   "mod.details.preview_changes": "预览修改",
   "submit.initial_release": "初始发布详情",
   "submit.game_version": "目标游戏版本",
-  "submit.game_version_placeholder": "例如: 3.1.0",
-  "submit.game_version_help": "此模组版本支持的目标游戏版本（留空表示'无限制'）",
   "mod.details.game_version_label": "游戏版本",
   "update.changelog_placeholder": "此版本有哪些更新？",
   "submit.name_placeholder": "例如: 我的超酷悬浮窗模组",
