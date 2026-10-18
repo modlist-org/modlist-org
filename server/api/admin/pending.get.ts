@@ -44,6 +44,9 @@ export default defineEventHandler(async (event) => {
         versionId: ver._id,
         version: ver.version,
         downloadUrl: ver.downloadUrl,
+        platformDownloads: ver.platformDownloads,
+        loaderDownloads: ver.loaderDownloads,
+        branchName: mod.branches.find((b) => b._id === ver.branchId)?.name ?? '',
         changelog: ver.changelog,
         submittedBy: ver.submittedBy,
         createdAt: ver.createdAt

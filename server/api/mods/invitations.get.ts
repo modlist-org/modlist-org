@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { mods, modCollaborators } from '../../db/schema'
+import { mods, modCollaborators, organizationMembers, organizations } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { hydrateMods } from '../../utils/mod-repo'
 
@@ -21,10 +21,21 @@ export default defineEventHandler(async (event) => {
       .where(inArray(mods.id, invitedModIds))
       .orderBy(desc(mods.updatedAt))
 
-    const hydrated = await hydrateMods(db, rows)
+    const transferRows = await db.select().from(mods)
+      .where(eq(mods.transferToUserId, currentUser.id))
+      .orderBy(desc(mods.updatedAt))
+
     // Invitees are not collaborators yet: don't leak download URLs or pending edits
-    const result = hydrated.map(({ versions: _, pendingEdit: __, ...mod }) => mod)
-    return { mods: result }
+    const strip = (list: Awaited<ReturnType<typeof hydrateMods>>) => list.map(({ versions: _, pendingEdit: __, ...mod }) => mod)
+    const orgRows = await db.select({ _id: organizations.id, name: organizations.name, slug: organizations.slug })
+      .from(organizationMembers)
+      .innerJoin(organizations, eq(organizations.id, organizationMembers.organizationId))
+      .where(and(eq(organizationMembers.userId, currentUser.id), eq(organizationMembers.status, 'pending')))
+    return {
+      mods: strip(await hydrateMods(db, rows)),
+      transfers: strip(await hydrateMods(db, transferRows)),
+      organizations: orgRows
+    }
   } catch (error) {
     console.error('Fetch invitations error:', error)
     throw createError({

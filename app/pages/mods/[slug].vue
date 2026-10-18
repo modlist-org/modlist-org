@@ -161,8 +161,36 @@
         <section class="card mod-section">
           <h2 class="section-title">
             {{ t('mod.details.versions') }}
-            <span v-if="mod.versions?.length" class="section-count">{{ mod.versions.length }}</span>
+            <span v-if="branchVersions.length" class="section-count">{{ branchVersions.length }}</span>
           </h2>
+          <div v-if="mod.branches?.length > 1 || isEditable" class="branch-bar">
+            <div class="branch-tabs" role="tablist">
+              <button
+                v-for="b in mod.branches"
+                :key="b._id"
+                type="button"
+                role="tab"
+                class="branch-tab"
+                :class="{ active: b._id === selectedBranchId }"
+                :aria-selected="b._id === selectedBranchId"
+                @click="selectBranch(b._id)"
+              >
+                {{ b.name }}
+                <span v-if="b.isDefault" class="badge badge-category">{{ t('branch.default') }}</span>
+                <span v-if="b.isBeta" class="badge badge-beta">{{ t('branch.default_beta') }}</span>
+              </button>
+              <button v-if="isEditable" type="button" class="branch-tab branch-add" @click="createBranch">+ {{ t('branch.new') }}</button>
+            </div>
+            <div v-if="isEditable && selectedBranch" class="branch-actions">
+              <button v-if="!selectedBranch.isDefault" type="button" class="btn btn-ghost btn-sm" @click="updateBranch({ isDefault: true })">{{ t('branch.make_default') }}</button>
+              <button v-if="!selectedBranch.isDefault && !selectedBranch.isBeta" type="button" class="btn btn-ghost btn-sm" @click="updateBranch({ isBeta: true })">{{ t('branch.make_beta') }}</button>
+              <button v-if="selectedBranch.isBeta" type="button" class="btn btn-ghost btn-sm" @click="updateBranch({ isBeta: false })">{{ t('branch.unset_beta') }}</button>
+              <button type="button" class="btn btn-ghost btn-sm" @click="renameBranch">{{ t('branch.rename') }}</button>
+              <button v-if="!selectedBranch.isDefault" type="button" class="btn btn-danger btn-sm" @click="deleteBranch">{{ t('branch.delete') }}</button>
+            </div>
+            <p v-if="selectedBranch?.description" class="branch-description">{{ selectedBranch.description }}</p>
+          </div>
+          <p v-if="branchVersions.length === 0" class="no-downloads">{{ t('branch.empty') }}</p>
           <div class="versions-list">
             <div v-for="(ver, idx) in paginatedVersions" :key="ver._id" class="version-row" :class="{ pending: !ver.isApproved, editing: editingVersionId === ver._id }">
               <div class="version-head">
@@ -183,6 +211,9 @@
                     </span>
                     <span v-if="ver.availablePlatforms?.length" class="version-platforms">
                       <span v-for="platform in ver.availablePlatforms" :key="platform" class="badge badge-category platform-badge">{{ getPlatformLabel(platform) }}</span>
+                    </span>
+                    <span v-if="ver.availableLoaders?.length" class="version-platforms">
+                      <span v-for="loader in ver.availableLoaders" :key="loader" class="badge badge-game platform-badge">{{ loaderLabel(loader) }}</span>
                     </span>
                   </div>
                 </div>
@@ -208,7 +239,7 @@
                   <button
                     type="button"
                     class="btn btn-secondary btn-sm"
-                    @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}`)"
+                    @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}&branch=${ver.branchId}`)"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
                     {{ t('mod.details.download') }}
@@ -297,20 +328,26 @@
             </div>
 
             <div class="form-group">
+              <label for="new-branch">{{ t('branch.label') }}</label>
+              <select id="new-branch" v-model="updateForm.branchId">
+                <option v-for="b in mod.branches" :key="b._id" :value="b._id">
+                  {{ b.name }}{{ b.isDefault ? ` (${t('branch.default')})` : b.isBeta ? ` (${t('branch.default_beta')})` : '' }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
               <DownloadLinksInput
                 v-model:mode="updateForm.downloadMode"
                 v-model:unified-url="updateForm.downloadUrl"
                 v-model:platform-downloads="updateForm.platformDownloads"
+                :optional="hasLoaderLink(updateForm.loaderLinks)"
+                :help="t('loader.generic_help')"
               />
             </div>
 
-            <div class="form-group beta-toggle">
-              <UIToggle
-                v-model="updateForm.isBeta"
-                :default-value="false"
-                :label="t('submit.is_beta_label', 'Mark as Beta Version')"
-                :font-size="14"
-              />
+            <div class="form-group">
+              <LoaderLinksInput v-model="updateForm.loaderLinks" />
             </div>
 
             <div class="form-group">
@@ -468,6 +505,13 @@
         <section class="card side-card">
           <h3 class="side-title">{{ t('mod.details.creators') }}</h3>
           <div class="creator-list">
+            <NuxtLink v-if="mod.organization" :to="`/orgs/${mod.organization.slug}`" class="creator-item creator-org">
+              <span class="org-avatar" :style="getFallbackGradientStyle(mod.organization.name)">{{ mod.organization.name.charAt(0).toUpperCase() }}</span>
+              <div class="creator-text">
+                <span class="creator-item-name">{{ mod.organization.name }}</span>
+                <span class="creator-role">{{ t('org.label') }}</span>
+              </div>
+            </NuxtLink>
             <div class="creator-item">
               <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <div class="creator-text">
@@ -553,6 +597,8 @@ import { UIToggle } from 'overlayer-ui'
 import { useAuth } from '../../composables/useAuth'
 import { renderSafeMarkdown } from '../../utils/markdown'
 import { SITE_LOCALES } from '../../utils/locales'
+import { hasLoaderLink, loaderLabel, loaderLinksToBody, loaderLinksToForm } from '../../utils/loaders'
+import type { LoaderLinksForm } from '../../utils/loaders'
 import type { ModTranslations } from '../../utils/locales'
 
 interface CreatorUser {
@@ -572,6 +618,9 @@ interface ModVersion {
   gameVersion?: string
   isApproved: boolean
   availablePlatforms?: Array<'windows' | 'macos' | 'linux'>
+  availableLoaders?: string[]
+  loaderDownloads?: Record<string, { downloadUrl?: string; platformDownloads?: Partial<Record<'windows' | 'macos' | 'linux', string>> }>
+  branchId: string
   isBeta?: boolean
   rejectionReason?: string
   submittedBy?: {
@@ -627,7 +676,20 @@ interface ModItem {
   dependencies: string[]
   downloads: number
   versions: ModVersion[]
+  branches: ModBranch[]
+  defaultBranchId: string
+  betaBranchId: string | null
+  organization: { _id: string; name: string; slug: string } | null
+  transferToUserId?: string | null
   isFeatured?: boolean
+}
+
+interface ModBranch {
+  _id: string
+  name: string
+  description: string
+  isDefault: boolean
+  isBeta: boolean
 }
 
 const route = useRoute()
@@ -691,20 +753,65 @@ watch([modData, fetchError], ([newVal, err]) => {
   }
 }, { immediate: true })
 
+// Branches: the version list shows one branch at a time, default branch first
+const selectedBranchId = ref('')
+const selectedBranch = computed(() => mod.value?.branches?.find((b) => b._id === selectedBranchId.value) ?? null)
+const branchVersions = computed(() => mod.value?.versions?.filter((v) => v.branchId === selectedBranchId.value) ?? [])
+watch(mod, (m) => {
+  if (m && !m.branches?.some((b) => b._id === selectedBranchId.value)) selectedBranchId.value = m.defaultBranchId
+}, { immediate: true })
+
+const selectBranch = (id: string) => {
+  selectedBranchId.value = id
+  versionPage.value = 1
+  if (!editingVersionId.value) updateForm.value.branchId = id
+}
+
+const branchRequest = async (path: string, method: 'POST' | 'PUT' | 'DELETE', body?: Record<string, unknown>) => {
+  try {
+    const res = await $fetch<{ branch?: { _id: string } }>(`/api/mods/${slug}/branches${path}`, { method, body })
+    await fetchModDetails()
+    return res
+  } catch (err: unknown) {
+    const e = err as { data?: { statusMessage?: string } }
+    alert(e.data?.statusMessage || t('branch.failed'))
+  }
+}
+
+const createBranch = async () => {
+  const name = prompt(t('branch.name_prompt'))?.trim()
+  if (!name) return
+  const res = await branchRequest('', 'POST', { name })
+  if (res?.branch) selectBranch(res.branch._id)
+}
+
+const renameBranch = async () => {
+  if (!selectedBranch.value) return
+  const name = prompt(t('branch.name_prompt'), selectedBranch.value.name)?.trim()
+  if (name && name !== selectedBranch.value.name) await branchRequest(`/${selectedBranch.value._id}`, 'PUT', { name })
+}
+
+const updateBranch = async (change: { isDefault?: boolean; isBeta?: boolean }) => {
+  if (selectedBranch.value) await branchRequest(`/${selectedBranch.value._id}`, 'PUT', change)
+}
+
+const deleteBranch = async () => {
+  if (!selectedBranch.value || !confirm(t('branch.delete_confirm', { name: selectedBranch.value.name }))) return
+  await branchRequest(`/${selectedBranch.value._id}`, 'DELETE')
+}
+
 // Version History Pagination
 const versionPage = ref(1)
 const versionsPerPage = 5
 
 const totalVersionPages = computed(() => {
-  if (!mod.value || !mod.value.versions) return 1
-  return Math.ceil(mod.value.versions.length / versionsPerPage) || 1
+  return Math.ceil(branchVersions.value.length / versionsPerPage) || 1
 })
 
 const paginatedVersions = computed(() => {
-  if (!mod.value || !mod.value.versions) return []
   const start = (versionPage.value - 1) * versionsPerPage
   const end = start + versionsPerPage
-  return mod.value.versions.slice(start, end)
+  return branchVersions.value.slice(start, end)
 })
 
 const changeVersionPage = (page: number) => {
@@ -757,11 +864,12 @@ const updateForm = ref({
   },
   changelog: '',
   gameVersion: '',
-  isBeta: false
+  branchId: selectedBranchId.value,
+  loaderLinks: {} as LoaderLinksForm
 })
-const hasUpdateDownload = computed(() => updateForm.value.downloadMode === 'unified'
+const hasUpdateDownload = computed(() => hasLoaderLink(updateForm.value.loaderLinks) || (updateForm.value.downloadMode === 'unified'
   ? updateForm.value.downloadUrl.trim().length > 0
-  : Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0))
+  : Object.values(updateForm.value.platformDownloads).some((url) => url.trim().length > 0)))
 const submittingUpdate = ref(false)
 const editingVersionId = ref<string | null>(null)
 const editingVersion = computed(() => mod.value?.versions?.find((v) => v._id === editingVersionId.value) ?? null)
@@ -777,7 +885,8 @@ const emptyUpdateForm = () => ({
   },
   changelog: '',
   gameVersion: '',
-  isBeta: false
+  branchId: selectedBranchId.value,
+  loaderLinks: {} as LoaderLinksForm
 })
 
 const startEditVersion = (ver: ModVersion) => {
@@ -796,7 +905,8 @@ const startEditVersion = (ver: ModVersion) => {
     },
     changelog: ver.changelog || '',
     gameVersion: ver.gameVersion || '',
-    isBeta: !!ver.isBeta
+    branchId: ver.branchId,
+    loaderLinks: loaderLinksToForm(ver.loaderDownloads)
   }
   formError.value = ''
   formSuccess.value = ''
@@ -1072,7 +1182,11 @@ const submitUpdate = async () => {
     const response = await $fetch<{ requiresReview?: boolean }>(isEditing ? `/api/mods/${slug}/versions/${editingVersionId.value}` : `/api/mods/${slug}/versions`, {
       method: isEditing ? 'PUT' : 'POST',
       body: {
-        ...updateForm.value,
+        version: updateForm.value.version,
+        changelog: updateForm.value.changelog,
+        gameVersion: updateForm.value.gameVersion,
+        branchId: updateForm.value.branchId,
+        loaderDownloads: loaderLinksToBody(updateForm.value.loaderLinks),
         downloadUrl: updateForm.value.downloadMode === 'unified'
           ? updateForm.value.downloadUrl.trim()
           : Object.values(updateForm.value.platformDownloads).find((url) => url.trim()) || '',
@@ -2200,4 +2314,75 @@ onMounted(() => {
   }
 }
 
+.branch-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.branch-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.branch-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.branch-tab:hover {
+  color: var(--text);
+}
+
+.branch-tab.active {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.branch-add {
+  border-style: dashed;
+}
+
+.branch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.branch-description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.creator-org {
+  text-decoration: none;
+  color: inherit;
+}
+
+.org-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+}
 </style>

@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core'
-import type { PlatformDownloads } from '../utils/mod-platform'
+import type { LoaderDownloads, PlatformDownloads } from '../utils/mod-platform'
 
 export const GAMES = ['adofai', 'rhythm-doctor', 'dancing-line'] as const
 export const CATEGORIES = ['ui', 'gameplay', 'utility', 'visuals', 'library'] as const
@@ -59,6 +59,26 @@ export interface PendingModEdit {
   createdAt?: string
 }
 
+export const organizations = sqliteTable('organizations', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description').notNull().default(''),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
+})
+
+export const organizationMembers = sqliteTable('organization_members', {
+  organizationId: text('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  role: text('role', { enum: ['owner', 'member'] }).notNull(),
+  status: text('status', { enum: ['accepted', 'pending'] }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+}, (t) => [
+  primaryKey({ columns: [t.organizationId, t.userId] }),
+  index('organization_members_user_idx').on(t.userId, t.status)
+])
+
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   discordId: text('discord_id').notNull().unique(),
@@ -86,6 +106,12 @@ export const mods = sqliteTable('mods', {
   games: text('games', { mode: 'json' }).$type<Game[]>().notNull().default(sql`'[]'`),
   categories: text('categories', { mode: 'json' }).$type<Category[]>().notNull(),
   authorId: text('author_id').notNull(),
+  organizationId: text('organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+  // Set for every mod since migration 0003; null only transiently
+  defaultBranchId: text('default_branch_id'),
+  betaBranchId: text('beta_branch_id'),
+  // Pending ownership transfer to another user; they must accept
+  transferToUserId: text('transfer_to_user_id'),
   pendingEdit: text('pending_edit', { mode: 'json' }).$type<PendingModEdit | null>(),
   isApproved: integer('is_approved', { mode: 'boolean' }).notNull().default(false),
   rejectionReason: text('rejection_reason').notNull().default(''),
@@ -121,12 +147,27 @@ export const modDependencies = sqliteTable('mod_dependencies', {
   primaryKey({ columns: [t.modId, t.dependencyId] })
 ])
 
+export const modBranches = sqliteTable('mod_branches', {
+  id: text('id').primaryKey(),
+  modId: text('mod_id').notNull().references(() => mods.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  position: integer('position').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
+}, (t) => [
+  index('mod_branches_mod_idx').on(t.modId)
+])
+
 export const modVersions = sqliteTable('mod_versions', {
   id: text('id').primaryKey(),
   modId: text('mod_id').notNull().references(() => mods.id, { onDelete: 'cascade' }),
+  // Null only for rows written before migration 0003; readers fall back to the mod's default branch
+  branchId: text('branch_id').references(() => modBranches.id, { onDelete: 'cascade' }),
   version: text('version').notNull(),
+  // Generic (any loader) link; empty when the version only has loader-specific files
   downloadUrl: text('download_url').notNull(),
   platformDownloads: text('platform_downloads', { mode: 'json' }).$type<PlatformDownloads>().notNull(),
+  loaderDownloads: text('loader_downloads', { mode: 'json' }).$type<LoaderDownloads>().notNull().default(sql`'{}'`),
   changelog: text('changelog').notNull().default(''),
   gameVersion: text('game_version').notNull().default(''),
   isApproved: integer('is_approved', { mode: 'boolean' }).notNull().default(false),
@@ -142,3 +183,5 @@ export const modVersions = sqliteTable('mod_versions', {
 export type UserRow = typeof users.$inferSelect
 export type ModRow = typeof mods.$inferSelect
 export type ModVersionRow = typeof modVersions.$inferSelect
+export type ModBranchRow = typeof modBranches.$inferSelect
+export type OrganizationRow = typeof organizations.$inferSelect

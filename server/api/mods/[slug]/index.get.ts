@@ -1,5 +1,5 @@
 import { useDb } from '../../../utils/db'
-import { findModBySlug, hydrateMods, stripDownloadUrls } from '../../../utils/mod-repo'
+import { findModBySlug, hydrateMods, isModManager, latestVersions, stripDownloadUrls } from '../../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -24,11 +24,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const isOwnerOrAdmin = !!currentUser && (
-      currentUser.isAdmin ||
-      mod.authorId?._id === currentUser.id ||
-      mod.collaboratorIds.some((c) => c._id === currentUser.id)
-    )
+    const isOwnerOrAdmin = isModManager(mod, currentUser)
 
     // Unapproved mods are only visible to owners and admins
     if (!mod.isApproved && !isOwnerOrAdmin) {
@@ -40,12 +36,7 @@ export default defineEventHandler(async (event) => {
 
     const versions = isOwnerOrAdmin ? mod.versions : mod.versions.filter((v) => v.isApproved)
 
-    const approvedVersions = versions.filter((v) => v.isApproved)
-    const latestVersion = approvedVersions.find((v) => !v.isBeta) || null
-    const latestBeta = approvedVersions.find((v) => v.isBeta) || null
-    const latestBetaVersion = latestBeta && (!latestVersion || new Date(latestBeta.createdAt) > new Date(latestVersion.createdAt))
-      ? latestBeta
-      : null
+    const { latestVersion, latestBetaVersion, latestIn } = latestVersions(mod, versions)
 
     return {
       mod: {
@@ -53,8 +44,12 @@ export default defineEventHandler(async (event) => {
         pendingEdit: isOwnerOrAdmin ? mod.pendingEdit : undefined,
         // Editors get the raw links back so they can edit versions
         versions: versions.map((v) => isOwnerOrAdmin
-          ? { ...stripDownloadUrls(v), downloadUrl: v.downloadUrl, platformDownloads: v.platformDownloads }
-          : stripDownloadUrls(v))
+          ? { ...stripDownloadUrls(v), downloadUrl: v.downloadUrl, platformDownloads: v.platformDownloads, loaderDownloads: v.loaderDownloads }
+          : stripDownloadUrls(v)),
+        branches: mod.branches.map((b) => {
+          const latest = latestIn(b._id)
+          return { ...b, latestVersion: latest ? stripDownloadUrls(latest) : null }
+        })
       },
       latestVersion: latestVersion ? stripDownloadUrls(latestVersion) : null,
       latestBetaVersion: latestBetaVersion ? stripDownloadUrls(latestBetaVersion) : null,

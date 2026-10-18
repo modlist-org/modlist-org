@@ -132,6 +132,7 @@
                     <NuxtLink :to="`/mods/${ver.modSlug}`" class="review-title-link">{{ ver.modName }}</NuxtLink>
                   </h3>
                   <span class="badge badge-admin">{{ t('admin.update_version', { version: ver.version }) }}</span>
+                  <span v-if="ver.branchName" class="badge badge-game">{{ t('branch.label') }}: {{ ver.branchName }}</span>
                 </div>
                 <div class="review-meta">
                   <span class="badge badge-game">{{ getGameLabel(ver.game) }}</span>
@@ -151,10 +152,16 @@
             </div>
 
             <div class="release-box">
-              <div class="release-row">
+              <div v-if="ver.downloadUrl" class="release-row">
                 <span class="release-label">{{ t('admin.download_link') }}</span>
                 <a :href="ver.downloadUrl" target="_blank" rel="noopener" class="release-link">{{ ver.downloadUrl }}</a>
               </div>
+              <template v-for="(entry, loader) in ver.loaderDownloads || {}" :key="loader">
+                <div v-for="(url, platform) in loaderLinks(entry)" :key="`${loader}-${platform}`" class="release-row">
+                  <span class="release-label">{{ loaderLabel(String(loader)) }}{{ platform === 'all' ? '' : ` (${platform})` }}</span>
+                  <a :href="url" target="_blank" rel="noopener" class="release-link">{{ url }}</a>
+                </div>
+              </template>
               <details v-if="ver.changelog" class="release-details" open>
                 <summary>{{ t('mod.details.changelog') }}</summary>
                 <p class="release-changelog">{{ ver.changelog }}</p>
@@ -409,12 +416,18 @@
 
 <script setup lang="ts">
 import { SITE_LOCALES } from '../utils/locales'
+import { loaderLabel } from '../utils/loaders'
 import type { ModTranslation, ModTranslations } from '../utils/locales'
 import { ref, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
+
+const loaderLinks = (entry: { downloadUrl: string; platformDownloads: Record<string, string> }) => {
+  const platforms = Object.entries(entry.platformDownloads || {}).filter(([, url]) => !!url)
+  return platforms.length > 0 ? Object.fromEntries(platforms) : { all: entry.downloadUrl }
+}
 const { user, loading: authLoading } = useAuth()
 
 useSeoMeta({
@@ -448,6 +461,8 @@ interface PendingVersion {
   versionId: string
   version: string
   downloadUrl: string
+  branchName?: string
+  loaderDownloads?: Record<string, { downloadUrl: string; platformDownloads: Record<string, string> }>
   changelog: string
   submittedBy?: {
     username: string

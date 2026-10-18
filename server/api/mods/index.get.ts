@@ -1,8 +1,8 @@
 import { and, asc, count, desc, eq, exists, inArray, or, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
-import { mods, modCollaborators, CATEGORIES, GAMES } from '../../db/schema'
+import { mods, modCollaborators, organizationMembers, CATEGORIES, GAMES } from '../../db/schema'
 import { useDb, likePattern } from '../../utils/db'
-import { hydrateMods, stripDownloadUrls } from '../../utils/mod-repo'
+import { hydrateMods, isModManager, latestVersions, stripDownloadUrls } from '../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -57,6 +57,11 @@ export default defineEventHandler(async (event) => {
         eq(modCollaborators.modId, mods.id),
         eq(modCollaborators.userId, currentUser.id),
         eq(modCollaborators.status, 'accepted')
+      ))),
+      exists(db.select({ one: sql`1` }).from(organizationMembers).where(and(
+        eq(organizationMembers.organizationId, mods.organizationId),
+        eq(organizationMembers.userId, currentUser.id),
+        eq(organizationMembers.status, 'accepted')
       )))
     )!)
   } else {
@@ -97,15 +102,12 @@ export default defineEventHandler(async (event) => {
     const hydrated = await hydrateMods(db, rows)
 
     const sanitizedMods = hydrated.map((mod) => {
-      const isOwnerOrAdmin = currentUser && (
-        currentUser.isAdmin ||
-        mod.authorId?._id === currentUser.id ||
-        mod.collaboratorIds.some((c) => c._id === currentUser.id)
-      )
+      const isOwnerOrAdmin = isModManager(mod, currentUser)
 
       // Only owners/admins see unapproved versions
       const visibleVersions = isOwnerOrAdmin ? mod.versions : mod.versions.filter((v) => v.isApproved)
-      const latestVersion = visibleVersions.find((v) => !v.isBeta) || visibleVersions[0] || null
+      const latestVersion = latestVersions(mod, visibleVersions).latestVersion
+        || visibleVersions.find((v) => v.branchId === mod.defaultBranchId) || visibleVersions[0] || null
 
       return {
         ...mod,

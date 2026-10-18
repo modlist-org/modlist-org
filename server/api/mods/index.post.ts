@@ -1,7 +1,7 @@
-import { mods, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames, normalizeTranslations } from '../../db/schema'
+import { mods, modBranches, modVersions, modCollaborators, modDependencies, CATEGORIES, normalizeGames, normalizeTranslations } from '../../db/schema'
 import { useDb, newId } from '../../utils/db'
-import { getAvailablePlatforms, isHttpUrl, normalizePlatformDownloads } from '../../utils/mod-platform'
-import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
+import { isHttpUrl, parseVersionInput } from '../../utils/mod-platform'
+import { collaboratorRows, dependencyRows, findModBySlug, hydrateMods, isOrgMember, validateDependencyIds, validateUserIds } from '../../utils/mod-repo'
 import { storeLogo } from '../../utils/logo'
 import { runInBackground, sendAdminPendingWebhook, sendDiscordWebhook } from '../../utils/webhook'
 
@@ -25,31 +25,26 @@ export default defineEventHandler(async (event) => {
     summary,
     description,
     translations,
-    version,
-    downloadUrl,
-    platformDownloads,
     changelog,
-    gameVersion,
     collaboratorIds,
+    organizationId,
     logo,
     sourceUrl,
     communityUrl,
-    dependencies,
-    isBeta
+    dependencies
   } = body
 
   // 1. Validations
-  const normalizedPlatformDownloads = normalizePlatformDownloads(platformDownloads)
-  const availablePlatforms = getAvailablePlatforms(normalizedPlatformDownloads)
-
   const targetGames = normalizeGames(games, game)
 
-  if (!name || !slug || targetGames.length === 0 || !categories || !summary || !version || (!downloadUrl && availablePlatforms.length === 0)) {
+  if (!name || !slug || targetGames.length === 0 || !categories || !summary) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Required fields: name, slug, game, categories, summary, version, and at least one platform download link.'
     })
   }
+
+  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, gameVersion, isBeta } = parseVersionInput(body)
 
   if (sourceUrl && !isHttpUrl(sourceUrl)) {
     throw createError({
@@ -93,23 +88,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (downloadUrl && !isHttpUrl(downloadUrl)) {
+  if (organizationId && (typeof organizationId !== 'string' || !await isOrgMember(db, organizationId, currentUser.id))) {
     throw createError({
-      statusCode: 400,
-      statusMessage: 'Download link must be a valid direct HTTP/HTTPS URL (e.g. GitHub release).'
+      statusCode: 403,
+      statusMessage: 'You can only assign mods to organizations you are a member of.'
     })
   }
-
-  for (const platform of availablePlatforms) {
-    if (!isHttpUrl(normalizedPlatformDownloads[platform])) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: `${platform} download link must be a valid direct HTTP/HTTPS URL.`
-      })
-    }
-  }
-
-  const normalizedDownloadUrl = downloadUrl?.trim() || normalizedPlatformDownloads[availablePlatforms[0] as keyof typeof normalizedPlatformDownloads]
 
   const validatedCollabIds = await validateUserIds(db, collaboratorIds, currentUser.id)
   const validatedDepIds = await validateDependencyIds(db, dependencies, targetGames)
@@ -121,6 +105,9 @@ export default defineEventHandler(async (event) => {
 
   try {
     const modId = newId()
+    const mainBranchId = newId()
+    // Beta first releases also get a beta branch, matching how migrated mods were split
+    const betaBranchId = isBeta ? newId() : null
     const now = new Date()
     const initialChangelog = changelog || 'Initial release'
 
@@ -136,6 +123,9 @@ export default defineEventHandler(async (event) => {
         description: description || '',
         translations: normalizeTranslations(translations),
         authorId: currentUser.id,
+        organizationId: organizationId || null,
+        defaultBranchId: mainBranchId,
+        betaBranchId,
         isApproved: isAutoApproved,
         logo: storedLogo,
         sourceUrl: sourceUrl || '',
@@ -144,16 +134,22 @@ export default defineEventHandler(async (event) => {
         createdAt: now,
         updatedAt: now
       }),
+      db.insert(modBranches).values([
+        { id: mainBranchId, modId, name: 'main', position: 0, createdAt: now },
+        ...(betaBranchId ? [{ id: betaBranchId, modId, name: 'beta', position: 1, createdAt: now }] : [])
+      ]),
       db.insert(modVersions).values({
         id: newId(),
         modId,
+        branchId: betaBranchId ?? mainBranchId,
         version,
-        downloadUrl: normalizedDownloadUrl!,
+        downloadUrl: normalizedDownloadUrl,
         platformDownloads: normalizedPlatformDownloads,
+        loaderDownloads,
         changelog: initialChangelog,
         gameVersion: gameVersion || '',
         isApproved: isAutoApproved,
-        isBeta: !!isBeta,
+        isBeta,
         submittedBy: currentUser.id,
         createdAt: now
       }),
@@ -168,7 +164,7 @@ export default defineEventHandler(async (event) => {
         runInBackground(event, sendDiscordWebhook(
           event,
           hydrated,
-          { version, downloadUrl: normalizedDownloadUrl!, changelog: initialChangelog, gameVersion: gameVersion || '', isBeta: !!isBeta }
+          { version, downloadUrl: normalizedDownloadUrl, changelog: initialChangelog, gameVersion, isBeta }
         ), 'Discord webhook on creation')
       }
     } else {

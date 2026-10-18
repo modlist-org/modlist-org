@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { mods, modVersions } from '../../../db/schema'
 import { useDb, newId } from '../../../utils/db'
 import { normalizeVersionString, parseVersionInput } from '../../../utils/mod-platform'
-import { canManageMod, findModBySlug, hydrateMods } from '../../../utils/mod-repo'
+import { canManageMod, findBranch, findModBySlug, hydrateMods } from '../../../utils/mod-repo'
 import type { ModDto } from '../../../utils/mod-repo'
 import { runInBackground, sendAdminPendingWebhook, sendDiscordWebhook } from '../../../utils/webhook'
 
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const input = parseVersionInput(await readBody(event))
-  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, changelog, gameVersion, isBeta } = input
+  const { version, downloadUrl: normalizedDownloadUrl, platformDownloads: normalizedPlatformDownloads, loaderDownloads, changelog, gameVersion } = input
 
   try {
     const db = useDb(event)
@@ -47,9 +47,20 @@ export default defineEventHandler(async (event) => {
     // Auto-approve version if submitted by verified developer or admin
     const isAutoApproved = currentUser.isVerifiedDeveloper || currentUser.isAdmin
 
+    // Older clients send isBeta instead of a branch
+    const branchId = input.branchId ?? (input.isBeta && mod.betaBranchId ? mod.betaBranchId : mod.defaultBranchId)
+    if (!branchId || !await findBranch(db, mod.id, branchId)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Branch not found for this mod.'
+      })
+    }
+    const isBeta = branchId === mod.betaBranchId
+
+    // Version numbers are unique per branch
     const existingVersions = await db.select().from(modVersions).where(eq(modVersions.modId, mod.id))
     const normalizedNewVersion = normalizeVersionString(version)
-    const existingVer = existingVersions.find((v) => normalizeVersionString(v.version) === normalizedNewVersion)
+    const existingVer = existingVersions.find((v) => (v.branchId ?? mod.defaultBranchId) === branchId && normalizeVersionString(v.version) === normalizedNewVersion)
 
     if (existingVer?.isApproved) {
       throw createError({
@@ -60,12 +71,14 @@ export default defineEventHandler(async (event) => {
 
     const now = new Date()
     const fields = {
-      downloadUrl: normalizedDownloadUrl as string,
+      branchId,
+      downloadUrl: normalizedDownloadUrl,
       platformDownloads: normalizedPlatformDownloads,
+      loaderDownloads,
       changelog: changelog || '',
       gameVersion: gameVersion || '',
       isApproved: isAutoApproved,
-      isBeta: !!isBeta,
+      isBeta,
       rejectionReason: '',
       submittedBy: currentUser.id,
       createdAt: now
@@ -85,13 +98,14 @@ export default defineEventHandler(async (event) => {
         runInBackground(event, sendDiscordWebhook(
           event,
           hydrated as ModDto,
-          { version, downloadUrl: normalizedDownloadUrl as string, changelog: changelog || '', gameVersion: gameVersion || '', isBeta: !!isBeta },
+          { version, downloadUrl: normalizedDownloadUrl, changelog: changelog || '', gameVersion: gameVersion || '', isBeta },
           true
         ), 'Discord webhook on version update')
       }
     } else if (mod.isApproved) {
       // Versions of unapproved mods are reviewed together with the mod itself
-      runInBackground(event, sendAdminPendingWebhook(event, 'version', mod, `v${version}`), 'Admin webhook on pending version')
+      const branch = await findBranch(db, mod.id, branchId)
+      runInBackground(event, sendAdminPendingWebhook(event, 'version', mod, `v${version} (${branch?.name ?? 'main'})`), 'Admin webhook on pending version')
     }
 
     const savedVersion = saved[0]!

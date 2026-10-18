@@ -167,7 +167,11 @@
           v-model:mode="form.downloadMode"
           v-model:unified-url="form.downloadUrl"
           v-model:platform-downloads="form.platformDownloads"
+          :optional="hasLoaderLink(form.loaderLinks)"
+          :help="t('loader.generic_help')"
         />
+
+        <LoaderLinksInput v-model="form.loaderLinks" />
 
         <div class="form-group">
           <label for="mod-changelog">{{ t('submit.changelog') }}</label>
@@ -192,6 +196,15 @@
       <!-- Team -->
       <section class="card form-section">
         <h2 class="section-title">{{ t('submit.section_team') }}</h2>
+
+        <div v-if="myOrgs.length > 0" class="form-group">
+          <label for="mod-org">{{ t('org.owner_label') }}</label>
+          <select id="mod-org" v-model="form.organizationId">
+            <option value="">{{ t('transfer.personal') }}</option>
+            <option v-for="o in myOrgs" :key="o._id" :value="o._id">{{ o.name }}</option>
+          </select>
+          <span class="form-help-text">{{ t('org.owner_help') }}</span>
+        </div>
 
         <div class="form-group">
           <label for="collab-search">{{ t('submit.collaborators') }}</label>
@@ -307,6 +320,8 @@
 <script setup lang="ts">
 import { MAX_LOGO_BYTES, MAX_SOURCE_BYTES, dataUrlBytes, prepareLogo } from '../utils/logo-image'
 import type { ModTranslations } from '../utils/locales'
+import { hasLoaderLink, loaderLinksToBody } from '../utils/loaders'
+import type { LoaderLinksForm } from '../utils/loaders'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n, navigateTo, useSeoMeta } from '#imports'
 import { UIToggle } from 'overlayer-ui'
@@ -354,8 +369,12 @@ const form = ref({
   },
   changelog: '',
   gameVersion: '',
-  isBeta: false
+  isBeta: false,
+  organizationId: '',
+  loaderLinks: {} as LoaderLinksForm
 })
+
+const myOrgs = ref<{ _id: string; name: string }[]>([])
 
 interface DependencyMod {
   _id: string
@@ -382,9 +401,9 @@ const successMsg = ref('')
 
 const logoInput = ref<HTMLInputElement | null>(null)
 
-const hasDownload = computed(() => form.value.downloadMode === 'unified'
+const hasDownload = computed(() => hasLoaderLink(form.value.loaderLinks) || (form.value.downloadMode === 'unified'
   ? form.value.downloadUrl.trim().length > 0
-  : Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0))
+  : Object.values(form.value.platformDownloads).some((url) => url.trim().length > 0)))
 
 const onAvatarError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/images/default_avatar.png'
@@ -572,6 +591,9 @@ const handleSubmit = async () => {
       platformDownloads: form.value.downloadMode === 'platform'
         ? Object.fromEntries(Object.entries(form.value.platformDownloads).filter(([, url]) => url.trim()))
         : {},
+      loaderLinks: undefined,
+      loaderDownloads: loaderLinksToBody(form.value.loaderLinks),
+      organizationId: form.value.organizationId || undefined,
       collaboratorIds: selectedCollabs.value.map((c) => c._id),
       dependencies: selectedDependencies.value.map((d) => d._id)
     }
@@ -599,6 +621,13 @@ onMounted(() => {
     navigateTo('/')
   }
 })
+
+watch(user, (u) => {
+  if (!u) return
+  $fetch<{ organizations: typeof myOrgs.value }>('/api/orgs/mine')
+    .then((res) => { myOrgs.value = res.organizations })
+    .catch(() => {})
+}, { immediate: true })
 </script>
 
 <style scoped>

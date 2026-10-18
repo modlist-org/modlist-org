@@ -1,0 +1,1 @@
+ALTER TABLE `mods` ADD `transfer_to_user_id` text;

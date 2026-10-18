@@ -22,6 +22,20 @@
       "when": 1791292930797,
       "tag": "0002_mod_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792291397380,
+      "tag": "0003_orgs_branches_loaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792291633808,
+      "tag": "0004_mod_transfer",
+      "breakpoints": true
     }
   ]
 }

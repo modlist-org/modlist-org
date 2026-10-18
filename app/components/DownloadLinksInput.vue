@@ -2,8 +2,8 @@
   <div class="download-links">
     <div class="download-links-header">
       <div class="download-links-heading">
-        <span class="download-links-title">{{ t('submit.platform_downloads', 'Download links') }}</span>
-        <span class="form-help-text">{{ t('submit.platform_downloads_help', 'Choose one link for every OS or provide separate OS links.') }}</span>
+        <span class="download-links-title">{{ title || t('submit.platform_downloads', 'Download links') }}</span>
+        <span class="form-help-text">{{ help || t('submit.platform_downloads_help', 'Choose one link for every OS or provide separate OS links.') }}</span>
       </div>
 
       <div class="segmented" role="tablist">
@@ -41,7 +41,7 @@
           type="url"
           :placeholder="t('submit.download_placeholder')"
           :aria-label="t('submit.download_all_platforms', 'All platforms')"
-          required
+          :required="!optional"
           @input="updateUnifiedUrl"
         >
       </div>
@@ -55,7 +55,7 @@
           type="url"
           :placeholder="t('submit.download_placeholder')"
           :aria-label="platform.label"
-          :required="!hasPlatformDownload"
+          :required="!optional && !hasPlatformDownload"
           @input="updatePlatformUrl(platform.key, $event)"
         >
       </div>
@@ -75,6 +75,9 @@ const props = defineProps<{
   mode: DownloadMode
   unifiedUrl: string
   platformDownloads: PlatformDownloads
+  optional?: boolean
+  title?: string
+  help?: string
 }>()
 
 const emit = defineEmits<{

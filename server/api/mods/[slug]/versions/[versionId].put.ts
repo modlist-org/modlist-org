@@ -2,7 +2,8 @@ import { and, eq } from 'drizzle-orm'
 import { mods, modVersions } from '../../../../db/schema'
 import { useDb } from '../../../../utils/db'
 import { normalizeVersionString, parseVersionInput } from '../../../../utils/mod-platform'
-import { canManageMod, findModBySlug } from '../../../../utils/mod-repo'
+import { runInBackground, sendAdminPendingWebhook } from '../../../../utils/webhook'
+import { canManageMod, findBranch, findModBySlug } from '../../../../utils/mod-repo'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')?.toLowerCase()
@@ -51,20 +52,31 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const normalized = normalizeVersionString(input.version)
-    if (versions.some((v) => v.id !== target.id && normalizeVersionString(v.version) === normalized)) {
+    const { branchId: requestedBranchId, isBeta: _, ...fields } = input
+    const branchId = requestedBranchId ?? target.branchId ?? mod.defaultBranchId
+    if (!branchId || !await findBranch(db, mod.id, branchId)) {
       throw createError({
         statusCode: 400,
-        statusMessage: `Version ${input.version} already exists for this mod.`
+        statusMessage: 'Branch not found for this mod.'
+      })
+    }
+    const branchOf = (v: typeof target) => v.branchId ?? mod.defaultBranchId
+
+    const normalized = normalizeVersionString(input.version)
+    if (versions.some((v) => v.id !== target.id && branchOf(v) === branchId && normalizeVersionString(v.version) === normalized)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Version ${input.version} already exists in this branch.`
       })
     }
 
     const changed = target.version !== input.version
+      || branchOf(target) !== branchId
+      || JSON.stringify(target.loaderDownloads ?? {}) !== JSON.stringify(input.loaderDownloads)
       || target.downloadUrl !== input.downloadUrl
       || JSON.stringify(target.platformDownloads ?? {}) !== JSON.stringify(input.platformDownloads)
       || target.changelog !== input.changelog
       || target.gameVersion !== input.gameVersion
-      || target.isBeta !== input.isBeta
 
     if (!changed) {
       return { success: true, version: { ...target, _id: target.id }, requiresReview: !target.isApproved }
@@ -75,7 +87,9 @@ export default defineEventHandler(async (event) => {
 
     const [saved] = await db.batch([
       db.update(modVersions).set({
-        ...input,
+        ...fields,
+        branchId,
+        isBeta: branchId === mod.betaBranchId,
         isApproved: isTrusted,
         rejectionReason: ''
       }).where(and(eq(modVersions.id, target.id), eq(modVersions.modId, mod.id))).returning(),
@@ -83,6 +97,9 @@ export default defineEventHandler(async (event) => {
     ])
 
     const savedVersion = saved[0]!
+    if (!isTrusted && mod.isApproved) {
+      runInBackground(event, sendAdminPendingWebhook(event, 'version', mod, `v${savedVersion.version} (edited)`), 'Admin webhook on edited version')
+    }
     return {
       success: true,
       version: { ...savedVersion, _id: savedVersion.id },

@@ -262,6 +262,8 @@
           </div>
         </div>
       </form>
+
+      <ModTransferCard :mod="mod" @changed="loadModDetails" />
     </template>
 
     <div v-else class="empty-state">
@@ -338,6 +340,8 @@ interface ModItem {
     avatar?: string
     isVerifiedDeveloper: boolean
   }
+  organization?: { _id: string; name: string } | null
+  transferToUserId?: string | null
   collaboratorIds: SearchUserItem[]
   pendingCollaboratorIds: SearchUserItem[]
   dependencies: string[]

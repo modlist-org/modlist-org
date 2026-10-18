@@ -24,8 +24,11 @@
             <span v-else :style="getFallbackGradientStyle(inv.name)">{{ inv.name ? inv.name.charAt(0).toUpperCase() : 'M' }}</span>
           </div>
           <div class="invite-body">
-            <div class="invite-name">{{ inv.name }}</div>
-            <div class="invite-meta">
+            <div class="invite-name">
+              {{ inv.name }}
+              <span class="badge badge-category">{{ t(`pending.invite_kind_${inv.kind}`) }}</span>
+            </div>
+            <div v-if="inv.kind !== 'org'" class="invite-meta">
               <span>{{ t('mod.details.creator_label') }}</span>
               <img :src="inv.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <span class="invite-author">{{ inv.authorId?.globalName || inv.authorId?.username }}</span>
@@ -33,10 +36,10 @@
             </div>
           </div>
           <div class="invite-actions">
-            <button type="button" class="btn btn-sm btn-ghost" @click="respondInvitation(inv.slug, 'reject')">
+            <button type="button" class="btn btn-sm btn-ghost" @click="respondInvitation(inv, 'reject')">
               {{ t('pending.reject') }}
             </button>
-            <button type="button" class="btn btn-sm btn-primary" @click="respondInvitation(inv.slug, 'accept')">
+            <button type="button" class="btn btn-sm btn-primary" @click="respondInvitation(inv, 'accept')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
               {{ t('pending.accept') }}
             </button>
@@ -257,7 +260,8 @@ const onAvatarError = (e: Event) => {
 const { user, loading: authLoading, invitationsCount } = useAuth()
 
 const mods = ref<ModItem[]>([])
-const invitations = ref<ModItem[]>([])
+type Invitation = Pick<ModItem, '_id' | 'name' | 'slug'> & Partial<ModItem> & { kind: 'collab' | 'transfer' | 'org' }
+const invitations = ref<Invitation[]>([])
 const loading = ref(true)
 
 const fetchPendingModsAndInvitations = async () => {
@@ -265,10 +269,14 @@ const fetchPendingModsAndInvitations = async () => {
   try {
     const [modsRes, invsRes] = await Promise.all([
       $fetch<{ mods: ModItem[] }>('/api/mods', { params: { pending: 'true' } }),
-      $fetch<{ mods: ModItem[] }>('/api/mods/invitations')
+      $fetch<{ mods: ModItem[]; transfers?: ModItem[]; organizations?: { _id: string; name: string; slug: string }[] }>('/api/mods/invitations')
     ])
     mods.value = modsRes.mods || []
-    invitations.value = invsRes.mods || []
+    invitations.value = [
+      ...(invsRes.transfers || []).map((m) => ({ ...m, kind: 'transfer' as const })),
+      ...(invsRes.mods || []).map((m) => ({ ...m, kind: 'collab' as const })),
+      ...(invsRes.organizations || []).map((o) => ({ ...o, kind: 'org' as const }))
+    ]
     invitationsCount.value = invitations.value.length
   } catch (error) {
     console.error('Failed to load pending mods/invitations:', error)
@@ -277,9 +285,12 @@ const fetchPendingModsAndInvitations = async () => {
   }
 }
 
-const respondInvitation = async (slug: string, action: 'accept' | 'reject') => {
+const respondInvitation = async (inv: Invitation, action: 'accept' | 'reject') => {
+  const path = inv.kind === 'org'
+    ? `/api/orgs/${inv.slug}/respond`
+    : `/api/mods/${inv.slug}/${inv.kind === 'transfer' ? 'respond-transfer' : 'respond-invitation'}`
   try {
-    await $fetch(`/api/mods/${slug}/respond-invitation`, {
+    await $fetch(path, {
       method: 'POST',
       body: { action }
     })
