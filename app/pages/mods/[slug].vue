@@ -2175,7 +2175,10 @@ a.creator-chip:hover .creator-name {
 }
 
 .feature-icon {
-  font-size: 15px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--accent);
 }
 
 .modal-actions {
