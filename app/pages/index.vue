@@ -508,12 +508,12 @@ onMounted(() => {
   gap: var(--space-2xl);
 }
 
-/* Hero: Index posture, the head small and the mod index below it is the visual */
+/* Hero: Index posture, head then search stacked, the mod index below it is the visual */
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  align-items: end;
-  gap: var(--space-lg) var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xl);
   padding: var(--space-xl) 0 var(--space-xl);
   border-bottom: var(--rule-hair) solid var(--border);
 }
@@ -546,6 +546,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-md);
+  width: 100%;
+  max-width: 640px;
   min-width: 0;
 }
 
@@ -855,7 +857,6 @@ onMounted(() => {
 
 @media (max-width: 960px) {
   .hero {
-    grid-template-columns: minmax(0, 1fr);
     padding-top: var(--space-md);
   }
   .browse {
