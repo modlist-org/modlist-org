@@ -508,11 +508,12 @@ onMounted(() => {
   gap: var(--space-2xl);
 }
 
-/* Hero: Index posture, head then search stacked, the mod index below it is the visual */
+/* Hero: Index posture, head then search stacked and centred, the mod index below it is the visual */
 .hero {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   gap: var(--space-xl);
   padding: var(--space-xl) 0 var(--space-xl);
   border-bottom: var(--rule-hair) solid var(--border);
@@ -521,12 +522,13 @@ onMounted(() => {
 .hero-head {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-md);
   min-width: 0;
 }
 
 .hero-title {
-  font-size: var(--text-display-s);
+  font-size: var(--text-page-head);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1;
@@ -544,7 +546,7 @@ onMounted(() => {
 .hero-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-md);
   width: 100%;
   max-width: 640px;

@@ -1415,7 +1415,7 @@ h1, h2, h3, .page-title, .section-title, .empty-title {
 .mod-title {
   margin: 0;
   max-width: 18ch;
-  font-size: var(--text-display-s);
+  font-size: var(--text-page-head);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1;
