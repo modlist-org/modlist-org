@@ -532,7 +532,7 @@ onMounted(() => {
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1;
-  max-width: 14ch;
+  max-width: none;
   color: var(--text);
 }
 
