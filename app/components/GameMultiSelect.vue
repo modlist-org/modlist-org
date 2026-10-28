@@ -16,17 +16,17 @@
         <span v-for="id in modelValue" :key="id" class="game-select-tag">
           {{ label(id) }}
           <button type="button" class="game-select-tag-remove" :aria-label="t('submit.remove')" @click.stop="toggle(id)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
           </button>
         </span>
       </div>
-      <svg class="game-select-triangle" :class="{ 'is-expanded': open }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
+      <svg aria-hidden="true" class="game-select-triangle" :class="{ 'is-expanded': open }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
     </div>
 
     <transition :css="false" v-bind="expandHooks">
       <div v-if="open" class="game-select-list">
         <div v-if="options.length > SEARCH_THRESHOLD" class="game-select-search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
           <input ref="searchRef" v-model="query" type="text" :placeholder="t('submit.game_search_placeholder')" @keydown.esc="open = false">
         </div>
         <div class="game-select-rows">
@@ -119,12 +119,21 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 6px 8px 6px 8px;
+  padding: 8px 8px 8px 8px;
   background-color: var(--ol-control);
   border-radius: 8px;
   cursor: pointer;
   user-select: none;
-  outline: none;
+}
+
+.game-select-tag-remove:focus-visible {
+  outline: 2px solid var(--color-accent-ink);
+  outline-offset: 0;
+}
+
+.game-select-header:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .game-select-header::after {
@@ -134,12 +143,11 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   border: 2px solid var(--ol-accent);
   border-radius: 8px;
   opacity: 0;
-  transition: opacity 0.1s ease-out;
+  transition: opacity var(--dur-micro) var(--ease-out);
   pointer-events: none;
 }
 
 .game-select-header:hover::after,
-.game-select-header:focus-visible::after,
 .game-select.open .game-select-header::after {
   opacity: 1;
 }
@@ -148,12 +156,12 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .game-select-placeholder {
-  padding: 0 6px;
+  padding: 0 8px;
   color: var(--text-tertiary);
   font-size: 14px;
   line-height: 30px;
@@ -164,11 +172,11 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   align-items: center;
   gap: 4px;
   height: 30px;
-  padding: 0 6px 0 12px;
+  padding: 0 8px 0 12px;
   border-radius: 6px;
   background: var(--ol-button);
-  color: #fff;
-  font-size: 13px;
+  color: var(--color-accent-ink);
+  font-size: var(--text-sm);
   white-space: nowrap;
 }
 
@@ -182,13 +190,13 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .game-select-tag-remove:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  background: var(--border-strong);
+  color: var(--text);
 }
 
 .game-select-tag-remove svg {
@@ -200,8 +208,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  color: #f3f4ff;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s cubic-bezier(0.61, 1, 0.88, 1);
+  color: var(--text);
+  transition: transform 0.4s var(--ease-out), color 0.2s cubic-bezier(0.61, 1, 0.88, 1);
 }
 
 .game-select-triangle.is-expanded {
@@ -220,15 +228,15 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   flex-direction: column;
   background-color: var(--ol-control);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px -5px var(--color-shadow), 0 8px 10px -6px var(--color-shadow);
   overflow: hidden;
 }
 
 .game-select-search {
   position: relative;
   padding: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border);
 }
 
 .game-select-search svg {
@@ -245,7 +253,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 .game-select-search input {
   width: 100%;
   height: 36px;
-  padding: 0 12px 0 34px;
+  padding: 0 12px 0 32px;
   background: var(--surface-2);
 }
 
@@ -261,10 +269,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   gap: 12px;
   width: 100%;
   height: 40px;
-  padding: 0 12px 0 14px;
+  padding: 0 12px 0 16px;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--text);
   font: inherit;
   font-size: 14px;
   text-align: left;
@@ -283,7 +291,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
   flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid var(--ol-muted);
-  transition: all 0.15s ease-out;
+  transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
 }
 
 .game-select-row.selected .game-select-indicator {
@@ -292,15 +300,15 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 }
 
 .game-select-row:hover .game-select-indicator {
-  border-color: #fff;
+  border-color: var(--text);
 }
 
 .game-select-row.selected:hover .game-select-indicator {
-  background: #fff;
+  background: var(--color-doc-paper);
 }
 
 .game-select-empty {
-  padding: 12px 14px;
+  padding: 12px 16px;
   color: var(--text-tertiary);
   font-size: 14px;
 }

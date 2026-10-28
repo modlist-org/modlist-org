@@ -90,7 +90,7 @@ const pick = (u: PickedUser) => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 8px;
   border: none;
   border-radius: 6px;
   background: transparent;

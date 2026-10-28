@@ -216,7 +216,7 @@ const gradient = (name: string) => {
   let hash = 0
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
   const h1 = Math.abs(hash) % 360
-  return { background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${(h1 + 40) % 360}, 70%, 40%) 100%)` }
+  return { backgroundColor: `oklch(45% 0.1 ${h1})` }
 }
 </script>
 
@@ -327,7 +327,7 @@ const gradient = (name: string) => {
   flex-shrink: 0;
   border-radius: 10px;
   object-fit: cover;
-  color: #fff;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -349,7 +349,7 @@ const gradient = (name: string) => {
 .org-member {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .org-member img {

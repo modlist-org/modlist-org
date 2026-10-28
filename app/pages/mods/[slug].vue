@@ -7,22 +7,22 @@
   <div v-else-if="mod" class="mod-page">
     <!-- Status callouts -->
     <div v-if="!mod.isApproved && mod.rejectionReason" class="callout callout-danger">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6M9 9l6 6" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6M9 9l6 6" /></svg>
       <span>{{ t('mod.rejection_reason_banner', { reason: mod.rejectionReason }) }}</span>
     </div>
     <div v-else-if="!mod.isApproved" class="callout callout-info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
       <span>{{ t('mod.details.pending_notice') }}</span>
     </div>
 
     <div v-if="mod.editRejectionReason" class="callout callout-danger">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6M9 9l6 6" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6M9 9l6 6" /></svg>
       <span>{{ t('mod.edit_rejection_reason_banner', { reason: mod.editRejectionReason }) }}</span>
     </div>
 
     <!-- Pending Edit Banner (Only for owners/collabs/admins) -->
     <div v-if="mod.pendingEdit && isEditable" class="callout callout-warning pending-edit-callout">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /></svg>
       <span class="callout-text">{{ t('mod.details.pending_edit_banner') }}</span>
       <UIToggle
         v-model="showPreviewMode"
@@ -43,7 +43,7 @@
       <div class="mod-hero-info">
         <div class="mod-title-row">
           <h1 class="mod-title">{{ activeName }}</h1>
-          <span v-if="mod.isFeatured" class="badge badge-featured">★ {{ t('sort.featured', 'Featured') }}</span>
+          <span v-if="mod.isFeatured" class="badge badge-featured">{{ t('sort.featured', 'Featured') }}</span>
           <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
         </div>
         <p class="mod-summary">{{ shownSummary }}</p>
@@ -56,12 +56,12 @@
           <span v-if="!mod.organization" class="creator-chip">
             <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
             <span class="creator-name">{{ mod.authorId?.globalName || mod.authorId?.username }}</span>
-            <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+            <VerifiedMark v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
           </span>
           <span v-for="c in outsideCollaborators" :key="c._id" class="creator-chip">
             <img :src="c.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
             <span class="creator-name">{{ c.globalName || c.username }}</span>
-            <span v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+            <VerifiedMark v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
           </span>
         </div>
 
@@ -78,7 +78,7 @@
           class="btn btn-primary btn-lg download-btn"
           @click="triggerDownloadModal(`/api/mods/${mod.slug}/download`)"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
           <span>{{ t('mod.details.download') }}</span>
           <span class="download-btn-version">v{{ latestVersion.version }}</span>
         </button>
@@ -88,22 +88,22 @@
           class="btn btn-secondary download-btn beta-btn"
           @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?beta=true`)"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
           <span>v{{ latestBetaVersion.version }}</span>
           <span class="badge badge-beta">{{ t('mod.details.beta') }}</span>
         </button>
         <p v-if="latestVersion?.availablePlatforms?.length" class="download-platforms">
-          {{ latestVersion.availablePlatforms.map(getPlatformLabel).join(' · ') }}
+          {{ latestVersion.availablePlatforms.map(getPlatformLabel).join(', ') }}
         </p>
         <p v-if="!latestVersion && !latestBetaVersion" class="no-downloads">{{ t('mod.details.no_downloads') }}</p>
 
         <div v-if="isEditable" class="editor-actions">
           <NuxtLink :to="`/edit/${mod.slug}`" class="btn btn-secondary btn-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
             {{ t('mod.details.edit') }}
           </NuxtLink>
           <a href="#submit-update" class="btn btn-secondary btn-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg>
             {{ t('mod.details.update') }}
           </a>
         </div>
@@ -112,17 +112,17 @@
 
     <div class="mod-stats">
       <div class="mod-stat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
         <strong>{{ mod.downloads.toLocaleString('en-US') }}</strong>
         <span>{{ t('mod.details.downloads_label') }}</span>
       </div>
       <div v-if="latestVersion || latestBetaVersion" class="mod-stat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" /><path d="M7 7h.01" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" /><path d="M7 7h.01" /></svg>
         <strong>v{{ (latestVersion || latestBetaVersion)?.version }}</strong>
         <span>{{ t('mod.details.latest_version') }}</span>
       </div>
       <div v-if="latestVersion || latestBetaVersion" class="mod-stat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
         <span>{{ t('mod.details.updated') }}</span>
         <strong>{{ formatDate((latestVersion || latestBetaVersion)?.createdAt || '') }}</strong>
       </div>
@@ -206,12 +206,12 @@
                   </div>
                   <div class="version-meta">
                     <span v-if="ver.gameVersion" v-tooltip="t('mod.details.game_version_label')" class="version-meta-item">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3" /><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" /></svg>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3" /><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01" /></svg>
                       {{ ver.gameVersion }}
                     </span>
                     <span class="version-meta-item">{{ formatDate(ver.createdAt) }}</span>
                     <span class="version-meta-item">
-                      {{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[0] }}<span class="version-submitter">{{ ver.submittedBy?.globalName || ver.submittedBy?.username || 'Unknown' }}<span v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span></span>{{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[1] }}
+                      {{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[0] }}<span class="version-submitter">{{ ver.submittedBy?.globalName || ver.submittedBy?.username || 'Unknown' }}<VerifiedMark v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" /></span>{{ t('mod.details.submitted_by', { user: 'USER_PLACEHOLDER' }).split('USER_PLACEHOLDER')[1] }}
                     </span>
                     <span v-if="ver.availablePlatforms?.length" class="version-platforms">
                       <span v-for="platform in ver.availablePlatforms" :key="platform" class="badge badge-category platform-badge">{{ getPlatformLabel(platform) }}</span>
@@ -229,7 +229,7 @@
                     class="btn btn-secondary btn-sm"
                     @click="startEditVersion(ver)"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                     {{ t('mod.details.edit_version') }}
                   </button>
                   <button
@@ -245,7 +245,7 @@
                     class="btn btn-secondary btn-sm"
                     @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}&branch=${ver.branchId}`)"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
                     {{ t('mod.details.download') }}
                   </button>
                 </div>
@@ -259,7 +259,7 @@
                   class="version-file"
                   @click="triggerDownloadModal(`/api/mods/${mod.slug}/download?version=${encodeURIComponent(ver.version)}&branch=${ver.branchId}&file=${f.index}`)"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
                   {{ fileLabel(f) }}
                 </button>
               </div>
@@ -377,7 +377,7 @@
       <!-- Admin Controls Panel (Only Admins) -->
       <section v-if="user?.isAdmin" class="card side-card admin-card">
         <h3 class="side-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>
           {{ t('admin.controls') }}
         </h3>
         <div class="admin-buttons">
@@ -443,24 +443,24 @@
               class="side-link"
             >
               <!-- GitHub Icon -->
-              <svg v-if="sourceInfo?.type === 'github'" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <svg v-if="sourceInfo?.type === 'github'" aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
               </svg>
               <!-- GitLab Icon -->
-              <svg v-else-if="sourceInfo?.type === 'gitlab'" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <svg v-else-if="sourceInfo?.type === 'gitlab'" aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M23.953 13.072l-1.653-5.09a.908.908 0 0 0-.317-.417.92.92 0 0 0-.52-.108.932.932 0 0 0-.486.205.918.918 0 0 0-.275.428L18.42 15.02H5.58L3.298 7.973a.918.918 0 0 0-.275-.428.932.932 0 0 0-.486-.205.92.92 0 0 0-.52.108.908.908 0 0 0-.317.417L.047 13.072a1.002 1.002 0 0 0 .356 1.107l10.913 7.94a1.144 1.144 0 0 0 1.368 0l10.913-7.94a1.002 1.002 0 0 0 .356-1.107z" />
               </svg>
               <!-- Bitbucket Icon -->
-              <svg v-else-if="sourceInfo?.type === 'bitbucket'" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <svg v-else-if="sourceInfo?.type === 'bitbucket'" aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.313 3.007a1.246 1.246 0 0 0-1.226 1.01L18.59 20.306a1.07 1.07 0 0 1-1.053.864H6.467a1.07 1.07 0 0 1-1.053-.864L2.915 4.017A1.246 1.246 0 0 0 1.69 3.007c-.99 0-1.636 1.008-1.34 1.95l2.49 14.887a2.535 2.535 0 0 0 2.497 2.05H17.81a2.535 2.535 0 0 0 2.497-2.05l2.49-14.887a1.157 1.157 0 0 0-.156-.837 1.18 1.18 0 0 0-.74-.47L22.313 3z" />
               </svg>
               <!-- Generic Code Icon -->
-              <svg v-else class="side-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <svg v-else aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                 <polyline points="16 18 22 12 16 6" />
                 <polyline points="8 6 2 12 8 18" />
               </svg>
               <span>{{ sourceInfo?.name }}</span>
-              <svg class="side-link-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>
+              <svg aria-hidden="true" class="side-link-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>
             </a>
             <!-- Community Link -->
             <a
@@ -472,15 +472,15 @@
               :class="communityInfo.type"
             >
               <!-- Discord Icon -->
-              <svg v-if="communityInfo.type === 'discord'" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <svg v-if="communityInfo.type === 'discord'" aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.094 13.094 0 0 1-1.873-.894.077.077 0 0 1-.008-.128c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.073 0 0 1 .078.009c.12.099.246.195.373.289a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" />
               </svg>
               <!-- Generic Chat Icon -->
-              <svg v-else class="side-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <svg v-else aria-hidden="true" class="side-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span>{{ communityInfo.name }}</span>
-              <svg class="side-link-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>
+              <svg aria-hidden="true" class="side-link-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>
             </a>
           </div>
         </section>
@@ -516,7 +516,7 @@
               <div class="creator-text">
                 <span class="creator-item-name">
                   {{ mod.authorId?.globalName || mod.authorId?.username }}
-                  <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                  <VerifiedMark v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
                 </span>
                 <span class="creator-role">{{ t('mod.details.author') }}</span>
               </div>
@@ -526,7 +526,7 @@
               <div class="creator-text">
                 <span class="creator-item-name">
                   {{ c.globalName || c.username }}
-                  <span v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                  <VerifiedMark v-if="c.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
                 </span>
                 <span class="creator-role">{{ t('mod.details.collaborator') }}</span>
               </div>
@@ -541,7 +541,7 @@
       <div v-if="showAppRecommendModal" class="modal-overlay" @click.self="showAppRecommendModal = false">
         <div class="app-recommend-card" role="dialog" aria-modal="true">
           <button type="button" class="btn btn-ghost btn-icon modal-close-btn" aria-label="Close modal" @click="showAppRecommendModal = false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
 
           <h3 class="modal-recommend-title">
@@ -553,15 +553,15 @@
 
           <ul class="app-features-list">
             <li class="app-feature-item">
-              <span class="feature-icon">⚡</span>
+              <svg aria-hidden="true" class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" /></svg>
               <span>{{ t('mod.download_modal.feature_1') }}</span>
             </li>
             <li class="app-feature-item">
-              <span class="feature-icon">🔄</span>
+              <svg aria-hidden="true" class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5" /></svg>
               <span>{{ t('mod.download_modal.feature_2') }}</span>
             </li>
             <li class="app-feature-item">
-              <span class="feature-icon">🧩</span>
+              <svg aria-hidden="true" class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h4a2 2 0 1 1 4 0h4v4a2 2 0 1 1 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 0 0-4Z" /></svg>
               <span>{{ t('mod.download_modal.feature_3') }}</span>
             </li>
           </ul>
@@ -580,7 +580,7 @@
   </div>
 
   <div v-else class="empty-state detail-not-found-state">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
     <h2>{{ t('submit.mod_not_found') }}</h2>
     <p>{{ t('mod.details.not_approved_detail') }}</p>
     <NuxtLink to="/" class="btn btn-secondary">
@@ -1019,9 +1019,8 @@ const getFallbackGradientStyle = (name: string) => {
   }
 
   const h1 = Math.abs(hash) % 360
-  const h2 = (h1 + 40) % 360
   return {
-    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+    backgroundColor: `oklch(45% 0.1 ${h1})`
   }
 }
 
@@ -1033,7 +1032,7 @@ const fileLabel = (f: { loader?: string; platform?: string; gameVersion?: string
   f.loader ? loaderLabel(f.loader) : t('files.any_loader'),
   f.platform ? platformLabel(f.platform) : t('files.any_os'),
   ...(f.gameVersion ? [f.gameVersion] : [])
-].join(' · ')
+].join(', ')
 
 const getPlatformLabel = (platform: string) => {
   if (platform === 'windows') return 'Windows'
@@ -1276,6 +1275,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .detail-loading-state {
   display: flex;
   flex-direction: column;
@@ -1295,8 +1299,8 @@ onMounted(() => {
 .callout {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 12px 16px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1319,19 +1323,19 @@ onMounted(() => {
 
 .callout-danger {
   background: var(--danger-soft);
-  border-color: rgba(239, 107, 115, 0.28);
+  border-color: var(--color-danger-line);
   color: var(--danger);
 }
 
 .callout-warning {
   background: var(--warning-soft);
-  border-color: rgba(242, 181, 82, 0.28);
+  border-color: var(--color-warning-line);
   color: var(--warning);
 }
 
 .callout-success {
   background: var(--success-soft);
-  border-color: rgba(95, 195, 145, 0.28);
+  border-color: var(--color-success-line);
   color: var(--success);
 }
 
@@ -1356,21 +1360,22 @@ onMounted(() => {
 }
 
 /* Header */
+/* Hero: Counter posture, the download box is the action */
 .mod-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-  padding-top: 4px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) minmax(280px, 360px);
+  align-items: start;
+  gap: var(--space-lg) var(--space-xl);
+  padding: var(--space-lg) 0 var(--space-xl);
 }
 
 .mod-logo {
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: 112px;
   flex-shrink: 0;
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
   background: var(--surface-2);
-  border: 1px solid var(--border);
 }
 
 .mod-logo img,
@@ -1388,61 +1393,69 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
+  font-size: var(--text-3xl);
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .mod-hero-info {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-md);
 }
 
 .mod-title-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 10px;
+  gap: var(--space-xs) var(--space-sm);
 }
 
 .mod-title {
   margin: 0;
-  font-size: 30px;
+  max-width: 18ch;
+  font-size: var(--text-display-s);
   font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .mod-summary {
   margin: 0;
+  max-width: 52ch;
   color: var(--text-secondary);
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: var(--text-lead);
+  line-height: 1.45;
 }
 
 .mod-creators {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: var(--space-xs) var(--space-md);
 }
 
 .creator-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-xs);
   min-width: 0;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+a.creator-chip:hover .creator-name {
+  text-decoration: underline;
 }
 
 .creator-chip img {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -1454,33 +1467,20 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.verified-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--success-soft);
-  color: var(--success);
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-}
-
 .mod-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2xs);
 }
 
 .mod-hero-actions {
-  width: 240px;
-  flex-shrink: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
 }
 
 .download-btn {
@@ -1489,78 +1489,84 @@ onMounted(() => {
 
 .download-btn-version {
   font-weight: 500;
-  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
 .beta-btn .badge {
   height: 20px;
-  font-size: 11px;
 }
 
 .download-platforms,
 .no-downloads {
   margin: 0;
-  text-align: center;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
 .no-downloads {
-  padding: 12px;
-  border: 1px dashed var(--border-strong);
+  padding: var(--space-sm);
+  border: var(--rule-hair) dashed var(--border-strong);
   border-radius: var(--radius);
-  font-size: 13px;
 }
 
 .editor-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: var(--rule-hair) solid var(--border-strong);
 }
 
 .editor-actions .btn {
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 var(--space-xs);
 }
 
-/* Stats row */
+/* Figures: the mod's own numbers, parted by vertical hairlines */
 .mod-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  padding: 14px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  padding: var(--space-lg) 0;
+  border-top: var(--rule-hair) solid var(--border);
+  border-bottom: var(--rule-hair) solid var(--border);
 }
 
 .mod-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-xl);
+  border-left: var(--rule-hair) solid var(--border);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
+.mod-stat:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
 .mod-stat svg {
-  width: 16px;
-  height: 16px;
-  color: var(--text-tertiary);
+  display: none;
 }
 
 .mod-stat strong {
+  order: -1;
   color: var(--text);
-  font-weight: 700;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 /* Two-column layout */
 .mod-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   grid-template-areas: "main side";
-  gap: 24px;
+  gap: var(--space-2xl);
   align-items: start;
 }
 
@@ -1576,7 +1582,19 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-2xl);
+}
+
+/* Main sections sit on the page, not in boxes */
+.mod-main > .card.mod-section {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.mod-main > .card.mod-section + .card.mod-section {
+  padding-top: var(--space-2xl);
+  border-top: var(--rule-hair) solid var(--border);
 }
 
 .admin-card {
@@ -1588,45 +1606,36 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .section-title {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 16px;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0 0 var(--space-lg);
+  max-width: none;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .section-count {
-  padding: 0 7px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Versions */
 .versions-list {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
+  border-top: var(--rule-hair) solid var(--border);
 }
 
 .version-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 16px 16px;
   border-top: 1px solid var(--border);
 }
 
@@ -1639,7 +1648,7 @@ onMounted(() => {
 }
 
 .version-row.pending {
-  background: rgba(239, 107, 115, 0.04);
+  background: var(--danger-soft);
 }
 
 .version-head {
@@ -1653,7 +1662,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .version-title {
@@ -1673,7 +1682,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: 4px 16px;
   font-size: 13px;
   color: var(--text-tertiary);
 }
@@ -1681,7 +1690,7 @@ onMounted(() => {
 .version-meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .version-meta-item svg {
@@ -1717,7 +1726,7 @@ onMounted(() => {
 .version-changelog summary {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -1749,8 +1758,8 @@ onMounted(() => {
 }
 
 .version-changelog .markdown-body {
-  margin-top: 10px;
-  padding: 12px 14px;
+  margin-top: 12px;
+  padding: 12px 16px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1852,7 +1861,7 @@ onMounted(() => {
 
 /* Sidebar cards */
 .side-card {
-  padding: 18px;
+  padding: 16px;
 }
 
 .side-title {
@@ -1874,7 +1883,7 @@ onMounted(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .info-row {
@@ -1916,9 +1925,9 @@ onMounted(() => {
 .dep-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  margin: 0 -10px;
+  gap: 12px;
+  padding: 8px 12px;
+  margin: 0 -12px;
   border-radius: var(--radius-sm);
   color: var(--text);
   text-decoration: none;
@@ -1940,7 +1949,7 @@ onMounted(() => {
 }
 
 .side-link.discord .side-link-icon {
-  color: #5865f2;
+  color: var(--color-discord);
 }
 
 .side-link-external {
@@ -1977,7 +1986,7 @@ onMounted(() => {
   justify-content: center;
   font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .dep-text {
@@ -2009,7 +2018,7 @@ onMounted(() => {
 .creator-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -2030,7 +2039,7 @@ onMounted(() => {
 .creator-item-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
 }
@@ -2042,7 +2051,7 @@ onMounted(() => {
 
 /* Admin controls */
 .admin-card {
-  border-color: rgba(239, 107, 115, 0.25);
+  border-color: var(--color-danger-line);
 }
 
 .admin-card .side-title {
@@ -2057,18 +2066,18 @@ onMounted(() => {
 
 .btn-success {
   background: var(--success-soft);
-  border-color: rgba(95, 195, 145, 0.3);
+  border-color: var(--color-success-line);
   color: var(--success);
 }
 
 .btn-success:hover:not(:disabled) {
   background: var(--success);
-  color: #0b0b10;
+  color: var(--color-accent-ink);
 }
 
 .btn-danger-solid {
   background: var(--danger);
-  color: #fff;
+  color: var(--text);
 }
 
 .btn-danger-solid:hover:not(:disabled) {
@@ -2101,14 +2110,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(5, 5, 8, 0.7);
+  background: var(--color-overlay);
 }
 
 .app-recommend-card {
   position: relative;
   width: 100%;
   max-width: 440px;
-  padding: 32px 28px 24px;
+  padding: 32px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2146,11 +2155,11 @@ onMounted(() => {
 .app-features-list {
   width: 100%;
   margin: 0 0 24px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2159,7 +2168,7 @@ onMounted(() => {
 .app-feature-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
   font-size: 14px;
   font-weight: 500;
@@ -2174,7 +2183,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .modal-app-btn {
@@ -2232,21 +2241,24 @@ onMounted(() => {
   }
 
   .mod-hero {
-    flex-wrap: wrap;
+    grid-template-columns: 88px minmax(0, 1fr);
   }
 
-  .mod-hero-info {
-    flex-basis: calc(100% - 120px);
+  .mod-logo {
+    width: 88px;
+    height: 88px;
+    border-radius: 20px;
   }
 
   .mod-hero-actions {
-    width: 100%;
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 640px) {
   .mod-hero {
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
   }
 
   .mod-logo {
@@ -2256,33 +2268,25 @@ onMounted(() => {
   }
 
   .mod-logo span {
-    font-size: 30px;
-  }
-
-  .mod-hero-info {
-    flex-basis: calc(100% - 88px);
-  }
-
-  .mod-title {
-    font-size: 24px;
-  }
-
-  .mod-summary {
-    font-size: 15px;
+    font-size: var(--text-2xl);
   }
 
   .mod-stats {
-    gap: 8px 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .mod-section {
-    padding: 18px;
+  .mod-stat {
+    padding: 0 var(--space-sm);
+  }
+
+  .mod-stat strong {
+    font-size: var(--text-lg);
   }
 
   .version-head {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: var(--space-sm);
   }
 
   .version-actions .btn {
@@ -2290,23 +2294,23 @@ onMounted(() => {
   }
 
   .app-recommend-card {
-    padding: 28px 20px 20px;
+    padding: var(--space-xl) var(--space-lg) var(--space-lg);
   }
 }
 
 .version-file-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .version-file {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -2329,20 +2333,20 @@ onMounted(() => {
 .branch-bar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .branch-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .branch-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -2372,7 +2376,7 @@ onMounted(() => {
 .branch-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .branch-description {

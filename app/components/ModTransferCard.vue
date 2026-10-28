@@ -111,7 +111,7 @@ const transferToUser = (u: PickedUser) => {
 .transfer-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   border-color: var(--danger, var(--border));
 }
 
@@ -123,7 +123,7 @@ const transferToUser = (u: PickedUser) => {
 .transfer-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .transfer-inline {

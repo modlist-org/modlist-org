@@ -1,0 +1,32 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "site",
+  "shape": "Index",
+  "theme": "brand",
+  "axes": "dark/geometric-sans/chromatic-violet",
+  "hero": "Index (/), Counter (/mods/[slug])",
+  "nav": "dense bar",
+  "footer": "mast",
+  "imagery": "product",
+  "photos": [],
+  "entry": "none",
+  "fingerprint": "index-rows/counter-box/figures-hairlines",
+  "sections": [
+   "hero",
+   "index",
+   "figures",
+   "description",
+   "versions"
+  ],
+  "signature": "the mod index rows",
+  "waived": [
+   "44c",
+   "79",
+   "39b"
+  ],
+  "prompt": "redesign modlist.org and modlist_org_app",
+  "date": "2026-10-28"
+ }
+]

@@ -92,11 +92,11 @@
               </div>
               <div class="review-actions">
                 <button type="button" class="btn btn-sm btn-success" @click="approveMod(mod._id)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
                   {{ t('admin.approve') }}
                 </button>
                 <button type="button" class="btn btn-sm btn-danger" @click="rejectMod(mod._id)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   {{ t('admin.reject') }}
                 </button>
               </div>
@@ -119,12 +119,12 @@
               <span class="review-foot-label">{{ t('admin.submitted_by') }}</span>
               <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" class="avatar-xs" @error="onAvatarError">
               <span class="review-foot-name">{{ mod.authorId?.globalName || mod.authorId?.username }}</span>
-              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+              <VerifiedMark v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
             </footer>
           </article>
         </div>
         <div v-else class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
           <p>{{ t('admin.no_pending') }}</p>
         </div>
       </section>
@@ -152,11 +152,11 @@
               </div>
               <div class="review-actions">
                 <button type="button" class="btn btn-sm btn-success" @click="approveVersion(ver.modId, ver.versionId)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
                   {{ t('admin.approve') }}
                 </button>
                 <button type="button" class="btn btn-sm btn-danger" @click="rejectVersion(ver.modId, ver.versionId)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   {{ t('admin.reject') }}
                 </button>
               </div>
@@ -177,12 +177,12 @@
               <span class="review-foot-label">{{ t('admin.submitted_by') }}</span>
               <img :src="ver.submittedBy?.avatar || '/images/default_avatar.png'" alt="" class="avatar-xs" @error="onAvatarError">
               <span class="review-foot-name">{{ ver.submittedBy?.globalName || ver.submittedBy?.username || 'Unknown' }}</span>
-              <span v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+              <VerifiedMark v-if="ver.submittedBy?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
             </footer>
           </article>
         </div>
         <div v-else class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
           <p>{{ t('admin.no_pending') }}</p>
         </div>
       </section>
@@ -208,7 +208,7 @@
                     {{ t('admin.proposed_by') }}
                     <img :src="mod.authorId?.avatar || '/images/default_avatar.png'" alt="" class="avatar-xs" @error="onAvatarError">
                     <span class="review-foot-name">{{ mod.authorId?.globalName || mod.authorId?.username }}</span>
-                    <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                    <VerifiedMark v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
                   </span>
                 </div>
               </div>
@@ -311,18 +311,18 @@
 
             <footer class="review-foot review-foot-actions">
               <button type="button" class="btn btn-sm btn-danger" @click="rejectEdit(mod._id)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
                 {{ t('admin.reject_edit') }}
               </button>
               <button type="button" class="btn btn-sm btn-success" @click="approveEdit(mod._id)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
                 {{ t('admin.approve_edit') }}
               </button>
             </footer>
           </article>
         </div>
         <div v-else class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" /></svg>
           <p>{{ t('admin.no_pending') }}</p>
         </div>
       </section>
@@ -360,7 +360,7 @@
       <section v-if="activeTab === 'users'" class="pane">
         <div class="users-toolbar">
           <div class="search-field">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input
               v-model="userSearchQuery"
               type="search"
@@ -404,7 +404,7 @@
           </div>
         </div>
         <div v-else class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
           <p>{{ t('admin.no_users') }}</p>
         </div>
 
@@ -440,7 +440,7 @@
 
     <!-- Error State -->
     <div v-else class="card denied">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
       <h2>{{ t('admin.access_denied_title') }}</h2>
       <p>{{ t('admin.access_denied_desc') }}</p>
       <NuxtLink to="/" class="btn btn-secondary">{{ t('mod.details.back_home') }}</NuxtLink>
@@ -464,7 +464,7 @@ const fileLabel = (f: VersionFileRow) => [
   f.loader ? loaderLabel(f.loader) : t('files.any_loader'),
   f.platform ? platformLabel(f.platform) : t('files.any_os'),
   ...(f.gameVersion ? [f.gameVersion] : [])
-].join(' · ')
+].join(', ')
 
 // Organizations tab
 interface AdminOrg { _id: string; name: string; slug: string; logo: string; description: string; modCount: number; memberCount: number }
@@ -799,9 +799,8 @@ const getFallbackGradientStyle = (name: string) => {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
   }
   const h1 = Math.abs(hash) % 360
-  const h2 = (h1 + 40) % 360
   return {
-    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+    backgroundColor: `oklch(45% 0.1 ${h1})`
   }
 }
 
@@ -860,6 +859,11 @@ watch(authLoading, async (isLoading) => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .admin {
   display: flex;
   flex-direction: column;
@@ -895,7 +899,7 @@ watch(authLoading, async (isLoading) => {
   gap: 8px;
   flex-shrink: 0;
   height: 44px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -934,7 +938,7 @@ watch(authLoading, async (isLoading) => {
 .tab-count {
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -967,7 +971,7 @@ watch(authLoading, async (isLoading) => {
 .review-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 20px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -977,7 +981,7 @@ watch(authLoading, async (isLoading) => {
 .review-head {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 16px;
 }
 
 .review-logo {
@@ -1007,7 +1011,7 @@ watch(authLoading, async (isLoading) => {
   justify-content: center;
   font-size: 20px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .review-info {
@@ -1015,14 +1019,14 @@ watch(authLoading, async (isLoading) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .review-title-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 12px;
   min-width: 0;
 }
 
@@ -1053,7 +1057,7 @@ watch(authLoading, async (isLoading) => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 8px 12px;
   color: var(--text-tertiary);
   font-size: 13px;
 }
@@ -1061,7 +1065,7 @@ watch(authLoading, async (isLoading) => {
 .review-meta-user {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1080,7 +1084,7 @@ watch(authLoading, async (isLoading) => {
 
 .btn-success {
   background: var(--success-soft);
-  border-color: rgba(95, 195, 145, 0.3);
+  border-color: var(--color-success-line);
   color: var(--success);
 }
 
@@ -1094,7 +1098,7 @@ watch(authLoading, async (isLoading) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1105,7 +1109,7 @@ watch(authLoading, async (isLoading) => {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 12px;
   min-width: 0;
 }
 
@@ -1152,7 +1156,7 @@ watch(authLoading, async (isLoading) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
   color: var(--text-tertiary);
   font-size: 13px;
@@ -1208,15 +1212,15 @@ watch(authLoading, async (isLoading) => {
   grid-template-columns: 160px minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: center;
-  padding: 12px 14px;
+  padding: 12px 16px;
   font-size: 14px;
   border-top: 1px solid var(--border);
 }
 
 .diff-header {
   border-top: none;
-  padding-top: 9px;
-  padding-bottom: 9px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   background: var(--bg-elev);
   color: var(--text-tertiary);
   font-size: 12px;
@@ -1232,7 +1236,7 @@ watch(authLoading, async (isLoading) => {
 .diff-old {
   color: var(--text-tertiary);
   text-decoration: line-through;
-  text-decoration-color: rgba(239, 107, 115, 0.6);
+  text-decoration-color: var(--danger);
   overflow-wrap: anywhere;
 }
 
@@ -1282,7 +1286,7 @@ watch(authLoading, async (isLoading) => {
 }
 
 .diff-desc {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border);
   font-size: 13px;
 }
@@ -1295,7 +1299,7 @@ watch(authLoading, async (isLoading) => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .diff-desc-box {
@@ -1312,7 +1316,7 @@ watch(authLoading, async (isLoading) => {
 .diff-desc-box::before {
   content: attr(data-label);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1375,7 +1379,7 @@ watch(authLoading, async (isLoading) => {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   padding: 12px 16px;
   border-top: 1px solid var(--border);
   transition: background-color 0.15s ease;
@@ -1425,7 +1429,7 @@ watch(authLoading, async (isLoading) => {
 
 .user-badges {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -1444,7 +1448,7 @@ watch(authLoading, async (isLoading) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
 }
 
@@ -1462,7 +1466,7 @@ watch(authLoading, async (isLoading) => {
 @media (max-width: 900px) {
   .user-row {
     grid-template-columns: 40px minmax(0, 1fr);
-    row-gap: 10px;
+    row-gap: 12px;
   }
   .user-badges,
   .user-actions {
@@ -1495,7 +1499,7 @@ watch(authLoading, async (isLoading) => {
   }
   .diff-row {
     grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
+    gap: 8px;
   }
   .diff-old::before,
   .diff-new::before {

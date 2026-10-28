@@ -20,7 +20,7 @@
           <p class="profile-handle">@{{ user.username }}</p>
           <div class="profile-badges">
             <span v-if="user.isAdmin" class="badge badge-admin">{{ t('profile.role_admin') }}</span>
-            <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">✓ {{ t('profile.role_verified_dev') }}</span>
+            <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">{{ t('profile.role_verified_dev') }}</span>
             <span class="badge badge-game">{{ t('profile.normal_member') }}</span>
           </div>
         </div>
@@ -28,11 +28,11 @@
     </template>
 
     <div v-else class="card signed-out">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></svg>
       <h2>{{ t('profile.not_logged_in_title') }}</h2>
       <p>{{ t('profile.not_logged_in_desc') }}</p>
       <a href="/api/auth/login" class="btn btn-discord">
-        <svg viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.53-2a75.58,75.58,0,0,0,73,0c.81.71,1.65,1.4,2.53,2a68.32,68.32,0,0,1-10.5,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,48.24,123.6,25.41,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.88-.65,1.72-1.34,2.53-2a75.58,75.58,0,0,0,73,0c.81.71,1.65,1.4,2.53,2a68.32,68.32,0,0,1-10.5,5,77.63,77.63,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,48.24,123.6,25.41,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" /></svg>
         {{ t('nav.login') }}
       </a>
     </div>
@@ -52,6 +52,11 @@ const onAvatarError = (e: Event) => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .profile {
   width: 100%;
   max-width: 760px;
@@ -101,7 +106,7 @@ const onAvatarError = (e: Event) => {
 
 .profile-badges {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -116,14 +121,14 @@ const onAvatarError = (e: Event) => {
 
 .skeleton-line.w-25 {
   width: 25%;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .signed-out {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 48px 24px;
   text-align: center;
 }

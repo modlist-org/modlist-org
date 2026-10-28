@@ -138,9 +138,9 @@ const setDescription = (value: string) => {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 32px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: none;
   border-radius: 6px;
   background: transparent;

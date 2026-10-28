@@ -32,7 +32,7 @@
               <span>{{ t('mod.details.creator_label') }}</span>
               <img :src="inv.authorId?.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <span class="invite-author">{{ inv.authorId?.globalName || inv.authorId?.username }}</span>
-              <span v-if="inv.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+              <VerifiedMark v-if="inv.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
             </div>
           </div>
           <div class="invite-actions">
@@ -40,7 +40,7 @@
               {{ t('pending.reject') }}
             </button>
             <button type="button" class="btn btn-sm btn-primary" @click="respondInvitation(inv, 'accept')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
               {{ t('pending.accept') }}
             </button>
           </div>
@@ -111,14 +111,14 @@
                 </template>
               </div>
               <span class="mod-author-names" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
-              <span v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+              <VerifiedMark v-if="mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" />
             </div>
 
             <p class="mod-summary">{{ localizedText(mod, locale).summary }}</p>
 
             <!-- Rejection feedback on pending/rejected list -->
             <div v-if="mod.rejectionReason" class="rejection">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
               <div>
                 <strong>{{ t('admin.rejection_reason') || 'Rejection Reason:' }}</strong>
                 <p>{{ mod.rejectionReason }}</p>
@@ -131,7 +131,7 @@
               <span class="mod-stats">
                 <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
                 <span class="mod-downloads">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
                   {{ mod.downloads }}
                 </span>
               </span>
@@ -142,7 +142,7 @@
 
       <!-- Empty State -->
       <div v-else class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
         <p>{{ t('pending.empty') }}</p>
       </div>
     </section>
@@ -247,9 +247,8 @@ const getFallbackGradientStyle = (name: string) => {
   }
   
   const h1 = Math.abs(hash) % 360
-  const h2 = (h1 + 40) % 360
   return {
-    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+    backgroundColor: `oklch(45% 0.1 ${h1})`
   }
 }
 
@@ -327,6 +326,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .pending {
   display: flex;
   flex-direction: column;
@@ -336,7 +340,7 @@ onMounted(() => {
 .section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .section-head {
@@ -356,17 +360,7 @@ onMounted(() => {
 }
 
 .section-count {
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .section-desc {
@@ -379,14 +373,14 @@ onMounted(() => {
 .invite-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .invite {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 16px 16px;
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-lg);
@@ -419,7 +413,7 @@ onMounted(() => {
   justify-content: center;
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .invite-body {
@@ -441,7 +435,7 @@ onMounted(() => {
 .invite-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   color: var(--text-secondary);
   font-size: 13px;
@@ -479,7 +473,7 @@ onMounted(() => {
 .mod-card {
   display: flex;
   gap: 16px;
-  padding: 18px;
+  padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -495,11 +489,11 @@ onMounted(() => {
 }
 
 .mod-card.rejected {
-  border-color: rgba(239, 107, 115, 0.22);
+  border-color: var(--color-danger-line);
 }
 
 .mod-card.rejected:hover {
-  border-color: rgba(239, 107, 115, 0.4);
+  border-color: var(--color-danger-line);
 }
 
 .mod-card-skeleton {
@@ -517,7 +511,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .skeleton-line {
@@ -564,7 +558,7 @@ onMounted(() => {
   justify-content: center;
   font-size: 22px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .mod-info {
@@ -572,7 +566,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .mod-heading {
@@ -600,7 +594,7 @@ onMounted(() => {
 .badge-review {
   background-color: var(--warning-soft);
   color: var(--warning);
-  border-color: rgba(242, 181, 82, 0.28);
+  border-color: var(--color-warning-line);
 }
 
 .mod-authors {
@@ -623,7 +617,7 @@ onMounted(() => {
   height: 18px;
   border-radius: 50%;
   border: 2px solid var(--surface);
-  margin-left: -6px;
+  margin-left: -8px;
 }
 
 .avatar-stack img {
@@ -684,11 +678,11 @@ onMounted(() => {
 
 .rejection {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 4px;
-  padding: 10px 12px;
+  padding: 12px 12px;
   background: var(--danger-soft);
-  border: 1px solid rgba(239, 107, 115, 0.25);
+  border: 1px solid var(--color-danger-line);
   border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--danger);
@@ -716,7 +710,7 @@ onMounted(() => {
 .mod-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: auto;
 }
@@ -770,7 +764,7 @@ onMounted(() => {
 
 @media (max-width: 520px) {
   .mod-card {
-    padding: 14px;
+    padding: 16px;
     gap: 12px;
   }
   .mod-logo {

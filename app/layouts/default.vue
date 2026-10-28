@@ -20,11 +20,11 @@
             <span v-if="link.count" class="nav-count">{{ link.count }}</span>
           </NuxtLink>
           <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" rel="noopener" class="site-nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
             {{ t('nav.download') }}
           </a>
           <a href="https://discord.modlist.org" target="_blank" rel="noopener" class="site-nav-link">
-            <svg viewBox="0 0 127.14 96.36" fill="currentColor"><path :d="discordPath" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 127.14 96.36" fill="currentColor"><path :d="discordPath" /></svg>
             Discord
           </a>
         </nav>
@@ -40,12 +40,12 @@
             />
           </div>
 
-          <div v-if="loading" class="skeleton" style="width: 120px; height: 36px; border-radius: 999px;" />
+          <div v-if="loading" class="skeleton" style="width: 120px; height: 40px;" />
           <div v-else-if="user" ref="userMenuRef" class="user-menu">
             <button type="button" class="user-menu-trigger" :aria-expanded="userMenuOpen" @click="userMenuOpen = !userMenuOpen">
               <img :src="user.avatar || '/images/default_avatar.png'" alt="" @error="onAvatarError">
               <span class="user-menu-name">{{ user.globalName || user.username }}</span>
-              <svg class="user-menu-triangle" :class="{ 'is-expanded': userMenuOpen }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
+              <svg aria-hidden="true" class="user-menu-triangle" :class="{ 'is-expanded': userMenuOpen }" viewBox="0 0 24 24"><polygon points="6,9 12,15 18,9" fill="currentColor" /></svg>
             </button>
             <transition :css="false" v-bind="expandHooks">
               <div v-if="userMenuOpen" class="user-menu-panel" @click="userMenuOpen = false">
@@ -53,7 +53,7 @@
                   <strong>{{ user.globalName || user.username }}</strong>
                   <div class="user-menu-badges">
                     <span v-if="user.isAdmin" class="badge badge-admin">{{ t('nav.badge_admin') }}</span>
-                    <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">✓ {{ t('mod.details.verified_source') }}</span>
+                    <span v-if="user.isVerifiedDeveloper" class="badge badge-verified">{{ t('mod.details.verified_source') }}</span>
                   </div>
                 </div>
                 <NuxtLink to="/submit" class="user-menu-item">{{ t('nav.submit') }}</NuxtLink>
@@ -68,12 +68,12 @@
             </transition>
           </div>
           <a v-else href="/api/auth/login" class="btn btn-discord btn-sm">
-            <svg viewBox="0 0 127.14 96.36" fill="currentColor"><path :d="discordPath" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 127.14 96.36" fill="currentColor"><path :d="discordPath" /></svg>
             {{ t('nav.login') }}
           </a>
 
           <button type="button" class="btn btn-ghost btn-icon menu-toggle" :aria-label="t('nav.menu')" @click="mobileOpen = !mobileOpen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path v-if="!mobileOpen" d="M4 7h16M4 12h16M4 17h16" /><path v-else d="M6 6l12 12M18 6 6 18" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path v-if="!mobileOpen" d="M4 7h16M4 12h16M4 17h16" /><path v-else d="M6 6l12 12M18 6 6 18" /></svg>
           </button>
         </div>
       </div>
@@ -102,16 +102,17 @@
 
     <footer class="site-footer">
       <div class="container site-footer-inner">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <BrandMark style="width: 18px; height: 18px; opacity: 0.6;" />
-          <span>&copy; {{ new Date().getFullYear() }} modlist.org</span>
-        </div>
+        <NuxtLink to="/" class="site-footer-mast" aria-label="modlist.org">
+          <BrandMark />
+          <span>modlist.org</span>
+        </NuxtLink>
         <div class="site-footer-links">
           <NuxtLink to="/privacy">{{ t('nav.privacy') }}</NuxtLink>
           <NuxtLink to="/terms">{{ t('nav.terms') }}</NuxtLink>
           <NuxtLink to="/contact">{{ t('nav.contact') }}</NuxtLink>
           <a href="https://github.com/modlist-org" target="_blank" rel="noopener">GitHub</a>
         </div>
+        <p class="site-footer-legal">&copy; {{ new Date().getFullYear() }} modlist.org</p>
       </div>
     </footer>
 

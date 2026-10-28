@@ -97,7 +97,7 @@ useSeoMeta({
 }
 
 .card.doc-body h2 {
-  margin: 32px 0 10px;
+  margin: 32px 0 12px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
   color: var(--text);
@@ -107,17 +107,17 @@ useSeoMeta({
 }
 
 .doc-body p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 .doc-body ul {
-  margin: 0 0 14px;
-  padding-left: 22px;
+  margin: 0 0 16px;
+  padding-left: 24px;
   list-style: disc;
 }
 
 .doc-body li {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   padding-left: 2px;
 }
 

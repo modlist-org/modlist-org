@@ -16,11 +16,11 @@
       </header>
 
       <div v-if="mod.pendingEdit" class="callout warning">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
         <p>{{ t('mod.details.pending_edit_banner') }}</p>
       </div>
       <div v-else-if="requiresReview" class="callout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" /></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 16v-4M12 8h.01" /></svg>
         <p>{{ t('submit.edit_review_notice') }}</p>
       </div>
 
@@ -57,7 +57,7 @@
                 :aria-pressed="form.categories.includes(cat)"
                 @click="toggleFormCategory(cat)"
               >
-                <svg v-if="form.categories.includes(cat)" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                <svg v-if="form.categories.includes(cat)" aria-hidden="true" class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
                 {{ getCategoryLabelOnly(cat) }}
               </button>
             </div>
@@ -96,7 +96,7 @@
                 >
                 <div class="logo-buttons">
                   <button type="button" class="btn btn-secondary btn-sm" @click="triggerLogoSelect">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                     {{ t('submit.logo_select') }}
                   </button>
                   <button v-if="form.logo" type="button" class="btn btn-ghost btn-sm" @click="clearLogo">
@@ -140,7 +140,7 @@
           <div v-if="isAuthorOrAdmin" class="form-group">
             <label for="collab-search">{{ t('submit.collaborators') }}</label>
             <div class="search-field">
-              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               <input
                 id="collab-search"
                 v-model="collabSearchQuery"
@@ -162,7 +162,7 @@
                     <span class="result-name">{{ userObj.globalName || userObj.username }}</span>
                     <span class="result-sub">@{{ userObj.username }}</span>
                   </span>
-                  <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  <svg aria-hidden="true" class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
               </div>
             </div>
@@ -174,7 +174,7 @@
                 <span class="token-name">{{ userObj.globalName || userObj.username }}</span>
                 <span v-if="userObj.isPending" class="token-status">{{ t('submit.invite_pending') }}</span>
                 <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeCollab(userObj._id)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
@@ -199,7 +199,7 @@
 
           <div class="form-group">
             <div class="search-field">
-              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               <input
                 v-model="dependencySearchQuery"
                 type="text"
@@ -221,7 +221,7 @@
                     <span class="result-name">{{ dep.name }}</span>
                     <span class="result-sub">{{ dep.slug }}</span>
                   </span>
-                  <svg class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  <svg aria-hidden="true" class="result-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
               </div>
             </div>
@@ -232,7 +232,7 @@
                 <img :src="dep.logo || '/images/default_avatar.png'" alt="" class="token-logo" @error="onAvatarError">
                 <span class="token-name">{{ dep.name }}</span>
                 <button type="button" class="token-remove" :aria-label="t('submit.remove')" @click="removeDependency(dep._id)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>
@@ -243,11 +243,11 @@
         <div class="form-footer">
           <div class="form-footer-messages">
             <p v-if="errorMsg" class="form-message error" role="alert">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
               {{ errorMsg }}
             </p>
             <p v-if="successMsg" class="form-message success" role="status">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
               {{ successMsg }}
             </p>
           </div>
@@ -267,7 +267,7 @@
     </template>
 
     <div v-else class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
       <h2 class="empty-title">{{ t('submit.mod_not_found') }}</h2>
       <p>{{ t('submit.mod_not_found_detail') }}</p>
     </div>
@@ -467,9 +467,8 @@ const getFallbackGradientStyle = (name: string) => {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
   }
   const h1 = Math.abs(hash) % 360
-  const h2 = (h1 + 40) % 360
   return {
-    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+    backgroundColor: `oklch(45% 0.1 ${h1})`
   }
 }
 
@@ -688,6 +687,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .editor {
   width: 100%;
   max-width: 860px;
@@ -763,7 +767,7 @@ textarea {
 .chip-check {
   width: 14px;
   height: 14px;
-  color: #fff;
+  color: var(--text);
 }
 
 /* Logo */
@@ -800,7 +804,7 @@ textarea {
   justify-content: center;
   font-size: 30px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
 }
 
 .logo-controls {
@@ -861,9 +865,9 @@ textarea {
 .search-result {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1063,8 +1067,8 @@ textarea {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--text);
   animation: spin 0.8s linear infinite;
 }
 
@@ -1094,7 +1098,7 @@ textarea {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border: 1px solid var(--accent-border);
   border-radius: var(--radius);
   background: var(--accent-soft);
@@ -1115,7 +1119,7 @@ textarea {
 }
 
 .callout.warning {
-  border-color: rgba(242, 181, 82, 0.28);
+  border-color: var(--color-warning-line);
   background: var(--warning-soft);
 }
 

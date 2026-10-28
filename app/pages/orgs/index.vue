@@ -93,6 +93,11 @@ const createOrg = async () => {
 </script>
 
 <style scoped>
+h1, h2, h3, .page-title, .section-title, .empty-title {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 .orgs {
   width: 100%;
   max-width: 760px;
@@ -111,7 +116,7 @@ const createOrg = async () => {
 .orgs-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .orgs-title {

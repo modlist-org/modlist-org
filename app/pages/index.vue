@@ -1,21 +1,27 @@
 <template>
   <div class="home">
     <section class="hero">
-      <h1 class="hero-title">{{ t('subtitle') }}</h1>
-      <p class="hero-subtitle">{{ t('home.hero_subtitle') }}</p>
-      <div class="hero-search">
-        <svg class="hero-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input
-          v-model="searchQuery"
-          type="search"
-          :placeholder="t('search.placeholder')"
-          :aria-label="t('search.placeholder')"
-          @input="debouncedFetch"
-        >
+      <div class="hero-head">
+        <h1 class="hero-title">{{ t('subtitle') }}</h1>
+        <p class="hero-subtitle">{{ t('home.hero_subtitle') }}</p>
       </div>
-      <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" rel="noopener" class="hero-app-link">
-        {{ t('home.get_app') }} →
-      </a>
+      <div class="hero-actions">
+        <div class="hero-search">
+          <svg aria-hidden="true" class="hero-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input
+            v-model="searchQuery"
+            type="search"
+            name="q"
+            :placeholder="t('search.placeholder')"
+            :aria-label="t('search.placeholder')"
+            @input="debouncedFetch"
+          >
+        </div>
+        <a href="https://github.com/modlist-org/modlist_org_app/releases/latest" target="_blank" rel="noopener" class="hero-app-link">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+          {{ t('home.get_app') }}
+        </a>
+      </div>
     </section>
 
     <div class="browse">
@@ -69,7 +75,7 @@
       <section class="results">
         <div class="results-toolbar">
           <button type="button" class="btn btn-secondary btn-sm filters-toggle" @click="filtersOpen = !filtersOpen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
             {{ t('home.filters') }}
           </button>
           <span class="results-count">{{ loadingMods ? '' : t('home.results', { count: totalMods }) }}</span>
@@ -84,13 +90,12 @@
           </div>
         </div>
 
-        <div v-if="loadingMods" class="mods-grid">
+        <div v-if="loadingMods" class="mods-grid" aria-busy="true">
           <div v-for="n in 6" :key="n" class="mod-card mod-card-skeleton">
-            <div class="skeleton" style="width: 56px; height: 56px; border-radius: 12px;" />
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-              <div class="skeleton" style="width: 50%; height: 16px;" />
-              <div class="skeleton" style="width: 90%; height: 12px;" />
-              <div class="skeleton" style="width: 70%; height: 12px;" />
+            <div class="skeleton mod-logo" />
+            <div class="mod-info">
+              <div class="skeleton" style="width: 40%; height: 20px;" />
+              <div class="skeleton" style="width: 80%; height: 14px;" />
             </div>
           </div>
         </div>
@@ -112,7 +117,7 @@
               <div class="mod-info">
                 <div class="mod-heading">
                   <h3 class="mod-name">{{ mod.name }}</h3>
-                  <span v-if="mod.isFeatured" class="badge badge-featured">★ {{ t('sort.featured', 'Featured') }}</span>
+                  <span v-if="mod.isFeatured" class="badge badge-featured">{{ t('sort.featured', 'Featured') }}</span>
                   <span v-if="!mod.isApproved" class="badge badge-pending">{{ t('mod.details.pending_approval') }}</span>
                 </div>
 
@@ -128,7 +133,7 @@
                     >
                   </div>
                   <span class="mod-author-names" :title="getFullAuthorsText(mod)">{{ getAuthorsText(mod) }}</span>
-                  <span v-if="!mod.organization && mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-dot">✓</span>
+                  <svg v-if="!mod.organization && mod.authorId?.isVerifiedDeveloper" v-tooltip="t('mod.details.verified_source')" class="verified-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" role="img" :aria-label="t('mod.details.verified_source')"><path d="m5 12 5 5 9-10" /></svg>
                 </div>
 
                 <p class="mod-summary">{{ localizedText(mod, locale).summary }}</p>
@@ -137,26 +142,28 @@
                   <span v-for="g in modGames(mod)" :key="g" class="badge badge-game">{{ getGameLabelOnly(g) }}</span>
                   <span v-for="cat in mod.categories.slice(0, 3)" :key="cat" class="badge badge-category">{{ getCategoryLabelOnly(cat) }}</span>
                   <span v-if="mod.categories.length > 3" class="badge badge-category">+{{ mod.categories.length - 3 }}</span>
-                  <span class="mod-stats">
-                    <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
-                    <span class="mod-downloads">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
-                      {{ formatNumber(mod.downloads) }}
-                    </span>
-                  </span>
                 </div>
+              </div>
+
+              <div class="mod-stats">
+                <span class="mod-downloads">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17" /></svg>
+                  {{ formatNumber(mod.downloads) }}
+                </span>
+                <span v-if="mod.latestVersion" class="mod-version">v{{ mod.latestVersion.version }}</span>
               </div>
             </NuxtLink>
           </div>
 
           <div v-if="totalPages > 1" class="pagination-container">
-            <button class="pagination-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+            <button type="button" class="pagination-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
               {{ t('pagination.prev') }}
             </button>
             <div class="pagination-pages">
               <button
                 v-for="p in visiblePages"
                 :key="p"
+                type="button"
                 class="pagination-page-btn"
                 :class="{ active: p === currentPage }"
                 @click="changePage(p)"
@@ -164,14 +171,14 @@
                 {{ p }}
               </button>
             </div>
-            <button class="pagination-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+            <button type="button" class="pagination-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
               {{ t('pagination.next') }}
             </button>
           </div>
         </template>
 
         <div v-else class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
           <p>{{ t('home.no_mods') }}</p>
         </div>
       </section>
@@ -262,9 +269,8 @@ const getFallbackGradientStyle = (name: string) => {
   }
   
   const h1 = Math.abs(hash) % 360
-  const h2 = (h1 + 40) % 360
   return {
-    background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${h2}, 70%, 40%) 100%)`
+    backgroundColor: `oklch(45% 0.1 ${h1})`
   }
 }
 
@@ -499,52 +505,65 @@ onMounted(() => {
 .home {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: var(--space-2xl);
 }
 
-/* Hero */
+/* Hero: Index posture, the head small and the mod index below it is the visual */
 .hero {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: end;
+  gap: var(--space-lg) var(--space-2xl);
+  padding: var(--space-xl) 0 var(--space-xl);
+  border-bottom: var(--rule-hair) solid var(--border);
+}
+
+.hero-head {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 40px 0 8px;
-  gap: 14px;
+  gap: var(--space-md);
+  min-width: 0;
 }
 
 .hero-title {
-  margin: 0;
-  font-size: clamp(30px, 4.6vw, 46px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-size: var(--text-display-s);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  max-width: 14ch;
   color: var(--text);
 }
 
 .hero-subtitle {
-  margin: 0;
-  max-width: 560px;
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: var(--text-lead);
+  line-height: 1.45;
+  max-width: 44ch;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  min-width: 0;
 }
 
 .hero-search {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  margin-top: 12px;
 }
 
 .hero-search input {
   width: 100%;
-  height: 50px;
-  padding: 0 18px 0 48px;
-  font-size: 16px;
+  height: 56px;
+  padding: 0 var(--space-md) 0 52px;
+  font-size: var(--text-md);
 }
 
 .hero-search-icon {
   position: absolute;
-  left: 16px;
+  left: var(--space-md);
   top: 50%;
   width: 20px;
   height: 20px;
@@ -554,10 +573,20 @@ onMounted(() => {
 }
 
 .hero-app-link {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+}
+
+.hero-app-link svg {
+  width: 16px;
+  height: 16px;
 }
 
 .hero-app-link:hover {
@@ -567,35 +596,35 @@ onMounted(() => {
 /* Browse layout */
 .browse {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--gap-columns);
   align-items: start;
 }
 
 .filters {
   position: sticky;
-  top: calc(var(--header-height) + 24px);
+  top: calc(var(--header-height) + var(--space-lg));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
 .filter-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .filter-search input {
   width: 100%;
-  height: 34px;
-  margin-bottom: 4px;
+  height: 36px;
+  margin-bottom: var(--space-2xs);
 }
 
 .filter-scroll {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-3xs);
   max-height: 320px;
   overflow-y: auto;
 }
@@ -605,36 +634,33 @@ onMounted(() => {
 }
 
 .filter-title {
-  margin: 0 0 8px;
-  padding: 0 10px;
-  font-size: 13px;
+  margin: 0 0 var(--space-xs);
+  padding: 0 var(--space-sm);
+  font-size: var(--text-sm);
   font-weight: 600;
+  letter-spacing: 0;
   color: var(--text-tertiary);
 }
-
-
-
-
-
 
 /* Results */
 .results {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
   min-width: 0;
 }
 
 .results-toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .results-count {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .sort-box {
@@ -646,34 +672,32 @@ onMounted(() => {
   display: none;
 }
 
+/* The mod index: rows parted by hairlines, logo large, figures in a right column */
 .mods-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  border-top: var(--rule-hair) solid var(--border);
 }
 
 .mod-card {
-  display: flex;
-  gap: 16px;
-  padding: 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-md);
+  border-bottom: var(--rule-hair) solid var(--border);
+  border-radius: var(--radius-sm);
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.1s ease-out, background-color 0.12s ease-out;
+  transition: background-color var(--dur-micro) var(--ease-out);
 }
 
 .mod-card:hover {
   background: var(--surface-hover);
-  box-shadow: var(--outline);
 }
 
-.mod-card.featured {
-  background:
-    linear-gradient(180deg, rgba(240, 180, 90, 0.06), transparent 65%),
-    var(--surface);
-  border-color: rgba(240, 180, 90, 0.18);
+.mod-card:focus-visible {
+  outline-offset: -2px;
 }
 
 .mod-card-skeleton {
@@ -681,10 +705,10 @@ onMounted(() => {
 }
 
 .mod-logo {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   overflow: hidden;
   background: var(--surface-3);
 }
@@ -704,30 +728,31 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text);
 }
 
 .mod-info {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .mod-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .mod-name {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  max-width: none;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -736,9 +761,9 @@ onMounted(() => {
 .mod-authors {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
@@ -748,12 +773,12 @@ onMounted(() => {
 }
 
 .avatar-stack img {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--surface);
-  margin-left: -6px;
+  border: 2px solid var(--bg);
+  margin-left: -8px;
 }
 
 .avatar-stack img:first-child {
@@ -771,27 +796,20 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.verified-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
+.verified-mark {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--success-soft);
   color: var(--success);
-  font-size: 9px;
-  font-weight: 800;
 }
 
 .mod-summary {
-  margin: 2px 0 4px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-md);
   line-height: 1.5;
+  max-width: 70ch;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -799,57 +817,56 @@ onMounted(() => {
 .mod-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2xs);
   flex-wrap: wrap;
-  margin-top: auto;
 }
 
 .mod-stats {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.mod-version {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2xs);
+  min-width: 96px;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .mod-downloads {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--text-secondary);
+  gap: var(--space-xs);
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .mod-downloads svg {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
 }
 
-@media (max-width: 1100px) {
-  .mods-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.mod-version {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   .hero {
-    padding-top: 16px;
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: var(--space-md);
   }
   .browse {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: var(--space-md);
   }
   .filters {
     display: none;
     position: static;
-    padding: 16px;
+    padding: var(--space-md);
     background: var(--surface);
-    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
   }
   .filters.open {
@@ -863,14 +880,26 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .mod-card {
-    padding: 14px;
-    gap: 12px;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: var(--space-sm) var(--space-md);
+    padding: var(--space-md) var(--space-2xs);
+    align-items: start;
   }
   .mod-logo {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
+  }
+  .mod-stats {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-sm);
+    min-width: 0;
+  }
+  .mod-downloads {
+    font-size: var(--text-md);
   }
   .results-count {
     display: none;

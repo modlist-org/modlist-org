@@ -12,7 +12,7 @@ const gradient = computed(() => {
   let hash = 0
   for (let i = 0; i < props.name.length; i++) hash = props.name.charCodeAt(i) + ((hash << 5) - hash)
   const h1 = Math.abs(hash) % 360
-  return { background: `linear-gradient(135deg, hsl(${h1}, 70%, 50%) 0%, hsl(${(h1 + 40) % 360}, 70%, 40%) 100%)` }
+  return { backgroundColor: `oklch(45% 0.1 ${h1})` }
 })
 </script>
 
@@ -24,7 +24,7 @@ const gradient = computed(() => {
   flex-shrink: 0;
   border-radius: 22%;
   object-fit: cover;
-  color: #fff;
+  color: var(--text);
   font-weight: 800;
 }
 </style>
